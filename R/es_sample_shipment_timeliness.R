@@ -25,12 +25,14 @@ es_sample_shipment_timeliness <- function(es_data, lab_loc, end_date = Sys.Date(
 
   # Data validation and target year filtering
   current_year <- lubridate::year(end_date)
+  current_month <- lubridate::month(end_date)
 
   valid_data <- activity_dates_data_validation(
     data = es_data,
     date_columns = c("collection.date", "date.received.in.lab"),
     categorical_columns = c("es.lab.type")) |>
-    dplyr::filter(lubridate::year(collection.date) %in% (current_year - 3):current_year)
+    dplyr::filter(lubridate::year(collection.date) %in% (current_year - 3):current_year,
+      lubridate::month(collection.date) <= current_month)
 
   if (nrow(valid_data) == 0) cli::cli_abort("Unable to calculate timeliness due to missing data")
 
@@ -71,12 +73,12 @@ es_sample_shipment_timeliness <- function(es_data, lab_loc, end_date = Sys.Date(
     dplyr::mutate(
       !!paste0("median_", current_year-3, "_", current_year-1) := median_baseline,
       !!paste0("median_", current_year) := median_current,
-      median_difference = ifelse(is.na(median_baseline) | is.na(median_current), NA_real_, round(median_current - median_baseline, 1))
+      median_difference = ifelse(is.na(median_baseline) | is.na(median_current), NA_real_, round(median_baseline - median_current, 1))
     ) |>
     dplyr::select(-median_baseline, -median_current, -month) |>
     dplyr::rename_with(~ dplyr::case_when(. == "who.region" ~ "region", . == "ADM0_NAME" ~ "country", TRUE ~ .))
 
   # Output
   message("* ES samples lab receipt timeliness (in-country: 3 days, international: 7 days, unknown lab type: 7 days)")
-  print(result, width = Inf)
+  result |> print(width = Inf)
 }
