@@ -9,18 +9,19 @@
 #' es_wpv.vdpv_detection_timeliness(es_data)
 #' }
 es_wpv.vdpv_detection_timeliness <- function(es_data, end_date = Sys.Date()) {
-  
+
   # Filter for WPV/VDPV positive samples
-  es_data <- es_data |> dplyr::filter(wpv == 1 | vdpv == 1)
-  
+  es_data <- es_data |>
+    dplyr::filter(wpv == 1 | vdpv == 1)
+
   if(nrow(es_data) == 0) {
     cli::cli_abort("No WPV/VDPV positive ES samples found")
   }
-  
+
   # Data validation and target year filtering
   current_year <- lubridate::year(end_date)
   current_month <- lubridate::month(end_date)
-  
+
   valid_data <- activity_dates_data_validation(
     data = es_data,
     date_columns = c("collection.date", "date.final.combined.result"),
@@ -29,7 +30,7 @@ es_wpv.vdpv_detection_timeliness <- function(es_data, end_date = Sys.Date()) {
     dplyr::filter(lubridate::year(collection.date) %in% (current_year - 1):current_year,
     lubridate::month(collection.date) <= current_month)
   if (nrow(valid_data) == 0) cli::cli_abort("Unable to calculate detection timeliness due to missing data")
-  
+
   # Calculate detection timeliness results
   result <- valid_data |>
     dplyr::mutate(
@@ -53,7 +54,7 @@ es_wpv.vdpv_detection_timeliness <- function(es_data, end_date = Sys.Date()) {
       pct_limited_capacity_lab = round(detection_within_46days / dplyr::n() * 100, 1),
       .groups = "drop"
     )
-  
+
   # Calculate monthly median comparisons
   baseline_data <- valid_data |>
     dplyr::filter(lubridate::year(collection.date) == current_year - 1) |>
@@ -63,7 +64,7 @@ es_wpv.vdpv_detection_timeliness <- function(es_data, end_date = Sys.Date()) {
     ) |>
     dplyr::group_by(who.region, ADM0_NAME, month) |>
     dplyr::summarise(median_baseline = ifelse(dplyr::n() > 0, round(median(days_to_final_result, na.rm = TRUE), 1), NA_real_), .groups = "drop")
-  
+
   current_data <- valid_data |>
     dplyr::filter(lubridate::year(collection.date) == current_year) |>
     dplyr::mutate(
@@ -72,7 +73,7 @@ es_wpv.vdpv_detection_timeliness <- function(es_data, end_date = Sys.Date()) {
     ) |>
     dplyr::group_by(who.region, ADM0_NAME, month) |>
     dplyr::summarise(median_current = ifelse(dplyr::n() > 0, round(median(days_to_final_result, na.rm = TRUE), 1), NA_real_), .groups = "drop")
-  
+
   result <- result |>
     dplyr::left_join(baseline_data, by = c("who.region", "ADM0_NAME", "month")) |>
     dplyr::left_join(current_data, by = c("who.region", "ADM0_NAME", "month")) |>
@@ -83,8 +84,9 @@ es_wpv.vdpv_detection_timeliness <- function(es_data, end_date = Sys.Date()) {
     ) |>
     dplyr::select(-median_baseline, -median_current, -month) |>
     dplyr::rename_with(~ dplyr::case_when(. == "who.region" ~ "region", . == "ADM0_NAME" ~ "country", TRUE ~ .))
-  
+
   # Output
   message("* WPV/VDPV detection timeliness (targets: 35 days full capacity, 46 days limited capacity, ≥80% target for both)")
-  result |> print(width = Inf)
+  result |>
+    print(width = Inf)
 }
