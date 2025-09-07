@@ -12,7 +12,8 @@
 es_sample_shipment_timeliness <- function(es_data, lab_loc, end_date = Sys.Date()) {
   # Prepare data with lab types
   admin0_columns <- c("ADM0_NAME", "admin.0.officialname", "admin.0.vizname", "country.iso3")
-  es_data <- es_data |> dplyr::mutate(es.lab.type = NA_character_)
+  es_data <- es_data |>
+    dplyr::mutate(es.lab.type = NA_character_)
 
   for(i in seq_len(nrow(lab_loc))) {
     for(col in admin0_columns[admin0_columns %in% names(es_data)]) {
@@ -80,5 +81,6 @@ es_sample_shipment_timeliness <- function(es_data, lab_loc, end_date = Sys.Date(
 
   # Output
   message("* ES samples lab receipt timeliness (in-country: 3 days, international: 7 days, unknown lab type: 7 days)")
-  result |> print(width = Inf)
+  result |>
+    print(width = Inf)
 }
