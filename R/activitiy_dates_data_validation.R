@@ -33,7 +33,8 @@ activity_dates_data_validation <- function(data, date_columns = NULL, categorica
     for (col in date_cols) {
       missing_count <- sum(is.na(data[[col]]))
       if (missing_count > 0) results[[paste0(col, "_missing_count")]] <- missing_count
-      valid_data <- valid_data |> dplyr::filter(!is.na(.data[[col]]))
+      valid_data <- valid_data |>
+        dplyr::filter(!is.na(.data[[col]]))
     }
 
     results$missing_date_records <- total_records - nrow(valid_data)
@@ -45,7 +46,8 @@ activity_dates_data_validation <- function(data, date_columns = NULL, categorica
       for (i in 1:(length(date_cols) - 1)) {
         if (all(date_cols[i:(i+1)] %in% names(data))) {
           invalid_count <- invalid_count + sum(as.Date(data[[date_cols[i+1]]]) < as.Date(data[[date_cols[i]]]), na.rm = TRUE)
-          valid_data <- valid_data |> dplyr::filter(as.Date(.data[[date_cols[i+1]]]) >= as.Date(.data[[date_cols[i]]]))
+          valid_data <- valid_data |>
+            dplyr::filter(as.Date(.data[[date_cols[i+1]]]) >= as.Date(.data[[date_cols[i]]]))
         }
       }
       results$invalid_date_logic_records <- invalid_count
