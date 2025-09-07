@@ -74,9 +74,19 @@ es_sample_shipment_timeliness <- function(es_data, lab_loc, end_date = Sys.Date(
     dplyr::mutate(
       !!paste0("median_", current_year-3, "_", current_year-1) := median_baseline,
       !!paste0("median_", current_year) := median_current,
-      median_difference = ifelse(is.na(median_baseline) | is.na(median_current), NA_real_, round(median_baseline - median_current, 1))
+      median_difference = ifelse(is.na(median_baseline) | is.na(median_current), NA_real_, round(median_baseline - median_current, 1)),
+      `difference (days)` = dplyr::case_when(
+        is.na(median_difference) ~ NA_character_,
+        median_difference == 0 ~ "same",
+        abs(median_difference) <= 1 ~ paste0(
+          ifelse(median_difference > 0, "less by ", "more by "),
+          abs(median_difference), " day"
+        ),
+        median_difference > 0 ~ paste0("less by ", median_difference, " days"),
+        median_difference < 0 ~ paste0("more by ", abs(median_difference), " days")
+      )
     ) |>
-    dplyr::select(-median_baseline, -median_current, -month) |>
+    dplyr::select(-median_baseline, -median_current, -month, -median_difference) |>
     dplyr::rename_with(~ dplyr::case_when(. == "who.region" ~ "region", . == "ADM0_NAME" ~ "country", TRUE ~ .))
 
   # Output
