@@ -58,12 +58,25 @@ activity_dates_data_validation <- function(data, date_columns = NULL, categorica
 
   # Categorical analysis and output
   if (!is.null(categorical_columns)) {
+    # Helper function for empty values
     is_empty <- function(x) is.null(x) | is.na(x) | nchar(gsub("[^A-Za-z0-9]", "", trimws(x))) == 0
+
     for (col in categorical_columns[categorical_columns %in% names(valid_data)]) {
-      for (val in unique(valid_data[[col]])[!is_empty(unique(valid_data[[col]]))]) {
-        results[[paste0(col, "_", val, "_count")]] <- sum(tolower(trimws(valid_data[[col]])) == tolower(trimws(val)), na.rm = TRUE)
+      # Prepare column data
+      col_data <- tolower(trimws(valid_data[[col]]))
+      valid_vals <- unique(col_data)[!is_empty(unique(col_data))]
+
+      # Skip column if entirely empty
+      if (length(valid_vals) == 0) next
+
+      # Count valid categories
+      for (val in valid_vals) {
+        results[[paste0(col, "_", val, "_count")]] <- sum(col_data == val, na.rm = TRUE)
       }
-      if (sum(is_empty(valid_data[[col]])) > 0) results[[paste0(col, "_no_data_count")]] <- sum(is_empty(valid_data[[col]]))
+
+      # Count empty values
+      empty_count <- sum(is_empty(valid_data[[col]]))
+      if (empty_count > 0) results[[paste0(col, "_no_data_count")]] <- empty_count
     }
   }
 
