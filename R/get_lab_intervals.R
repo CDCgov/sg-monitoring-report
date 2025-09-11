@@ -1,3 +1,28 @@
+#' Calculate lab intervals
+#'
+#' @description
+#' Calculate the lab intervals of each sample in the lab dataset. The intervals calculated are
+#' timeliness of virus isolation results (days.lab.culture),
+#' ITD results (days.culture.itd), shipment for sequencing (days.seq.ship), and
+#' sequencing results (days.seq.rec.res). An alternative timeliness indicator for sequencing results
+#' is measured from the date of ITD results to sequencing results (days.itd.res.seq.res).
+#' The `t1-t5` filters for valid intervals only. That is, intervals that are not N/A, negative, nor
+#' more than 365 days.
+#'
+#'
+#' @param lab_data `tibble` Lab data, namely the regional lab data obtained from WHO.
+#'
+#' @details
+#' To request updated lab data, email Minh-Ly's group.
+#'
+#' @returns `tibble` The lab dataset with additional timeliness columns added.
+#' @internal
+#'
+#' @examples
+#' \dontrun{
+#' lab_data <- readr::read_csv("lab_data.csv")
+#' lab_data <- get_lab_intervals(lab_data)
+#' }
 get_lab_intervals <- function(lab_data) {
 
   lab_data |>
