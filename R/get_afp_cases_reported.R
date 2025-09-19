@@ -19,7 +19,6 @@ get_afp_cases_reported <- function(afp_data, end_date = Sys.Date()) {
 
   # Prepare month and year columns
   afp_only <- afp_data |>
-    dplyr::filter(!cdc.classification.all2 %in% c("NPAFP", "NOT-AFP")) |>
     dplyr::mutate(
       month = lubridate::month(dateonset, label = TRUE, abbr = TRUE),
       year = lubridate::year(dateonset)
