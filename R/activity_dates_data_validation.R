@@ -27,10 +27,11 @@ activity_dates_data_validation <- function(data, date_columns = NULL, categorica
   total_records <- nrow(data)
   valid_data <- data
   results <- list(total_records = total_records)
+  default_date_cols <- data |> dplyr::select(dplyr::contains("date")) |> names()
 
   # Date data availability
   if (!is.null(date_columns)) {
-    date_cols <- date_columns[date_columns %in% names(data)]
+    date_cols <- date_columns[date_columns %in% default_date_cols]
 
     # Filter valid_data and collect missing counts per column
     for (col in date_cols) {
@@ -87,4 +88,22 @@ activity_dates_data_validation <- function(data, date_columns = NULL, categorica
   result_tibble <- dplyr::tibble(metric = names(results), value = unlist(results))
   print(result_tibble, n = Inf)
   invisible(valid_data)
+}
+
+# private functions
+get_column_missingness <- function(data, cols) {
+  total_records <- data |>
+    dplyr::summarize(across(dplyr::any_of(cols), \(x) dplyr::n())) |>
+    tidyr::pivot_longer(cols = dplyr::any_of(cols), names_to = "column", values_to = "total")
+  missing_count <- data |>
+    dplyr::summarize(across(dplyr::any_of(cols), \(x) sum(is.na(x)))) |>
+    tidyr::pivot_longer(cols = dplyr::any_of(cols), names_to = "column", values_to = "missing")
+  valid_data <- data |>
+    dplyr::summarize(across(dplyr::any_of(cols), \(x) sum(!is.na(x)))) |>
+    tidyr::pivot_longer(cols = dplyr::any_of(cols), names_to = "column", values_to = "present")
+  results <- dplyr::full_join(missing_count, valid_data, by = "column") |>
+    dplyr::full_join(total_records, by = "column") |>
+    dplyr::mutate(prop_complete = round(present / total * 100, 2))
+
+  return(results)
 }
