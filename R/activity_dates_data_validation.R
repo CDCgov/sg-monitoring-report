@@ -1,23 +1,26 @@
 #' Data validation of activity dates and chronological sequences
+#'
 #' @description Checks completeness of required dates and validates logical date sequences to identify valid records.
-#' @param data Data containing records to validate
+#'
+#' @param data Data containing records to validate.
 #' @param date_columns Character vector of date column names to validate.
 #'   Column order matters: provide dates in expected chronological sequence (earliest activity first, latest activity last).
 #'   Function validates that each subsequent date occurs on or after the previous date.
-#' @param categorical_columns Optional character vector of categorical column names for analyzing validation results by subgroups.
-#' @returns Tibble with validation metrics and results
+#' @param categorical_columns `str` Optional character vector of categorical column names for analyzing validation results by subgroups.
+#' @returns `tibble` Summary with validation metrics and results.
 #' @export
 #' @examples
 #' \dontrun{
+#' raw_data <- sirfunctions::get_all_polio_data(attach.spatial.data = FALSE)
 #' # ES surveillance: collection before lab receipt
 #' activity_dates_data_validation(
-#'   data,
+#'   raw_data$es,
 #'   date_columns = c("collection.date", "date.received.in.lab"),
 #'   categorical_columns = c("es.lab.type"))
 #'
 #' # AFP surveillance: onset, notification, then investigation
 #' activity_dates_data_validation(
-#'   data,
+#'   raw_data$afp,
 #'   date_columns = c("date.onset", "notification.date", "investigation.date"))
 #' }
 activity_dates_data_validation <- function(data, date_columns = NULL, categorical_columns = NULL) {
