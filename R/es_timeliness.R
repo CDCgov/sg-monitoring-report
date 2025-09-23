@@ -13,87 +13,51 @@
 #' # With custom end date
 #' es_timeliness(es_data, lab_loc, end_date = as.Date("2024-06-20"))
 #' }
-es_timeliness <- function(es_data, lab_loc, end_date = Sys.Date()) {
-
+es_timeliness <- function(es_data, end_date = Sys.Date()) {
   current_year <- lubridate::year(end_date)
   current_month <- lubridate::month(end_date)
-  admin0_columns <- c("ADM0_NAME", "admin.0.officialname", "admin.0.vizname", "country.iso3")
-  baseline_years <- (current_year - 3):(current_year - 1)
 
-  # Add lab type once (only affects shipment)
-  es_data$es.lab.type <- NA_character_
-  for(i in seq_len(nrow(lab_loc))) {
-    for(col in admin0_columns[admin0_columns %in% names(es_data)]) {
-      matches <- which(toupper(trimws(es_data[[col]])) == toupper(trimws(lab_loc$country[i])))
-      if(length(matches) > 0) {
-        es_data$es.lab.type[matches] <- lab_loc$es.lab.type[i]
-        break
-      }
-    }
-  }
+  valid_es_data <- es_data |>
+    dplyr::rename(country = "ADM0_NAME") |>
+    dplyr::mutate(days.col.rec.lab = as.numeric(difftime(date.received.in.lab, collection.date, units = "days")),
+                  days.col.notif.hq = as.numeric(difftime(date.notification.to.hq, collection.date, units = "days")),
+                  month = lubridate::month(collection.date, label = TRUE),
+                  year = lubridate::year(collection.date)) |>
+    dplyr::filter(!is.na(days.col.rec.lab) | dplyr::between(days.col.rec.lab, 0, 365),
+                  dplyr::between(year, current_year - 1, current_year))
 
-  # Calculate both timeliness types
-  message("ES Shipment Data Validation")
-  shipment_result <- activity_dates_data_validation(es_data, c("collection.date", "date.received.in.lab"), "es.lab.type") |>
-    dplyr::filter(lubridate::year(collection.date) %in% (current_year - 3):current_year,
-                  lubridate::month(collection.date) <= current_month) |>
-    dplyr::mutate(days_diff = as.numeric(as.Date(date.received.in.lab) - as.Date(collection.date)),
-                  meets_target = dplyr::case_when(tolower(trimws(es.lab.type)) == "in-country" ~ days_diff <= 3,
-                                                  tolower(trimws(es.lab.type)) == "international" ~ days_diff <= 7,
-                                                  TRUE ~ days_diff <= 7),
-                  timeliness_type = "es_shipment")
+  timeliness_summary <- valid_es_data |>
+    dplyr::select(who.region, country, year, month, days.col.rec.lab) |>
+    dplyr::group_by(who.region, year, country, month) |>
+    dplyr::summarize(median_lab_shipment = median(days.col.rec.lab, na.rm = TRUE))
 
-  message("ES-WPV/VDPV Detection Timeliness Data Validation")
-  detection_result <- es_data |>
+  timeliness_summary_vdpv_wpv <- valid_es_data |>
     dplyr::filter(wpv == 1 | vdpv == 1) |>
-    activity_dates_data_validation(c("collection.date", "date.final.combined.result"), c("wpv", "vdpv")) |>
-    dplyr::filter(lubridate::year(collection.date) %in% (current_year - 1):current_year,
-                  lubridate::month(collection.date) <= current_month) |>
-    dplyr::mutate(days_diff = as.numeric(as.Date(date.final.combined.result) - as.Date(collection.date)),
-                  meets_target = days_diff <= 35,
-                  timeliness_type = "es_wpv/vdpv_detection")
+    dplyr::select(who.region, country, year, month, days.col.notif.hq) |>
+    dplyr::group_by(who.region, year, country, month) |>
+    dplyr::summarize(median_wpv_vdpv_detection = median(days.col.notif.hq, na.rm = TRUE))
 
-  # Combined data result
-  all_results <- dplyr::bind_rows(
-    if (nrow(shipment_result) > 0) shipment_result else NULL,
-    if (nrow(detection_result) > 0) detection_result else NULL
-  ) |>
-    dplyr::mutate(year = lubridate::year(collection.date), month = lubridate::month(collection.date))
+  timeliness_summary_all <- dplyr::full_join(timeliness_summary,
+                                             timeliness_summary_vdpv_wpv)
 
-  if (nrow(all_results) == 0) cli::cli_abort("Unable to calculate timeliness due to unavailable data")
+  # Create combinations of year, month, country
+  complete_table <- tidyr::expand_grid(
+    year = c(current_year - 1, current_year),
+    month = unique(valid_es_data$month),
+    country = unique(valid_es_data$country)) |>
+    dplyr::left_join(
+      es_data |> dplyr::distinct(ADM0_NAME, who.region) |> dplyr::rename(country = ADM0_NAME),
+      by = "country")
 
-  # Calculate medians and final result
-  baseline_label <- paste0("median_", min(baseline_years), "-", max(baseline_years))
-  current_label <- paste0("median_", current_year)
+  # Ensure that all countries and months are accounted for
+  timeliness_summary_full <- dplyr::full_join(complete_table,
+                                              timeliness_summary_all) |>
+    tidyr::pivot_longer(cols = dplyr::any_of(c("median_lab_shipment", "median_wpv_vdpv_detection")),
+                        names_to = "category",
+                        values_to = "value") |>
+    tidyr::pivot_wider(names_from = "year", values_from = "value") |>
+    dplyr::mutate(diff = round(.data[[paste0(current_year)]] - .data[[paste0(current_year - 1)]], 1)) |>
+    dplyr::arrange(month, who.region, country, category)
 
-  baseline_medians <- all_results |>
-    dplyr::filter((timeliness_type == "es_shipment" & year %in% baseline_years) |
-                    (timeliness_type == "es_wpv/vdpv_detection" & year == (current_year - 1))) |>
-    dplyr::group_by(timeliness_type, who.region, ADM0_NAME, month) |>
-    dplyr::summarise(!!baseline_label := round(median(days_diff, na.rm = TRUE), 1), .groups = "drop")
-
-  current_medians <- all_results |>
-    dplyr::filter(year == current_year) |>
-    dplyr::group_by(timeliness_type, who.region, ADM0_NAME, month) |>
-    dplyr::summarise(!!current_label := round(median(days_diff, na.rm = TRUE), 1), .groups = "drop")
-
-  final_result <- all_results |>
-    dplyr::group_by(timeliness_type, who.region, ADM0_NAME, year, month) |>
-    dplyr::summarise(month_name = first(month.abb[month]),
-                     pct_met_target = round(mean(meets_target, na.rm = TRUE) * 100, 1), .groups = "drop") |>
-    dplyr::left_join(baseline_medians, by = c("timeliness_type", "who.region", "ADM0_NAME", "month")) |>
-    dplyr::left_join(current_medians, by = c("timeliness_type", "who.region", "ADM0_NAME", "month")) |>
-    dplyr::mutate(diff = round(.data[[baseline_label]] - .data[[current_label]], 1),
-                  `difference (days)` = dplyr::case_when(is.na(diff) ~ NA_character_, diff == 0 ~ "same",
-                                                         abs(diff) <= 1 ~ paste0(ifelse(diff > 0, "less", "more"), " by ", abs(diff), " day"),
-                                                         TRUE ~ paste0(ifelse(diff > 0, "less", "more"), " by ", abs(diff), " days"))) |>
-    dplyr::select(-diff, -month) |>
-    dplyr::rename(region = who.region, country = ADM0_NAME)
-
-  message("* ES Timeliness Indicators:")
-  message("  - Lab shipment targets: in-country ≤3 days, international ≤7 days, unknown lab type ≤7 days")
-  message("  - Poliovirus detection targets: full capacity ≤35 days, limited capacity ≤46 days (using 35-day target for % met)")
-  message("  - Baseline periods: Shipment ", min(baseline_years), "-", max(baseline_years), " / Detection ", current_year - 1, " vs Current year: ", current_year)
-
-  final_result |> print(width = Inf)
+  return(timeliness_summary_full)
 }
