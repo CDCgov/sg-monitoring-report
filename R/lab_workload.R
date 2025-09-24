@@ -1,3 +1,17 @@
+#' Calculate lab workload
+#'
+#' @description
+#' Calculates the lab workload by country from the year of the end date and the
+#' year before. Workload is defined as the number of samples sent in a year up to
+#' the end date.
+#'
+#' @param lab_data `tibble` Lab data.
+#' @param end_date `str` End date of the analysis.
+#'
+#' @returns `tibble` Summary of the lab workload by country.
+#' @export
+#'
+#' @examples
 lab_workload <- function(lab_data, end_date = Sys.Date()) {
   start_date <- lubridate::floor_date(end_date, unit = "years")
   prev_year_end_date <- Sys.Date() - lubridate::years(1)
