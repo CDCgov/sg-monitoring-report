@@ -13,7 +13,7 @@
 #' # With custom end date
 #' es_timeliness(es_data, lab_loc, end_date = as.Date("2024-06-20"))
 #' }
-es_timeliness <- function(es_data, end_date = Sys.Date()) {
+get_es_timeliness <- function(es_data, end_date = Sys.Date()) {
   current_year <- lubridate::year(end_date)
   current_month <- lubridate::month(end_date, TRUE)
 
