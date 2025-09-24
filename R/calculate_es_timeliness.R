@@ -15,7 +15,7 @@
 #' }
 es_timeliness <- function(es_data, end_date = Sys.Date()) {
   current_year <- lubridate::year(end_date)
-  current_month <- lubridate::month(end_date)
+  current_month <- lubridate::month(end_date, TRUE)
 
   valid_es_data <- es_data |>
     dplyr::rename(country = "ADM0_NAME") |>
@@ -23,16 +23,18 @@ es_timeliness <- function(es_data, end_date = Sys.Date()) {
                   days.col.notif.hq = as.numeric(difftime(date.notification.to.hq, collection.date, units = "days")),
                   month = lubridate::month(collection.date, label = TRUE),
                   year = lubridate::year(collection.date)) |>
-    dplyr::filter(!is.na(days.col.rec.lab) | dplyr::between(days.col.rec.lab, 0, 365),
-                  dplyr::between(year, current_year - 1, current_year))
+    dplyr::filter(dplyr::between(year, current_year - 1, current_year),
+                  month <= current_month)
 
   timeliness_summary <- valid_es_data |>
     dplyr::select(who.region, country, year, month, days.col.rec.lab) |>
+    dplyr::filter(dplyr::between(days.col.rec.lab, 0, 365)) |>
     dplyr::group_by(who.region, year, country, month) |>
     dplyr::summarize(median_lab_shipment = median(days.col.rec.lab, na.rm = TRUE))
 
   timeliness_summary_vdpv_wpv <- valid_es_data |>
-    dplyr::filter(wpv == 1 | vdpv == 1) |>
+    dplyr::filter(wpv == 1 | vdpv == 1,
+                  dplyr::between(days.col.notif.hq, 0, 365)) |>
     dplyr::select(who.region, country, year, month, days.col.notif.hq) |>
     dplyr::group_by(who.region, year, country, month) |>
     dplyr::summarize(median_wpv_vdpv_detection = median(days.col.notif.hq, na.rm = TRUE))
@@ -57,7 +59,14 @@ es_timeliness <- function(es_data, end_date = Sys.Date()) {
                         values_to = "value") |>
     tidyr::pivot_wider(names_from = "year", values_from = "value") |>
     dplyr::mutate(diff = round(.data[[paste0(current_year)]] - .data[[paste0(current_year - 1)]], 1)) |>
-    dplyr::arrange(month, who.region, country, category)
+    dplyr::arrange(month, who.region, country, category) |>
+    dplyr::mutate(trend = dplyr::case_when(
+      diff == 0 ~ "Same",
+      diff > 0 ~ "Increase",
+      diff < 0 ~ "Decrease",
+      .default = "No data available for both years"
+    ))
+
 
   return(timeliness_summary_full)
 }
