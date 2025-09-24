@@ -16,6 +16,7 @@
 get_operational_sites <- function(es_data, end_date = Sys.Date()) {
 
   end_date <- lubridate::as_date(end_date)
+  current_month <- lubridate::month(end_date, TRUE)
   current_year <- lubridate::year(end_date)
 
   active_sites <- sirfunctions:::get_es_site_age(es_data, end_date)
@@ -30,12 +31,12 @@ get_operational_sites <- function(es_data, end_date = Sys.Date()) {
   current_year_active_site_summary <- active_sites |>
     dplyr::distinct() |>
     dplyr::group_by(ADM0_NAME) |>
-    dplyr::summarize(operational_sites = n()) |>
+    dplyr::summarize(operational_sites = dplyr::n()) |>
     dplyr::mutate(year = current_year)
   prev_year_active_site_summary <- prev_year_active_sites |>
     dplyr::distinct() |>
     dplyr::group_by(ADM0_NAME) |>
-    dplyr::summarize(operational_sites = n()) |>
+    dplyr::summarize(operational_sites = dplyr::n()) |>
     dplyr::mutate(year = current_year - 1)
 
   active_site_summary <- dplyr::full_join(current_year_active_site_summary,
@@ -60,6 +61,12 @@ get_operational_sites <- function(es_data, end_date = Sys.Date()) {
     dplyr::mutate(year = paste0(current_month," ", year)) |>
     tidyr::pivot_wider(names_from = year, values_from = operational_sites)
   active_site_summary_wide["comparison"] <- active_site_summary_wide[, 3] - active_site_summary_wide[, 2]
+  active_site_summary_wide <- active_site_summary_wide |>
+    dplyr::mutate(trend = dplyr::case_when(
+      comparison == 0 ~ "same",
+      comparison > 0 ~ "increase",
+      comparison < 0 ~ "decrease"
+    ))
 
   cli::cli_alert_info(paste0("Note: active sites are anchored based on the end date specified.",
                              " An active site is a site open for at least 12 months",
