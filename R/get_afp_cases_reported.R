@@ -67,10 +67,12 @@ get_afp_cases_reported <- function(afp_data, end_date = Sys.Date()) {
     dplyr::group_by(whoregion, place.admin.0, month) |>
     dplyr::summarize(median = median(n, na.rm = TRUE),
                      avg = mean(n, na.rm = TRUE),
-                     sd = sd(n, na.rm = TRUE) ,.groups = "drop") |>
+                     sd = sd(n, na.rm = TRUE),
+                     mad = mad(n, na.rm = TRUE), .groups = "drop") |>
     dplyr::rename(!!paste0(previous_year_min, "-", previous_year_max, " median") := median,
                   !!paste0(previous_year_min, "-", previous_year_max, " avg") := avg,
-                  !!paste0(previous_year_min, "-", previous_year_max, " sd") := sd)
+                  !!paste0(previous_year_min, "-", previous_year_max, " sd") := sd,
+                  !!paste0(previous_year_min, "-", previous_year_max, " mad") := mad)
 
   final_summary <- dplyr::left_join(previous_years,
                                     current_year,
