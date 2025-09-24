@@ -35,12 +35,11 @@ get_afp_lab_processing_timeliness <- function(lab_data, end_date = Sys.Date()) {
   valid_lab_data <- lab_data |>
     # Lab processing timeliness
     # From date stool received in lab to final rRTPCR results
-    dplyr::mutate(days.rec.lab.final = DateNotificationtoHQ - DateStoolReceivedinLab,
+    dplyr::mutate(days.rec.lab.final = as.numeric(difftime(DateNotificationtoHQ, DateStoolReceivedinLab, units = "days")),
                   year_month = lubridate::floor_date(CaseDate, unit = "months"),
                   month = lubridate::month(CaseDate, label = TRUE)) |>
     # Filter erroneous data
-    dplyr::filter(!is.na(.data$days.rec.lab.final),
-                  (.data$days.rec.lab.final >= 0 & .data$days.rec.lab.final <= 365))
+    dplyr::filter(dplyr::between(days.rec.lab.final, 0, 365))
 
   full_grid <- tidyr::expand_grid(
     country = unique(lab_data$country),
@@ -50,10 +49,9 @@ get_afp_lab_processing_timeliness <- function(lab_data, end_date = Sys.Date()) {
 
   summary <- valid_lab_data |>
     dplyr::group_by(whoregion, country, year, month) |>
-    dplyr::summarize(median = median(days.rec.lab.final, na.rm = TRUE), .groups = "drop")
+    dplyr::summarize(median = as.numeric(median(days.rec.lab.final, na.rm = TRUE)), .groups = "drop")
 
-  summary_full <- dplyr::left_join(full_grid, summary) |>
-    dplyr::mutate(median = tidyr::replace_na(as.numeric(median), 0))
+  summary_full <- dplyr::left_join(full_grid, summary)
 
   current_year <- summary_full |>
     dplyr::filter(year == year(end_date)) |>
@@ -67,8 +65,6 @@ get_afp_lab_processing_timeliness <- function(lab_data, end_date = Sys.Date()) {
     dplyr::rename(!!paste0(year(end_date) - 3, "-", year(end_date) - 1, " median") := median)
 
   three_month_summary <- dplyr::left_join(previous_years, current_year)
-
-  cli::cli_alert_info("Note: If end date is not the month end, comparisons from the previous years may be inaccurate")
 
   return(three_month_summary)
 }
