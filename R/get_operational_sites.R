@@ -52,10 +52,12 @@ get_operational_sites <- function(es_data, end_date = Sys.Date()) {
 
   # Replace NAs with 0 and pivot
   active_site_summary <- active_site_summary |>
-    dplyr::mutate(operational_sites = ifelse(is.na(operational_sites), 0, operational_sites))
+    dplyr::mutate(operational_sites = ifelse(is.na(operational_sites), 0, operational_sites)) |>
+    dplyr::rename(ctry = ADM0_NAME)
 
   # Yearly summary
   active_site_summary_wide <- active_site_summary |>
+    dplyr::mutate(year = paste0(current_month," ", year)) |>
     tidyr::pivot_wider(names_from = year, values_from = operational_sites)
   active_site_summary_wide["comparison"] <- active_site_summary_wide[, 3] - active_site_summary_wide[, 2]
 
@@ -63,6 +65,6 @@ get_operational_sites <- function(es_data, end_date = Sys.Date()) {
                              " An active site is a site open for at least 12 months",
                              " with 10 samples in the past 12 months."))
 
-  return(active_site_summary_wide)
+  return(active_site_summary_wide |> dplyr::arrange(comparison))
 
 }
