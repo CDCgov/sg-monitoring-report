@@ -33,7 +33,7 @@ get_afp_cases_reported <- function(afp_data, end_date = Sys.Date()) {
 
   # Get unique countries and their region mapping
   country_region <- afp_only |>
-    dplyr::mutate(whoregion = ifelse(place.admin.0 == "INDIA", "SEARO", "WPRO")) |>
+    dplyr::mutate(whoregion = ifelse(place.admin.0 == "INDIA", "SEARO", whoregion)) |>
     dplyr::select(place.admin.0, whoregion) |>
     dplyr::distinct()
 
