@@ -40,6 +40,24 @@ lab_data <- clean_lab_data(lab_data,
 
 ## AFP Surveillance Indicators
 
+::: panel-tabset
+
+### Number of AFP cases reported
+
+### Proportion of 60 days follow-up done
+
+### Proportion of lab pending
+
+### Timeliness of detection for WPV/VDPV samples
+
+### Timeliness of detection for negative samples
+
+### Timeliness of stool specimen shipment
+
+### Timeliness of lab processing of AFP samples
+
+:::
+
 ## Environmental Surveillance Indicators
 
 ```{r}
