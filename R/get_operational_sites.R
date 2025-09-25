@@ -63,9 +63,10 @@ get_operational_sites <- function(es_data, end_date = Sys.Date()) {
   active_site_summary_wide["comparison"] <- active_site_summary_wide[, 3] - active_site_summary_wide[, 2]
   active_site_summary_wide <- active_site_summary_wide |>
     dplyr::mutate(trend = dplyr::case_when(
-      comparison == 0 ~ "same",
-      comparison > 0 ~ "increase",
-      comparison < 0 ~ "decrease"
+      comparison == 0 ~ "Same",
+      comparison > 0 ~ "Increase",
+      comparison < 0 ~ "Decrease",
+      .default = "No data available for both years"
     ))
 
   cli::cli_alert_info(paste0("Note: active sites are anchored based on the end date specified.",

@@ -33,11 +33,35 @@ lab_workload <- function(lab_data, end_date = Sys.Date()) {
     dplyr::group_by(whoregion, country, year, month) |>
     dplyr::summarise(n = dplyr::n())
 
-  summary <- dplyr::bind_rows(prev_year_load, current_year_load) |>
-    dplyr::filter(month %in% unique(current_year_load$month)) |>
+
+
+  summary <- dplyr::bind_rows(prev_year_load, current_year_load)
+
+  # Create combinations of region, country, and interval
+  complete_table <- tidyr::expand_grid(
+    country = unique(lab_data$country),
+    month = lubridate::month(seq(1, 12), TRUE)) |>
+    dplyr::left_join(
+      lab_data |>
+        dplyr::distinct(country, whoregion)) |>
+    dplyr::filter(month <= lubridate::month(end_date, TRUE))
+
+  # Full join
+  summary <- dplyr::full_join(complete_table, summary)
+
+  summary <- summary |>
+    dplyr::filter(month %in% unique(current_year_load$month),
+                  !is.na(year)) |>
     tidyr::pivot_wider(names_from = year, values_from = n)
 
-  summary["difference"] <- summary[5] - summary[4]
+  summary["comparison"] <- summary[, 5] - summary[, 4]
+  summary <- summary |>
+    dplyr::mutate(trend = dplyr::case_when(
+      comparison == 0 ~ "Same",
+      comparison > 0 ~ "Increase",
+      comparison < 0 ~ "Decrease",
+      .default = "No data available for both years"
+    ))
 
   return(summary)
 

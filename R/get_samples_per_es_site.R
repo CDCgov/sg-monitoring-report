@@ -26,7 +26,7 @@ get_samples_per_es_site <- function(es_data, end_date = Sys.Date()) {
     ) |>
     dplyr::select(ctry = ADM0_NAME, site.name, month, collect.yr, site.status) |>
     dplyr::group_by(ctry, site.name, month, collect.yr, site.status) |>
-    dplyr::summarize(n_samples = n()) |>
+    dplyr::summarize(n_samples = dplyr::n()) |>
     tidyr::pivot_wider(names_from = collect.yr, values_from = n_samples) |>
     dplyr::ungroup() |>
     dplyr::mutate(dplyr::across(dplyr::any_of(c(5, 6)), \(x) ifelse(is.na(x), 0, x)))
@@ -34,9 +34,10 @@ get_samples_per_es_site <- function(es_data, end_date = Sys.Date()) {
   summary["comparison"] <- summary[, 6] - summary[, 5]
   summary <- summary |>
     dplyr::mutate(trend = dplyr::case_when(
-      comparison == 0 ~ "same",
-      comparison > 0 ~ "increase",
-      comparison < 0 ~ "decrease"
+      comparison == 0 ~ "Same",
+      comparison > 0 ~ "Increase",
+      comparison < 0 ~ "Decrease",
+      .default = "No data available for both years"
     ))
 
   return(summary)
