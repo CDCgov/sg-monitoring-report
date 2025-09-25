@@ -42,20 +42,176 @@ lab_data <- clean_lab_data(lab_data,
 
 ::: panel-tabset
 
+```{r}
+#| label: afp-indicators
+#| include: false
+#| echo: false
+
+afp_cases_reported <- get_afp_cases_reported(raw_data$afp)
+lab_pending <- get_proportion_lab_pending(raw_data$afp)
+afp_wpv_vdpv <- get_wpv_vdpv_timeliness(raw_data$pos)
+negative_lab_processing <- get_negative_lab_processing_timeliness(lab_data)
+afp_shipment_timeliness <- get_stool_shipment_timeliness(lab_data)
+afp_lab_processing <- get_afp_lab_processing_timeliness(lab_data)
+prop_60 <- get_prop_60_day_follow_up(raw_data$afp)
+```
+
 ### Number of AFP cases reported
+```{r}
+#| echo: false
+
+datatable(
+  afp_cases_reported |>
+    rename(
+      Region = "whoregion",
+      Country = "place.admin.0",
+      Month = "month"
+    ),
+  filter = "top",
+  extensions = 'Buttons',
+  options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'csv', 'excel'),
+    pageLength = 10
+  )
+)
+```
 
 ### Proportion of 60 days follow-up done
+```{r}
+#| echo: false
+
+datatable(
+  prop_60 |>
+    rename(
+      Country = "ctry",
+      Month = "month",
+      Difference = "comparison",
+      Trend = "trend"
+    ),
+  filter = "top",
+  extensions = 'Buttons',
+  options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'csv', 'excel'),
+    pageLength = 10
+  )
+)
+```
 
 ### Proportion of lab pending
+```{r}
+#| echo: false
+
+datatable(
+  lab_pending |>
+    rename(
+      Country = "country",
+      Region = "whoregion",
+      Year = "year",
+      Month = "month",
+      `Pending Samples` = "pending_samples"
+    ),
+  filter = "top",
+  extensions = 'Buttons',
+  options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'csv', 'excel'),
+    pageLength = 10
+  )
+)
+
+```
 
 ### Timeliness of detection for WPV/VDPV samples
+```{r}
+#| echo: false
+
+datatable(
+  afp_wpv_vdpv |>
+    rename(
+      Country = "country",
+      Region = "whoregion",
+      Month = "month",
+      Difference = "comparison",
+      Trend = "trend"
+    ),
+  filter = "top",
+  extensions = 'Buttons',
+  options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'csv', 'excel'),
+    pageLength = 10
+  )
+)
+
+```
 
 ### Timeliness of detection for negative samples
+```{r}
+datatable(
+  negative_lab_processing |>
+    rename(
+      Country = "country",
+      Region = "whoregion",
+      Category = "culture.itd.cat",
+      Month = "month",
+      Difference = "comparison",
+      Trend = "trend"
+    ),
+  filter = "top",
+  extensions = 'Buttons',
+  options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'csv', 'excel'),
+    pageLength = 10
+  )
+)
+
+```
 
 ### Timeliness of stool specimen shipment
+```{r}
+#| echo: false
+
+datatable(
+  afp_lab_processing |>
+    rename(
+      Country = "country",
+      Region = "whoregion",
+      Month = "month"
+    ),
+  filter = "top",
+  extensions = 'Buttons',
+  options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'csv', 'excel'),
+    pageLength = 10
+  )
+)
+
+```
 
 ### Timeliness of lab processing of AFP samples
+```{r}
+#| echo: false
 
+datatable(
+  afp_lab_processing |>
+    rename(
+      Country = "country",
+      Month = "month",
+      Region = "whoregion"
+    ),
+  filter = "top",
+  extensions = 'Buttons',
+  options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'csv', 'excel'),
+    pageLength = 10
+  )
+)
+```
 :::
 
 ## Environmental Surveillance Indicators
@@ -239,7 +395,10 @@ summary_string_bottom <- glue::glue_data(
 # Combine into a single sentence
 final_summary_top <- paste0("The top 10 countries with increased median timeliness compared to the three year median (difference in days shown) are: ", paste(summary_string_top, collapse = ", "), ".")
 final_summary_bottom <- paste0("The top 10 countries with the biggest improvement in median timeliness compared to the three year median (difference in days shown) are: ", paste(summary_string_bottom, collapse = ", "), ".")
-comparible <- paste("There were", interval_summary |> filter(Trend == "Same") |> nrow(), "countries the stayed in the same levels and", interval_summary |> 
+comparible <- paste("There were", interval_summary |> 
+                      filter(Trend == "Same") |> 
+                      nrow(), "countries the stayed in the same levels and", 
+                    interval_summary |> 
                       filter(Trend == "No data available for both years") |> 
                       nrow(), "countries with missing 3-year medians or 2025 medians.")
 overall <- paste0("Overall, ", length(unique(interval_summary$Country)), " countries had data in the lab dataset. ",
