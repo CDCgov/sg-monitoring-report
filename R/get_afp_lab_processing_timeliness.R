@@ -56,13 +56,13 @@ get_afp_lab_processing_timeliness <- function(lab_data, end_date = Sys.Date()) {
   current_year <- summary_full |>
     dplyr::filter(year == year(end_date)) |>
     dplyr::select(-year) |>
-    dplyr::rename(!!paste0(year(end_date), " median") := median)
+    dplyr::rename(!!paste0(year(end_date), " Median") := median)
 
   previous_years <- summary_full |>
     dplyr::filter(year != year(end_date)) |>
     dplyr::group_by(whoregion, country, month) |>
     dplyr::summarize(median = median(median, na.rm = TRUE)) |>
-    dplyr::rename(!!paste0(year(end_date) - 3, "-", year(end_date) - 1, " median") := median)
+    dplyr::rename(!!paste0(year(end_date) - 3, "-", year(end_date) - 1, " Median") := median)
 
   three_month_summary <- dplyr::left_join(previous_years, current_year)
 
