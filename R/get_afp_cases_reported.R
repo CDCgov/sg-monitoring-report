@@ -33,9 +33,16 @@ get_afp_cases_reported <- function(afp_data, end_date = Sys.Date()) {
 
   # Get unique countries and their region mapping
   country_region <- afp_only |>
-    dplyr::mutate(whoregion = ifelse(place.admin.0 == "INDIA", "SEARO", whoregion)) |>
     dplyr::select(place.admin.0, whoregion) |>
+    dplyr::mutate(whoregion = case_when(
+      place.admin.0 == "CHINA" ~ "WPRO",
+      place.admin.0 == "ETHIOPIA" ~ "AFRO",
+      place.admin.0 == "INDIA" ~ "SEARO",
+      place.admin.0 == "PAKISTAN" ~ "EMRO",
+      .default = whoregion
+    )) |>
     dplyr::distinct()
+
 
   # Create a full grid of all combinations for completeness (country, year, month)
   full_grid <- tidyr::expand_grid(
@@ -67,12 +74,12 @@ get_afp_cases_reported <- function(afp_data, end_date = Sys.Date()) {
     dplyr::group_by(whoregion, place.admin.0, month) |>
     dplyr::summarize(median = median(n, na.rm = TRUE),
                      avg = mean(n, na.rm = TRUE),
-                     sd = sd(n, na.rm = TRUE),
-                     mad = mad(n, na.rm = TRUE), .groups = "drop") |>
-    dplyr::rename(!!paste0(previous_year_min, "-", previous_year_max, " median") := median,
-                  !!paste0(previous_year_min, "-", previous_year_max, " avg") := avg,
-                  !!paste0(previous_year_min, "-", previous_year_max, " sd") := sd,
-                  !!paste0(previous_year_min, "-", previous_year_max, " mad") := mad)
+                     sd = round(sd(n, na.rm = TRUE)),
+                     mad = round(mad(n, na.rm = TRUE)), .groups = "drop") |>
+    dplyr::rename(!!paste0(previous_year_min, "-", previous_year_max, " Median") := median,
+                  !!paste0(previous_year_min, "-", previous_year_max, " Average") := avg,
+                  !!paste0(previous_year_min, "-", previous_year_max, " SD") := sd,
+                  !!paste0(previous_year_min, "-", previous_year_max, " MAD") := mad)
 
   final_summary <- dplyr::left_join(previous_years,
                                     current_year,
