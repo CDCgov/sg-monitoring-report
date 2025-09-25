@@ -64,7 +64,18 @@ get_afp_lab_processing_timeliness <- function(lab_data, end_date = Sys.Date()) {
     dplyr::summarize(median = median(median, na.rm = TRUE)) |>
     dplyr::rename(!!paste0(year(end_date) - 3, "-", year(end_date) - 1, " Median") := median)
 
-  three_month_summary <- dplyr::left_join(previous_years, current_year)
+  summary <- dplyr::left_join(previous_years, current_year)
 
-  return(three_month_summary)
+  summary["comparison"] <- summary[, 5] - summary[, 4]
+  summary <- summary |>
+    dplyr::mutate(trend = dplyr::case_when(
+      comparison == 0 ~ "Same",
+      comparison > 0 ~ "Increase",
+      comparison < 0 ~ "Decrease",
+      .default = "No data from both years"
+    ))
+
+
+
+  return(summary)
 }

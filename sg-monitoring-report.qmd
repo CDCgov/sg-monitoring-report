@@ -149,6 +149,8 @@ datatable(
 
 ### Timeliness of detection for negative samples
 ```{r}
+#| echo: false
+
 datatable(
   negative_lab_processing |>
     rename(
@@ -175,11 +177,13 @@ datatable(
 #| echo: false
 
 datatable(
-  afp_lab_processing |>
+  afp_shipment_timeliness |>
     rename(
       Country = "country",
       Region = "whoregion",
-      Month = "month"
+      Month = "month",
+      Difference = "comparison",
+      Trend = "trend"
     ),
   filter = "top",
   extensions = 'Buttons',
@@ -201,7 +205,9 @@ datatable(
     rename(
       Country = "country",
       Month = "month",
-      Region = "whoregion"
+      Region = "whoregion",
+      Difference = "comparison",
+      Trend = "trend"
     ),
   filter = "top",
   extensions = 'Buttons',
