@@ -46,7 +46,7 @@ lab_timely_indicators <- function(lab_data, end_date = Sys.Date()) {
       dplyr::group_by(whoregion, country) |>
       dplyr::summarize(
         interval = i,
-        `3yr median` = median(median, na.rm = TRUE),
+        `Median of Last 3 Years` = median(median, na.rm = TRUE),
         .groups = "drop"
       )
     medians_3_years <- dplyr::bind_rows(medians_3_years, summary)
@@ -58,8 +58,8 @@ lab_timely_indicators <- function(lab_data, end_date = Sys.Date()) {
     indicator_medians <- get_year_lab_median(lab_data, i, current_year, month_day_cutoff)
     summary <- indicator_medians |>
       dplyr::mutate(interval = i) |>
-      dplyr::rename(!!paste0(current_year, " median") := median) |>
-      dplyr::select(whoregion, country, interval, !!paste0(current_year, " median"))
+      dplyr::rename(!!paste0(current_year, " Median") := median) |>
+      dplyr::select(whoregion, country, interval, !!paste0(current_year, " Median"))
     median_current_year <- dplyr::bind_rows(median_current_year, summary)
   }
 
@@ -70,10 +70,32 @@ lab_timely_indicators <- function(lab_data, end_date = Sys.Date()) {
 
   lab_interval_summary <- lab_interval_summary |>
     dplyr::mutate(
-      difference = .data[[paste0(current_year, " median")]] - `3yr median`,
-      absolute_diff = abs(difference)
+      comparison = .data[[paste0(current_year, " Median")]] - `Median of Last 3 Years`
     ) |>
-    dplyr::arrange(interval, dplyr::desc(difference))
+    dplyr::arrange(interval, dplyr::desc(comparison))
+
+  # Create combinations of region, country, and interval
+  complete_table <- tidyr::expand_grid(
+    country = unique(lab_data$country),
+    interval = c(
+      "days.lab.culture",
+      "days.culture.itd",
+      "days.seq.ship",
+      "days.seq.rec.res"
+    )) |>
+    dplyr::left_join(
+      lab_data |>
+        dplyr::distinct(country, whoregion))
+
+  # Full join
+  lab_interval_summary <- dplyr::full_join(complete_table, lab_interval_summary)
+  lab_interval_summary <- lab_interval_summary |>
+    dplyr::mutate(trend = dplyr::case_when(
+      comparison == 0 ~ "Same",
+      comparison > 0 ~ "Increase",
+      comparison < 0 ~ "Decrease",
+      .default = "No data available for both years"
+    ))
 
   return(lab_interval_summary)
 }
