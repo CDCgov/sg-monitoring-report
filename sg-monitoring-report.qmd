@@ -1,5 +1,591 @@
 ---
-title: "sg-monitoring-report"
-format: html
+title: "Surveillance Group Monitoring Report"
+author: Mervin Keith Cuadera
+date: today
+date-format: "MMMM D, YYYY"  # e.g., September 24, 2025
+format: 
+  html:
+    page-layout: custom
+    embed-resources: true
+output-file: 
 ---
 
+```{r}
+#| label: load-packages
+#| include: false
+#| echo: false
+
+library(sirfunctions)
+library(DT)
+library(tidyverse)
+
+lapply(list.files("R"), \(fx) source(file.path("R", fx)))
+```
+
+```{r}
+#| label: load-data
+#| include: false
+#| echo: false
+
+raw_data <- get_all_polio_data(attach.spatial.data = FALSE)
+lab_data_path <- file.path("C:/Users/xrg9/World Health Organization",
+                           "SG Analytic Group - General/Desk Reviews/Lab Data",
+                           "20250829_afro_emro_lab_afp_2022_2025_clean.xlsx")
+lab_data <- readxl::read_xlsx(lab_data_path, guess_max = 1000000)
+lab_data <- clean_lab_data(lab_data, 
+                           start_date = min(lab_data$CaseDate, na.rm = TRUE),
+                           end_date = max(lab_data$CaseDate, na.rm = TRUE),
+                           raw_data$afp)
+```
+
+## AFP Surveillance Indicators
+
+::: panel-tabset
+
+### Number of AFP cases reported
+
+### Proportion of 60 days follow-up done
+
+### Proportion of lab pending
+
+### Timeliness of detection for WPV/VDPV samples
+
+### Timeliness of detection for negative samples
+
+### Timeliness of stool specimen shipment
+
+### Timeliness of lab processing of AFP samples
+
+:::
+
+## Environmental Surveillance Indicators
+
+```{r}
+#| label: es-sample-shipment
+#| include: false
+#| echo: false
+
+es_shipment_timeliness <- get_es_timeliness(raw_data$es)
+```
+
+::: panel-tabset
+### Timeliness of ES sample shipment
+
+```{r}
+#| label: es-lab-shipment
+#| echo: false
+
+es_shipment <- es_shipment_timeliness |>
+  dplyr::filter(category == "median_lab_shipment") |>
+  dplyr::select(-category) |>
+  dplyr::rename(
+    Month = "month",
+    Country = "country",
+    Region = "who.region",
+    Difference = "diff",
+    Trend = "trend"
+  )
+
+
+datatable(
+  es_shipment,
+  filter = "top",
+  extensions = 'Buttons',
+  options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'csv', 'excel'),
+    pageLength = 10
+  )
+)
+
+```
+
+### Timeliness of detection for WPV/VDPV-ES
+
+```{r}
+#| label: es-wpv-vdpv
+#| echo: false
+
+es_wpv_vdpv <- es_shipment_timeliness |>
+  dplyr::filter(category == "median_wpv_vdpv_detection") |>
+  dplyr::select(-category) |>
+  dplyr::rename(
+    Month = "month",
+    Country = "country",
+    Region = "who.region",
+    Difference = "diff",
+    Trend = "trend"
+  )
+
+datatable(
+  es_wpv_vdpv,
+  filter = "top",
+  extensions = 'Buttons',
+  options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'csv', 'excel'),
+    pageLength = 10
+  )
+)
+```
+
+### Number of operational ES sites per country
+
+```{r}
+#| label: es-sites
+#| echo: false
+
+es_sites <- suppressMessages(get_operational_sites(raw_data$es))
+es_sites <- es_sites |>
+  dplyr::rename(
+    Country = "ctry",
+    Difference = "comparison",
+    Trend = "trend"
+  )
+
+datatable(
+  es_sites,
+  filter = "top",
+  extensions = 'Buttons',
+  options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'csv', 'excel'),
+    pageLength = 10
+  )
+)
+
+```
+
+### Number of samples per sites
+
+```{r}
+#| label: es-site-samples
+#| include: true
+#| echo: false
+
+es_site_samples <- suppressMessages(get_samples_per_es_site(raw_data$es))
+es_site_samples <- es_site_samples |>
+  dplyr::rename(
+    Country = "ctry",
+    `Site Name` = "site.name",
+    Month = "month",
+    `Site Status` = "site.status",
+    Difference = "comparison",
+    Trend = "trend"
+  )
+
+datatable(
+  es_site_samples,
+  filter = "top",
+  extensions = 'Buttons',
+  options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'csv', 'excel'),
+    pageLength = 10
+  )
+)
+
+```
+:::
+
+## Lab Surveillance Indicators
+
+```{r}
+#| label: lab-intervals
+#| echo: false
+#| include: false
+
+
+lab_intervals <- lab_timely_indicators(lab_data)
+lab_intervals <- lab_intervals |>
+  dplyr::rename(
+    Region = "whoregion",
+    Country = "country",
+    Difference = "comparison",
+    Trend = "trend"
+  )
+```
+
+::: panel-tabset
+### Timeliness of virus isolation results
+
+```{r}
+#| include: false
+#| echo: false
+
+interval_summary <- lab_intervals |> 
+    dplyr::filter(interval == "days.lab.culture") |>
+    dplyr::select(-interval)
+top_10 <- interval_summary |> 
+  filter(Trend == "Increase") |> 
+  arrange(desc(Difference)) |>
+  select(-Trend) |>
+  slice_head(n = 10)
+bottom_10 <-interval_summary |> 
+  filter(Trend == "Decrease") |> 
+  arrange(Difference) |>
+  select(-Trend) |>
+  slice_head(n = 10)
+
+summary_string_top <- glue::glue_data(
+  top_10,
+  "{str_to_title(Country)} ({round(Difference, 1)})"
+)
+summary_string_bottom <- glue::glue_data(
+  bottom_10,
+  "{str_to_title(Country)} ({round(Difference, 1)})"
+)
+
+# Combine into a single sentence
+final_summary_top <- paste0("The top 10 countries with increased median timeliness compared to the three year median (difference in days shown) are: ", paste(summary_string_top, collapse = ", "), ".")
+final_summary_bottom <- paste0("The top 10 countries with the biggest improvement in median timeliness compared to the three year median (difference in days shown) are: ", paste(summary_string_bottom, collapse = ", "), ".")
+comparible <- paste("There were", interval_summary |> filter(Trend == "Same") |> nrow(), "countries the stayed in the same levels and", interval_summary |> 
+                      filter(Trend == "No data available for both years") |> 
+                      nrow(), "countries with missing 3-year medians or 2025 medians.")
+overall <- paste0("Overall, ", length(unique(interval_summary$Country)), " countries had data in the lab dataset. ",
+                  interval_summary |> 
+                    select(4) |> 
+                    filter(if_all(1, \(x) !is.na(x))) |>
+                    nrow(), " countries had medians for the current year and ",
+                  interval_summary |> 
+                    select(3) |> 
+                    filter(if_all(1, \(x) !is.na(x))) |>
+                    nrow(), " countries had 3-year medians."
+                  )
+
+```
+
+#### Summary
+
+`r final_summary_top`
+
+`r final_summary_bottom`
+
+`r comparible`
+
+`r overall`
+
+```{r}
+#| include: true
+#| echo: false
+
+datatable(interval_summary,
+  filter = "top",
+  extensions = 'Buttons',
+  options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'csv', 'excel'),
+    pageLength = 10
+  )
+)
+```
+
+### Timeliness of ITD results
+
+```{r}
+#| include: false
+#| echo: false
+
+interval_summary <- lab_intervals |> 
+    dplyr::filter(interval == "days.culture.itd") |>
+    dplyr::select(-interval)
+top_10 <- interval_summary |> 
+  filter(Trend == "Increase") |> 
+  arrange(desc(Difference)) |>
+  select(-Trend) |>
+  slice_head(n = 10)
+bottom_10 <-interval_summary |> 
+  filter(Trend == "Decrease") |> 
+  arrange(Difference) |>
+  select(-Trend) |>
+  slice_head(n = 10)
+
+summary_string_top <- glue::glue_data(
+  top_10,
+  "{str_to_title(Country)} ({round(Difference, 1)})"
+)
+summary_string_bottom <- glue::glue_data(
+  bottom_10,
+  "{str_to_title(Country)} ({round(Difference, 1)})"
+)
+
+# Combine into a single sentence
+final_summary_top <- paste0("The top 10 countries with increased median timeliness compared to the three year median (difference in days shown) are: ", paste(summary_string_top, collapse = ", "), ".")
+final_summary_bottom <- paste0("The top 10 countries with the biggest improvement in median timeliness compared to the three year median (difference in days shown) are: ", paste(summary_string_bottom, collapse = ", "), ".")
+comparible <- paste("There were", interval_summary |> filter(Trend == "Same") |> nrow(), "countries the stayed in the same levels and", interval_summary |> 
+                      filter(Trend == "No data available for both years") |> 
+                      nrow(), "countries with missing 3-year medians or 2025 medians.")
+overall <- paste0("Overall, ", length(unique(interval_summary$Country)), " countries had data in the lab dataset. ",
+                  interval_summary |> 
+                    select(4) |> 
+                    filter(if_all(1, \(x) !is.na(x))) |>
+                    nrow(), " countries had medians for the current year and ",
+                  interval_summary |> 
+                    select(3) |> 
+                    filter(if_all(1, \(x) !is.na(x))) |>
+                    nrow(), " countries had 3-year medians."
+                  )
+
+```
+
+#### Summary
+
+`r final_summary_top`
+
+`r final_summary_bottom`
+
+`r comparible`
+
+`r overall`
+
+```{r}
+#| include: true
+#| echo: false
+
+datatable(
+  lab_intervals |> 
+    dplyr::filter(interval == "days.culture.itd") |>
+    dplyr::select(-interval),
+  filter = "top",
+  extensions = 'Buttons',
+  options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'csv', 'excel'),
+    pageLength = 10
+  )
+)
+```
+
+### Timeliness of shipment for sequencing
+
+```{r}
+#| include: false
+#| echo: false
+
+interval_summary <- lab_intervals |> 
+    dplyr::filter(interval == "days.seq.ship") |>
+    dplyr::select(-interval)
+top_10 <- interval_summary |> 
+  filter(Trend == "Increase") |> 
+  arrange(desc(Difference)) |>
+  select(-Trend) |>
+  slice_head(n = 10)
+bottom_10 <-interval_summary |> 
+  filter(Trend == "Decrease") |> 
+  arrange(Difference) |>
+  select(-Trend) |>
+  slice_head(n = 10)
+
+summary_string_top <- glue::glue_data(
+  top_10,
+  "{str_to_title(Country)} ({round(Difference, 1)})"
+)
+summary_string_bottom <- glue::glue_data(
+  bottom_10,
+  "{str_to_title(Country)} ({round(Difference, 1)})"
+)
+
+# Combine into a single sentence
+final_summary_top <- paste0("The top 10 countries with increased median timeliness compared to the three year median (difference in days shown) are: ", paste(summary_string_top, collapse = ", "), ".")
+final_summary_bottom <- paste0("The top 10 countries with the biggest improvement in median timeliness compared to the three year median (difference in days shown) are: ", paste(summary_string_bottom, collapse = ", "), ".")
+comparible <- paste("There were", interval_summary |> filter(Trend == "Same") |> nrow(), "countries the stayed in the same levels and", interval_summary |> 
+                      filter(Trend == "No data available for both years") |> 
+                      nrow(), "countries with missing 3-year medians or 2025 medians.")
+overall <- paste0("Overall, ", length(unique(interval_summary$Country)), " countries had data in the lab dataset. ",
+                  interval_summary |> 
+                    select(4) |> 
+                    filter(if_all(1, \(x) !is.na(x))) |>
+                    nrow(), " countries had medians for the current year and ",
+                  interval_summary |> 
+                    select(3) |> 
+                    filter(if_all(1, \(x) !is.na(x))) |>
+                    nrow(), " countries had 3-year medians."
+                  )
+
+```
+
+#### Summary
+
+`r final_summary_top`
+
+`r final_summary_bottom`
+
+`r comparible`
+
+`r overall`
+
+```{r}
+#| include: true
+#| echo: false
+
+datatable(
+  lab_intervals |> 
+    dplyr::filter(interval == "days.seq.ship") |>
+    dplyr::select(-interval),
+  filter = "top",
+  extensions = 'Buttons',
+  options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'csv', 'excel'),
+    pageLength = 10
+  )
+)
+```
+
+### Timeliness of sequencing results
+
+```{r}
+#| include: false
+#| echo: false
+
+interval_summary <- lab_intervals |> 
+    dplyr::filter(interval == "days.seq.rec.res") |>
+    dplyr::select(-interval)
+top_10 <- interval_summary |> 
+  filter(Trend == "Increase") |> 
+  arrange(desc(Difference)) |>
+  select(-Trend) |>
+  slice_head(n = 10)
+bottom_10 <-interval_summary |> 
+  filter(Trend == "Decrease") |> 
+  arrange(Difference) |>
+  select(-Trend) |>
+  slice_head(n = 10)
+
+summary_string_top <- glue::glue_data(
+  top_10,
+  "{str_to_title(Country)} ({round(Difference, 1)})"
+)
+summary_string_bottom <- glue::glue_data(
+  bottom_10,
+  "{str_to_title(Country)} ({round(Difference, 1)})"
+)
+
+# Combine into a single sentence
+final_summary_top <- paste0("The top 10 countries with increased median timeliness compared to the three year median (difference in days shown) are: ", paste(summary_string_top, collapse = ", "), ".")
+final_summary_bottom <- paste0("The top 10 countries with the biggest improvement in median timeliness compared to the three year median (difference in days shown) are: ", paste(summary_string_bottom, collapse = ", "), ".")
+comparible <- paste("There were", interval_summary |> filter(Trend == "Same") |> nrow(), "countries the stayed in the same levels and", interval_summary |> 
+                      filter(Trend == "No data available for both years") |> 
+                      nrow(), "countries with missing 3-year medians or 2025 medians.")
+overall <- paste0("Overall, ", length(unique(interval_summary$Country)), " countries had data in the lab dataset. ",
+                  interval_summary |> 
+                    select(4) |> 
+                    filter(if_all(1, \(x) !is.na(x))) |>
+                    nrow(), " countries had medians for the current year and ",
+                  interval_summary |> 
+                    select(3) |> 
+                    filter(if_all(1, \(x) !is.na(x))) |>
+                    nrow(), " countries had 3-year medians."
+                  )
+
+```
+
+#### Summary
+
+`r final_summary_top`
+
+`r final_summary_bottom`
+
+`r comparible`
+
+`r overall`
+
+```{r}
+#| include: true
+#| echo: false
+
+datatable(
+  lab_intervals |> 
+    dplyr::filter(interval == "days.seq.rec.res") |>
+    dplyr::select(-interval),
+  filter = "top",
+  extensions = 'Buttons',
+  options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'csv', 'excel'),
+    pageLength = 10
+  )
+)
+```
+
+### Laboratory workload
+
+```{r}
+#| include: false
+#| echo: false
+
+lab_workload <- suppressMessages(lab_workload(lab_data))
+lab_workload <- lab_workload |>
+  dplyr::rename(
+    Region = "whoregion",
+    Country = "country",
+    Month = "month",
+    Difference = "comparison",
+    Trend = "trend"
+  )
+
+last_month <- lab_workload |>
+  filter(Month == lubridate::month(lubridate::month(Sys.Date()) - 1, TRUE))
+
+top_10 <- last_month |>
+  filter(Trend == "Increase") |>
+  arrange(desc(Difference)) |>
+  slice_head(n = 10)
+
+bottom_10 <- last_month |> 
+  filter(Trend == "Decrease") |> 
+  arrange(Difference) |>
+  select(-Trend) |>
+  slice_head(n = 10)
+
+summary_string_top <- glue::glue_data(
+  top_10,
+  "{str_to_title(Country)} ({round(Difference, 1)})"
+)
+summary_string_bottom <- glue::glue_data(
+  bottom_10,
+  "{str_to_title(Country)} ({round(Difference, 1)})"
+)
+
+# Combine into a single sentence
+final_summary_top <- paste0("The top 10 countries with increased lab samples sent to lab compared to the previous year (difference in samples shown) are: ", paste(summary_string_top, collapse = ", "), ".")
+final_summary_bottom <- paste0("The top 10 countries with reduced lab samples sent to lab compared to the previous year (difference in samples shown) are: ", paste(summary_string_bottom, collapse = ", "), ".")
+comparible <- paste("There were", last_month |> 
+                      filter(Trend == "Same") |> nrow(), "countries the stayed in the same levels and", last_month |> 
+                      filter(Trend == "No data available for both years") |> 
+                      nrow(), "countries with missing data for the current year and previous year.")
+overall <- paste0("Overall, ", 
+                  last_month |> 
+                    filter(if_any(5, \(x) !is.na(x))) |> 
+                    nrow(), 
+                  " countries had data in the lab dataset from the previous month of the current year.")
+
+```
+
+#### Summary
+
+**For the previous month** 
+
+`r final_summary_top` 
+
+`r final_summary_bottom` 
+
+`r comparible`
+
+`r overall`
+
+```{r}
+#| include: true
+#| echo: false
+datatable(
+  lab_workload,
+  filter = "top",
+  extensions = 'Buttons',
+  options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'csv', 'excel'),
+    pageLength = 10
+  )
+)
+```
+:::
