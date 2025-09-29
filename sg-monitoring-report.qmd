@@ -247,9 +247,12 @@ es_shipment <- es_shipment_timeliness |>
   dplyr::rename(
     Month = "month",
     Country = "country",
+    `Lab Type` = "es.lab.type",
     Region = "who.region",
     Difference = "diff",
-    Trend = "trend"
+    Trend = "trend",
+    `Current Year Timeliness` = "current_year_timeliness",
+    `Trend Summary` = "trend_summary"
   )
 
 
@@ -278,9 +281,12 @@ es_wpv_vdpv <- es_shipment_timeliness |>
   dplyr::rename(
     Month = "month",
     Country = "country",
+    `Lab Type` = "es.lab.type",
     Region = "who.region",
     Difference = "diff",
-    Trend = "trend"
+    Trend = "trend",
+    `Current Year Timeliness` = "current_year_timeliness",
+    `Trend Summary` = "trend_summary"
   )
 
 datatable(
