@@ -341,12 +341,15 @@ es_site_samples <- es_site_samples |>
     Country = "ADM0_NAME",
     `Site Name` = "site.name",
     `Site Age` = "site_age",
-    `Samples in Last 12 Months` = "n_samples_12_mo",
+    `Samples In Last 12 Months` = "n_samples_12_mo",
     `POLIS Site Status` = "site.status",
     `Earliest Collection` = "earliest_collection",
     `Last Collection` = "last_collection",
     `Days Since Last Collection` = "days_since_last_collection",
     `No Collection In Two Months` = "no_collection_two_mo",
+    `Last Detection` = "last_detection",
+    `Days Since Last Detection` = "days_since_last_det",
+    `No Detection In Two Months` = "no_detection_two_mo",
     `Is Active Site` = "active_site"
   )
 
