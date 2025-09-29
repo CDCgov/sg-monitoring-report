@@ -379,6 +379,8 @@ lab_intervals <- lab_timely_indicators(lab_data)
 lab_intervals <- lab_intervals |>
   dplyr::rename(
     Region = "whoregion",
+    `Culture/ITD Lab` = "culture.itd.lab",
+    `Sequencing Lab` = "seq.lab",
     Country = "country",
     Difference = "comparison",
     Trend = "trend"
