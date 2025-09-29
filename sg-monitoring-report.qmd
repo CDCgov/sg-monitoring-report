@@ -110,7 +110,8 @@ datatable(
       Region = "whoregion",
       Year = "year",
       Month = "month",
-      `Pending Samples` = "pending_samples"
+      `Pending Samples` = "pending_samples",
+      `% Lab Samples` = "prop_label"
     ),
   filter = "top",
   extensions = 'Buttons',
