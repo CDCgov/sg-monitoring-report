@@ -18,27 +18,30 @@
 get_samples_per_es_site <- function(es_data, end_date = Sys.Date()) {
   end_date <- lubridate::as_date(end_date)
 
-  summary <- es_data |>
+
+  # Get age of sites
+  site_ages <- sirfunctions:::get_es_site_age(es_data, end_date)
+
+  # Get latest collection date and see if there's a "missed" collection
+  latest_collection <- es_data |>
     dplyr::filter(collect.yr >= lubridate::year(end_date) - 1,
                   who.region %in% c("AFRO", "EMRO")) |>
-    dplyr::mutate(
-      month = lubridate::month(collect.date, label = TRUE)
-    ) |>
-    dplyr::select(ctry = ADM0_NAME, site.name, month, collect.yr, site.status) |>
-    dplyr::group_by(ctry, site.name, month, collect.yr, site.status) |>
-    dplyr::summarize(n_samples = dplyr::n()) |>
-    tidyr::pivot_wider(names_from = collect.yr, values_from = n_samples) |>
-    dplyr::ungroup() |>
-    dplyr::mutate(dplyr::across(dplyr::any_of(c(5, 6)), \(x) ifelse(is.na(x), 0, x)))
+    dplyr::group_by(ADM0_NAME, site.name, site.status) |>
+    dplyr::summarize(earliest_collection = min(collect.date, na.rm = TRUE),
+                     last_collection = max(collect.date, na.rm = TRUE)) |>
+    dplyr::mutate(days_since_last_collection = difftime(Sys.Date(), last_collection, units = "days"),
+                  no_collection_two_mo = if_else(days_since_last_collection > 60, "Yes", "No"))
 
-  summary["comparison"] <- summary[, 6] - summary[, 5]
+  # Combine
+  summary <- dplyr::left_join(site_ages, latest_collection)
+
+  # Determine if considered an "active site"
   summary <- summary |>
-    dplyr::mutate(trend = dplyr::case_when(
-      comparison == 0 ~ "Same",
-      comparison > 0 ~ "Increase",
-      comparison < 0 ~ "Decrease",
-      .default = "No data available for both years"
-    ))
+    dplyr::mutate(active_site = if_else(n_samples_12_mo >= 10 &
+                                          site_age >= 12 &
+                                          site.status != "CLOSED", "Yes", "No"),
+                  site_age = round(site_age)) |>
+    dplyr::select(-sampling_interval)
 
   return(summary)
 
