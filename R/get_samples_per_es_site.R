@@ -24,16 +24,25 @@ get_samples_per_es_site <- function(es_data, end_date = Sys.Date()) {
 
   # Get latest collection date and see if there's a "missed" collection
   latest_collection <- es_data |>
-    dplyr::filter(collect.yr >= lubridate::year(end_date) - 1,
-                  who.region %in% c("AFRO", "EMRO")) |>
+    dplyr::filter(who.region %in% c("AFRO", "EMRO")) |>
     dplyr::group_by(ADM0_NAME, site.name, site.status) |>
     dplyr::summarize(earliest_collection = min(collect.date, na.rm = TRUE),
                      last_collection = max(collect.date, na.rm = TRUE)) |>
-    dplyr::mutate(days_since_last_collection = difftime(Sys.Date(), last_collection, units = "days"),
+    dplyr::mutate(days_since_last_collection = difftime(end_date, last_collection, units = "days"),
                   no_collection_two_mo = if_else(days_since_last_collection > 60, "Yes", "No"))
 
+  # Latest EV detection
+  latest_ev_det <- es_data |>
+    dplyr::filter(who.region %in% c("AFRO", "EMRO"),
+                  ev.detect == 1) |>
+    dplyr::group_by(ADM0_NAME, site.name, site.status) |>
+    dplyr::summarize(last_detection = max(collect.date, na.rm = TRUE)) |>
+    dplyr::mutate(days_since_last_det = difftime(end_date, last_detection),
+                  no_detection_two_mo = if_else(days_since_last_det > 60, "Yes", "No"))
+
   # Combine
-  summary <- dplyr::left_join(site_ages, latest_collection)
+  summary <- dplyr::left_join(latest_collection, latest_ev_det) |>
+    dplyr::left_join(site_ages)
 
   # Determine if considered an "active site"
   summary <- summary |>
