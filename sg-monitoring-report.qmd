@@ -100,6 +100,9 @@ datatable(
 ```
 
 ### Proportion of lab pending
+
+Shows the proportion of lab samples not yet received in the culturing lab, with pending classification.
+
 ```{r}
 #| echo: false
 
