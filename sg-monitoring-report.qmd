@@ -100,6 +100,9 @@ datatable(
 ```
 
 ### Proportion of lab pending
+
+Shows the proportion of lab samples not yet received in the culturing lab, with pending classification.
+
 ```{r}
 #| echo: false
 
@@ -110,7 +113,8 @@ datatable(
       Region = "whoregion",
       Year = "year",
       Month = "month",
-      `Pending Samples` = "pending_samples"
+      `Pending Samples` = "pending_samples",
+      `% Lab Samples` = "prop_label"
     ),
   filter = "top",
   extensions = 'Buttons',
