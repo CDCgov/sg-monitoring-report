@@ -37,7 +37,10 @@ get_prop_60_day_follow_up <- function(afp_data, end_date = Sys.Date()) {
                   adequacy.final2 == "Inadequate") |>
     dplyr::group_by(year, ctry, month) |>
     dplyr::summarize(
-      prop_w_follow_up = round(sum(got60day == 1, na.rm = TRUE) / sum(!is.na(got60day)) * 100))
+      inad_cases = sum(!is.na(got60day)),
+      got_60_day = sum(got60day == 1, na.rm = TRUE),
+      prop_w_follow_up = round(got_60_day / inad_cases * 100)) |>
+    dplyr::mutate(label = paste0(prop_w_follow_up, "(", got_60_day, "/", inad_cases, ")"))
 
 
   full_grid <- tidyr::expand_grid(
@@ -46,17 +49,26 @@ get_prop_60_day_follow_up <- function(afp_data, end_date = Sys.Date()) {
     month = lubridate::month(seq(1, 12), T))
 
   summary <- dplyr::left_join(full_grid, summary)
-  summary <- summary |>
+
+  summary_with_label <- summary |>
+    dplyr::select(-inad_cases, -got_60_day, -prop_w_follow_up) |>
+    tidyr::pivot_wider(names_from = year, values_from = label)
+
+  summary_wo_label <- summary |>
+    dplyr::select(-inad_cases, -got_60_day, -label) |>
     tidyr::pivot_wider(names_from = year, values_from = prop_w_follow_up)
 
-  summary["comparison"] <- summary[, 4] - summary[, 3]
-  summary <- summary |>
+  summary_wo_label["comparison"] <- summary_wo_label[, 4] - summary_wo_label[, 3]
+  summary_wo_label <- summary_wo_label |>
     dplyr::mutate(trend = dplyr::case_when(
       comparison == 0 ~ "Same",
       comparison > 0 ~ "Increase",
       comparison < 0 ~ "Decrease",
       .default = "No data from both years"
     ))
+
+  summary <- dplyr::left_join(summary_wo_label |>
+                                select(-any_of(c(3,4))), summary_with_label)
 
   return(summary)
 
