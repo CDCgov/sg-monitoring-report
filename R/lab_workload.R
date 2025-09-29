@@ -61,10 +61,6 @@ lab_workload <- function(lab_data, end_date = Sys.Date()) {
       .default = "No data available for both years"
     ))
 
-  # Get list of countries served per lab
-
-
-
   return(summary)
 
 }

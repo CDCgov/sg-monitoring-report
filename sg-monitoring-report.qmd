@@ -701,10 +701,11 @@ datatable(
 lab_workload <- suppressMessages(lab_workload(lab_data))
 lab_workload <- lab_workload |>
   dplyr::rename(
-    Region = "whoregion",
+    `Culture/ITD Lab` = "culture.itd.lab",
     Country = "country",
     Month = "month",
     Difference = "comparison",
+    `Difference (%)` = "comparison_pct",
     Trend = "trend"
   )
 
