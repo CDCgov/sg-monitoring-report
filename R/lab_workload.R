@@ -49,6 +49,7 @@ lab_workload <- function(lab_data, end_date = Sys.Date()) {
   summary <- summary |>
     dplyr::filter(month %in% unique(current_year_load$month),
                   !is.na(year)) |>
+    tidyr::replace_na(list(n = 0)) |>
     tidyr::pivot_wider(names_from = year, values_from = n)
 
   summary["comparison"] <- summary[, 5] - summary[, 4]
