@@ -13,7 +13,7 @@
 #' # With custom end date
 #' es_timeliness(es_data, lab_loc, end_date = as.Date("2024-06-20"))
 #' }
-get_es_timeliness <- function(es_data, end_date = Sys.Date()) {
+get_es_timeliness <- function(es_data, lab_loc = sirfunctions::get_lab_locs(), end_date = Sys.Date()) {
   current_year <- lubridate::year(end_date)
   current_month <- lubridate::month(end_date, TRUE)
 
@@ -26,18 +26,35 @@ get_es_timeliness <- function(es_data, end_date = Sys.Date()) {
     dplyr::filter(dplyr::between(year, current_year - 1, current_year),
                   month <= current_month)
 
+  # Join lab information
+  valid_es_data <- dplyr::left_join(valid_es_data,
+                                    lab_loc |> select(country, es.lab.type))
+
+
   timeliness_summary <- valid_es_data |>
-    dplyr::select(who.region, country, year, month, days.col.rec.lab) |>
+    dplyr::select(who.region, country, es.lab.type, year, month, days.col.rec.lab) |>
     dplyr::filter(dplyr::between(days.col.rec.lab, 0, 365)) |>
-    dplyr::group_by(who.region, year, country, month) |>
+    dplyr::group_by(who.region, year, country, es.lab.type, month) |>
     dplyr::summarize(median_lab_shipment = median(days.col.rec.lab, na.rm = TRUE))
+    # dplyr::mutate(es_shipment_timeliness = case_when(
+    #   median_lab_shipment <= 3 & es.lab.type == "In-country" ~ "Timely",
+    #   median_lab_shipment <= 7 & es.lab.type == "International" ~ "Timely",
+    #   median_lab_shipment > 3 & es.lab.type == "In-country" ~ "Not timely",
+    #   median_lab_shipment > 7 & es.lab.type == "International" ~ "Not timely",
+    # ))
 
   timeliness_summary_vdpv_wpv <- valid_es_data |>
     dplyr::filter(wpv == 1 | vdpv == 1,
                   dplyr::between(days.col.notif.hq, 0, 365)) |>
-    dplyr::select(who.region, country, year, month, days.col.notif.hq) |>
-    dplyr::group_by(who.region, year, country, month) |>
+    dplyr::select(who.region, country, es.lab.type, year, month, days.col.notif.hq) |>
+    dplyr::group_by(who.region, year, country, es.lab.type, month) |>
     dplyr::summarize(median_wpv_vdpv_detection = median(days.col.notif.hq, na.rm = TRUE))
+    # dplyr::mutate(wpv_vdpv_timeliness = case_when(
+    #   median_wpv_vdpv_detection <= 35 & es.lab.type == "In-country" ~ "Timely",
+    #   median_wpv_vdpv_detection <= 46 & es.lab.type == "International" ~ "Timely",
+    #   median_wpv_vdpv_detection > 35 & es.lab.type == "In-country" ~ "Not timely",
+    #   median_wpv_vdpv_detection > 46 & es.lab.type == "International" ~ "Not timely",
+    # ))
 
   timeliness_summary_all <- dplyr::full_join(timeliness_summary,
                                              timeliness_summary_vdpv_wpv)
@@ -48,7 +65,9 @@ get_es_timeliness <- function(es_data, end_date = Sys.Date()) {
     month = unique(valid_es_data$month),
     country = unique(valid_es_data$country)) |>
     dplyr::left_join(
-      es_data |> dplyr::distinct(ADM0_NAME, who.region) |> dplyr::rename(country = ADM0_NAME),
+      es_data |>
+        dplyr::distinct(ADM0_NAME, who.region) |>
+        dplyr::rename(country = ADM0_NAME),
       by = "country")
 
   # Ensure that all countries and months are accounted for
@@ -65,8 +84,26 @@ get_es_timeliness <- function(es_data, end_date = Sys.Date()) {
       diff > 0 ~ "Increase",
       diff < 0 ~ "Decrease",
       .default = "No data available for both years"
-    ))
+    ), current_year_timeliness = dplyr::case_when(
+      category == "median_lab_shipment" & .data[[paste0(current_year)]] <= 3 & es.lab.type == "In-country" ~ "Timely",
+      category == "median_lab_shipment" & .data[[paste0(current_year)]] <= 7 & es.lab.type == "International" ~ "Timely",
+      category == "median_lab_shipment" & .data[[paste0(current_year)]] > 3 & es.lab.type == "In-country" ~ "Not timely",
+      category == "median_lab_shipment" & .data[[paste0(current_year)]] > 7 & es.lab.type == "International" ~ "Not timely",
 
+      category == "median_wpv_vdpv_detection" & .data[[paste0(current_year)]] <= 35 & es.lab.type == "In-country" ~ "Timely",
+      category == "median_wpv_vdpv_detection" & .data[[paste0(current_year)]] <= 46 & es.lab.type == "International" ~ "Timely",
+      category == "median_wpv_vdpv_detection" & .data[[paste0(current_year)]] > 35 & es.lab.type == "In-country" ~ "Not timely",
+      category == "median_wpv_vdpv_detection" & .data[[paste0(current_year)]] > 46 & es.lab.type == "International" ~ "Not timely"
+    ),
+    trend_summary = case_when(
+      trend == "Increase" & current_year_timeliness == "Timely" ~ "Worse but still timely this year",
+      trend == "Increase" & current_year_timeliness == "Not timely" ~ "Worse and not timely this year",
+      trend == "Decrease" & current_year_timeliness == "Timely" ~ "Improved from last year and timely this year",
+      trend == "Decrease" & current_year_timeliness == "Not timely" ~ "Improved from last year but not timely this year",
+      trend == "Same" & current_year_timeliness == "Not timely" ~ "Not timely like last year",
+      trend == "Same" & current_year_timeliness == "Timely" ~ "Timely like last year",
+      .default = "Unable to detect trend"
+    ))
 
   return(timeliness_summary_full)
 }
