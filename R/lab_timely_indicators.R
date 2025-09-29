@@ -85,7 +85,7 @@ lab_timely_indicators <- function(lab_data, end_date = Sys.Date()) {
     )) |>
     dplyr::left_join(
       lab_data |>
-        dplyr::distinct(country, whoregion))
+        dplyr::distinct(country, whoregion, culture.itd.lab, seq.lab))
 
   # Full join
   lab_interval_summary <- dplyr::full_join(complete_table, lab_interval_summary)
