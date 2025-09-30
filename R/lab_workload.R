@@ -41,7 +41,8 @@ lab_workload <- function(lab_data, end_date = Sys.Date()) {
     year = c(year(end_date) - 1, year(end_date)),
     month = lubridate::month(seq(1, 12), TRUE)) |>
     dplyr::filter(month <= lubridate::month(end_date, TRUE)) |>
-    dplyr::left_join(lab_data |> dplyr::distinct(country, culture.itd.lab))
+    dplyr::left_join(lab_data |>
+                       dplyr::distinct(country, culture.itd.lab))
 
   # Full join
   summary <- dplyr::full_join(complete_table, summary)
