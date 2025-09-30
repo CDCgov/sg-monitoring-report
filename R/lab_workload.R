@@ -22,7 +22,7 @@ lab_workload <- function(lab_data, end_date = Sys.Date()) {
                                  prev_year_start_date, prev_year_end_date)) |>
     dplyr::mutate(month = lubridate::month(DateStoolReceivedinLab, label = TRUE),
                   year = lubridate::year(DateStoolReceivedinLab)) |>
-    dplyr::group_by(whoregion, country, year, month) |>
+    dplyr::group_by(culture.itd.lab, country, year, month) |>
     dplyr::summarise(n = dplyr::n())
 
   current_year_load <- lab_data |>
@@ -30,21 +30,19 @@ lab_workload <- function(lab_data, end_date = Sys.Date()) {
                                  start_date, end_date)) |>
     dplyr::mutate(month = lubridate::month(DateStoolReceivedinLab, label = TRUE),
                   year = lubridate::year(DateStoolReceivedinLab)) |>
-    dplyr::group_by(whoregion, country, year, month) |>
+    dplyr::group_by(culture.itd.lab, country, year, month) |>
     dplyr::summarise(n = dplyr::n())
-
-
 
   summary <- dplyr::bind_rows(prev_year_load, current_year_load)
 
   # Create combinations of region, country, and interval
   complete_table <- tidyr::expand_grid(
     country = unique(lab_data$country),
+    year = c(year(end_date) - 1, year(end_date)),
     month = lubridate::month(seq(1, 12), TRUE)) |>
-    dplyr::left_join(
-      lab_data |>
-        dplyr::distinct(country, whoregion)) |>
-    dplyr::filter(month <= lubridate::month(end_date, TRUE))
+    dplyr::filter(month <= lubridate::month(end_date, TRUE)) |>
+    dplyr::left_join(lab_data |>
+                       dplyr::distinct(country, culture.itd.lab))
 
   # Full join
   summary <- dplyr::full_join(complete_table, summary)
@@ -52,9 +50,11 @@ lab_workload <- function(lab_data, end_date = Sys.Date()) {
   summary <- summary |>
     dplyr::filter(month %in% unique(current_year_load$month),
                   !is.na(year)) |>
+    tidyr::replace_na(list(n = 0)) |>
     tidyr::pivot_wider(names_from = year, values_from = n)
 
   summary["comparison"] <- summary[, 5] - summary[, 4]
+  summary["comparison_pct"] <- round((summary[, 5] - summary[, 4]) / summary[, 4] * 100, 2)
   summary <- summary |>
     dplyr::mutate(trend = dplyr::case_when(
       comparison == 0 ~ "Same",
