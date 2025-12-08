@@ -83,7 +83,7 @@ datatable(
 
 datatable(
   prop_60 |>
-    rename_with(recode,
+    dplyr::rename_with(dplyr::recode,
                 ctry = "Country",
                 quarter = "Quarter",
                 month = "Month",
