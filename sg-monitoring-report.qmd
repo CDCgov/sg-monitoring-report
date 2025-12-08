@@ -346,10 +346,10 @@ es_site_samples <- es_site_samples |>
     `Earliest Collection` = "earliest_collection",
     `Last Collection` = "last_collection",
     `Days Since Last Collection` = "days_since_last_collection",
-    `No Collection In Two Months` = "no_collection_two_mo",
+    `Collection In Two Months` = "collection_two_mo",
     `Last Detection` = "last_detection",
     `Days Since Last Detection` = "days_since_last_det",
-    `No Detection In Two Months` = "no_detection_two_mo",
+    `Detection In Two Months` = "detection_two_mo",
     `Is Active Site` = "active_site"
   )
 

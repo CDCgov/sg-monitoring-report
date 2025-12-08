@@ -29,7 +29,7 @@ get_samples_per_es_site <- function(es_data, end_date = Sys.Date()) {
     dplyr::summarize(earliest_collection = min(collect.date, na.rm = TRUE),
                      last_collection = max(collect.date, na.rm = TRUE)) |>
     dplyr::mutate(days_since_last_collection = difftime(end_date, last_collection, units = "days"),
-                  no_collection_two_mo = if_else(days_since_last_collection > 60, "Yes", "No"))
+                  collection_two_mo = dplyr::if_else(days_since_last_collection <= 60, "Yes", "No"))
 
   # Latest EV detection
   latest_ev_det <- es_data |>
@@ -38,7 +38,7 @@ get_samples_per_es_site <- function(es_data, end_date = Sys.Date()) {
     dplyr::group_by(ADM0_NAME, site.name, site.status) |>
     dplyr::summarize(last_detection = max(collect.date, na.rm = TRUE)) |>
     dplyr::mutate(days_since_last_det = difftime(end_date, last_detection),
-                  no_detection_two_mo = if_else(days_since_last_det > 60, "Yes", "No"))
+                  detection_two_mo = dplyr::if_else(days_since_last_det <= 60, "Yes", "No"))
 
   # Combine
   summary <- dplyr::left_join(latest_collection, latest_ev_det) |>
@@ -46,7 +46,7 @@ get_samples_per_es_site <- function(es_data, end_date = Sys.Date()) {
 
   # Determine if considered an "active site"
   summary <- summary |>
-    dplyr::mutate(active_site = if_else(n_samples_12_mo >= 10 &
+    dplyr::mutate(active_site = dplyr::if_else(n_samples_12_mo >= 10 &
                                           site_age >= 12 &
                                           site.status != "CLOSED", "Yes", "No"),
                   site_age = round(site_age)) |>
