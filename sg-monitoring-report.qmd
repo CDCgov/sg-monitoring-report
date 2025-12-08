@@ -312,6 +312,7 @@ es_sites <- es_sites |>
   dplyr::rename(
     Country = "ctry",
     Difference = "comparison",
+    `Difference, %` = "prop_diff",
     Trend = "trend"
   )
 

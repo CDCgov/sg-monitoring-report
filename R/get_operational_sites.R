@@ -61,6 +61,10 @@ get_operational_sites <- function(es_data, end_date = Sys.Date()) {
     dplyr::mutate(year = paste0(current_month," ", year)) |>
     tidyr::pivot_wider(names_from = year, values_from = operational_sites)
   active_site_summary_wide["comparison"] <- active_site_summary_wide[, 3] - active_site_summary_wide[, 2]
+  active_site_summary_wide["prop_diff"] <- round((active_site_summary_wide["comparison"]) /
+                                                   active_site_summary_wide[, 2]* 100, 0)
+  active_site_summary_wide <- active_site_summary_wide |>
+    dplyr::mutate(prop_diff = dplyr::if_else(prop_diff == Inf, !!dplyr::sym(names(active_site_summary_wide)[3]) * 100, prop_diff))
   active_site_summary_wide <- active_site_summary_wide |>
     dplyr::mutate(trend = dplyr::case_when(
       comparison == 0 ~ "Same",
