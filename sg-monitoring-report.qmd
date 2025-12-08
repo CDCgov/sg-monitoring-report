@@ -378,6 +378,7 @@ lab_intervals <- lab_intervals |>
     `Sequencing Lab` = "seq.lab",
     Country = "country",
     Difference = "comparison",
+    `Difference, %` = "prop_diff",
     Trend = "trend"
   )
 ```
