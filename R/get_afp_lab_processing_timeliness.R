@@ -35,7 +35,7 @@ get_afp_lab_processing_timeliness <- function(lab_data, end_date = Sys.Date()) {
   valid_lab_data <- lab_data |>
     # Lab processing timeliness
     # From date stool received in lab to final rRTPCR results
-    dplyr::mutate(days.rec.lab.final = as.numeric(difftime(DateNotificationtoHQ, DateStoolReceivedinLab, units = "days")),
+    dplyr::mutate(days.rec.lab.final = as.numeric(difftime(DateFinalCellCultureResult, DateStoolReceivedinLab, units = "days")),
                   year_month = lubridate::floor_date(CaseDate, unit = "months"),
                   month = lubridate::month(CaseDate, label = TRUE)) |>
     # Filter erroneous data
@@ -54,15 +54,15 @@ get_afp_lab_processing_timeliness <- function(lab_data, end_date = Sys.Date()) {
   summary_full <- dplyr::left_join(full_grid, summary)
 
   current_year <- summary_full |>
-    dplyr::filter(year == year(end_date)) |>
+    dplyr::filter(year == lubridate::year(end_date)) |>
     dplyr::select(-year) |>
-    dplyr::rename(!!paste0(year(end_date), " Median") := median)
+    dplyr::rename(!!paste0(lubridate::year(end_date), " Median") := median)
 
   previous_years <- summary_full |>
-    dplyr::filter(year != year(end_date)) |>
+    dplyr::filter(year != lubridate::year(end_date)) |>
     dplyr::group_by(whoregion, country, month) |>
     dplyr::summarize(median = median(median, na.rm = TRUE)) |>
-    dplyr::rename(!!paste0(year(end_date) - 3, "-", year(end_date) - 1, " Median") := median)
+    dplyr::rename(!!paste0(lubridate::year(end_date) - 3, "-", lubridate::year(end_date) - 1, " Median") := median)
 
   summary <- dplyr::left_join(previous_years, current_year)
 
