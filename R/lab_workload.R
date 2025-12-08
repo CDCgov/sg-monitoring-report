@@ -38,7 +38,7 @@ lab_workload <- function(lab_data, end_date = Sys.Date()) {
   # Create combinations of region, country, and interval
   complete_table <- tidyr::expand_grid(
     country = unique(lab_data$country),
-    year = c(year(end_date) - 1, year(end_date)),
+    year = c(lubridate::year(end_date) - 1, lubridate::year(end_date)),
     month = lubridate::month(seq(1, 12), TRUE)) |>
     dplyr::filter(month <= lubridate::month(end_date, TRUE)) |>
     dplyr::left_join(lab_data |>
