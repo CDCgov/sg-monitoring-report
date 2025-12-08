@@ -28,7 +28,7 @@ get_es_timeliness <- function(es_data, lab_loc = sirfunctions::get_lab_locs(), e
 
   # Join lab information
   valid_es_data <- dplyr::left_join(valid_es_data,
-                                    lab_loc |> select(country, es.lab.type))
+                                    lab_loc |> dplyr::select(country, es.lab.type))
 
 
   timeliness_summary <- valid_es_data |>
@@ -36,7 +36,7 @@ get_es_timeliness <- function(es_data, lab_loc = sirfunctions::get_lab_locs(), e
     dplyr::filter(dplyr::between(days.col.rec.lab, 0, 365)) |>
     dplyr::group_by(who.region, year, country, es.lab.type, month) |>
     dplyr::summarize(median_lab_shipment = median(days.col.rec.lab, na.rm = TRUE),
-                     median_lab_shipment_label = paste0(median_lab_shipment, " (n=", n(), ")"))
+                     median_lab_shipment_label = paste0(median_lab_shipment, " (n=", dplyr::n(), ")"))
 
 
   timeliness_summary_vdpv_wpv <- valid_es_data |>
@@ -45,7 +45,7 @@ get_es_timeliness <- function(es_data, lab_loc = sirfunctions::get_lab_locs(), e
     dplyr::select(who.region, country, es.lab.type, year, month, days.col.notif.hq) |>
     dplyr::group_by(who.region, year, country, es.lab.type, month) |>
     dplyr::summarize(median_wpv_vdpv_detection = median(days.col.notif.hq, na.rm = TRUE),
-                     median_wpv_vdpv_detection_label = paste0(median_wpv_vdpv_detection, " (n=", n(), ")"))
+                     median_wpv_vdpv_detection_label = paste0(median_wpv_vdpv_detection, " (n=", dplyr::n(), ")"))
 
   timeliness_summary_all <- dplyr::full_join(timeliness_summary,
                                              timeliness_summary_vdpv_wpv)
@@ -97,7 +97,7 @@ get_es_timeliness <- function(es_data, lab_loc = sirfunctions::get_lab_locs(), e
       category == "median_wpv_vdpv_detection" & .data[[paste0(current_year)]] > 35 & es.lab.type == "In-country" ~ "Not timely",
       category == "median_wpv_vdpv_detection" & .data[[paste0(current_year)]] > 46 & es.lab.type == "International" ~ "Not timely"
     ),
-    trend_summary = case_when(
+    trend_summary = dplyr::case_when(
       trend == "Increase" & current_year_timeliness == "Timely" ~ "Worse but still timely this year",
       trend == "Increase" & current_year_timeliness == "Not timely" ~ "Worse and not timely this year",
       trend == "Decrease" & current_year_timeliness == "Timely" ~ "Improved from last year and timely this year",
