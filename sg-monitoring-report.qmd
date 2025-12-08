@@ -145,12 +145,13 @@ datatable(
 ```
 
 ### Timeliness of detection for negative samples
+From date of collection to final cell culture results.
 ```{r}
 #| echo: false
 
 datatable(
   negative_lab_processing |>
-    rename(
+    dplyr::rename(
       Country = "country",
       Region = "whoregion",
       Category = "culture.itd.cat",
