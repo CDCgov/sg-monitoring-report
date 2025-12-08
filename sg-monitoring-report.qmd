@@ -28,14 +28,7 @@ lapply(list.files("R"), \(fx) source(file.path("R", fx)))
 #| echo: false
 
 raw_data <- get_all_polio_data(attach.spatial.data = FALSE)
-lab_data_path <- file.path("C:/Users/xrg9/World Health Organization",
-                           "SG Analytic Group - General/Desk Reviews/Lab Data",
-                           "20250829_afro_emro_lab_afp_2022_2025_clean.xlsx")
-lab_data <- readxl::read_xlsx(lab_data_path, guess_max = 1000000)
-lab_data <- clean_lab_data(lab_data, 
-                           start_date = min(lab_data$CaseDate, na.rm = TRUE),
-                           end_date = max(lab_data$CaseDate, na.rm = TRUE),
-                           raw_data$afp)
+sirfunctions_io("read", file_loc = get_constant("CLEANED_LAB_DATA"))
 ```
 
 ## AFP Surveillance Indicators
@@ -152,12 +145,13 @@ datatable(
 ```
 
 ### Timeliness of detection for negative samples
+From date of collection to final cell culture results.
 ```{r}
 #| echo: false
 
 datatable(
   negative_lab_processing |>
-    rename(
+    dplyr::rename(
       Country = "country",
       Region = "whoregion",
       Category = "culture.itd.cat",
