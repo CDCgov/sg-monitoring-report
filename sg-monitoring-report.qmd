@@ -75,6 +75,10 @@ prop_60 <- get_prop_60_day_follow_up(raw_data$afp) |>
   sirfunctions:::add_risk_category(ctry_col = "ctry") |>
   dplyr::select(-Region) |>
   dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "ctry")
+prop_classified <- get_prop_case_classified(raw_data$afp) |>
+  sirfunctions:::add_risk_category(ctry_col = "ctry") |>
+  dplyr::select(-Region) |>
+  dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "ctry")
 ```
 
 ### Number of AFP cases reported
@@ -129,7 +133,7 @@ Shows the proportion of lab samples not yet received in the culturing lab, with 
 
 datatable(
   lab_pending |>
-    rename(
+    dplyr::rename(
       Country = "country",
       Region = "whoregion",
       Year = "year",
@@ -146,6 +150,28 @@ datatable(
   )
 )
 
+```
+
+### Proportion of cases classified
+Proportion of cases with inadequate samples classified by the ERC.
+
+```{r}
+#| echo: false
+
+datatable(
+  prop_classified |>
+    dplyr::rename(
+      Country = "ctry",
+      Quarter = "quarter"
+    ),
+  filter = "top",
+  extensions = 'Buttons',
+  options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'csv', 'excel'),
+    pageLength = 10
+  )
+)
 ```
 
 ### Timeliness of detection for WPV/VDPV samples

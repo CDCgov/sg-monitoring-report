@@ -52,7 +52,8 @@ get_prop_case_classified <- function(afp_data, end_date = Sys.Date()) {
     dplyr::mutate(prop_pending = round(no_pending / cases * 100, 0),
                   prop_pending_label = paste0(prop_pending, " (", no_pending, "/", cases, ")")) |>
     dplyr::select(-dplyr::all_of(c("no_pending", "cases", "prop_pending"))) |>
-    tidyr::pivot_wider(names_from = year, values_from = prop_pending_label)
+    tidyr::pivot_wider(names_from = year, values_from = prop_pending_label) |>
+    dplyr::arrange(ctry, quarter)
 
   return(final_summary)
 
