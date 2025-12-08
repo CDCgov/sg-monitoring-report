@@ -83,12 +83,12 @@ datatable(
 
 datatable(
   prop_60 |>
-    rename(
-      Country = "ctry",
-      Month = "month",
-      Difference = "comparison",
-      Trend = "trend"
-    ),
+    dplyr::rename_with(dplyr::recode,
+                ctry = "Country",
+                quarter = "Quarter",
+                month = "Month",
+                comparison = "Difference",
+                trend = "Trend"),
   filter = "top",
   extensions = 'Buttons',
   options = list(
