@@ -40,13 +40,40 @@ sirfunctions_io("read", file_loc = get_constant("CLEANED_LAB_DATA"))
 #| include: false
 #| echo: false
 
-afp_cases_reported <- get_afp_cases_reported(raw_data$afp)
-lab_pending <- get_proportion_lab_pending(raw_data$afp)
-afp_wpv_vdpv <- get_wpv_vdpv_timeliness(raw_data$pos)
-negative_lab_processing <- get_negative_lab_processing_timeliness(lab_data)
-afp_shipment_timeliness <- get_stool_shipment_timeliness(lab_data)
-afp_lab_processing <- get_afp_lab_processing_timeliness(lab_data)
-prop_60 <- get_prop_60_day_follow_up(raw_data$afp)
+afp_cases_reported <- get_afp_cases_reported(raw_data$afp) |>
+  sirfunctions:::add_risk_category(ctry_col = "place.admin.0") |>
+  dplyr::select(-Region) |>
+  dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "place.admin.0")
+
+lab_pending <- get_proportion_lab_pending(raw_data$afp) |>
+  sirfunctions:::add_risk_category(ctry_col = "country") |>
+  dplyr::select(-Region) |>
+  dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "country")
+
+afp_wpv_vdpv <- get_wpv_vdpv_timeliness(raw_data$pos) |>
+  sirfunctions:::add_risk_category(ctry_col = "country") |>
+  dplyr::select(-Region) |>
+  dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "country")
+
+negative_lab_processing <- get_negative_lab_processing_timeliness(lab_data) |>
+  sirfunctions:::add_risk_category(ctry_col = "country") |>
+  dplyr::select(-Region) |>
+  dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "country")
+
+afp_shipment_timeliness <- get_stool_shipment_timeliness(lab_data) |>
+  sirfunctions:::add_risk_category(ctry_col = "country") |>
+  dplyr::select(-Region) |>
+  dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "country")
+
+afp_lab_processing <- get_afp_lab_processing_timeliness(lab_data) |>
+  sirfunctions:::add_risk_category(ctry_col = "country") |>
+  dplyr::select(-Region) |>
+  dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "country")
+
+prop_60 <- get_prop_60_day_follow_up(raw_data$afp) |>
+  sirfunctions:::add_risk_category(ctry_col = "ctry") |>
+  dplyr::select(-Region) |>
+  dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "ctry")
 ```
 
 ### Number of AFP cases reported
@@ -225,7 +252,10 @@ datatable(
 #| include: false
 #| echo: false
 
-es_shipment_timeliness <- get_es_timeliness(raw_data$es)
+es_shipment_timeliness <- get_es_timeliness(raw_data$es) |>
+  sirfunctions:::add_risk_category(ctry_col = "country") |>
+  dplyr::select(-Region) |>
+  dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "country")
 ```
 
 ::: panel-tabset
@@ -301,7 +331,11 @@ datatable(
 #| label: es-sites
 #| echo: false
 
-es_sites <- suppressMessages(get_operational_sites(raw_data$es))
+es_sites <- suppressMessages(get_operational_sites(raw_data$es)) |>
+  sirfunctions:::add_risk_category(ctry_col = "ctry") |>
+  dplyr::select(-Region) |>
+  dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "ctry")
+
 es_sites <- es_sites |>
   dplyr::rename(
     Country = "ctry",
@@ -330,7 +364,10 @@ datatable(
 #| include: true
 #| echo: false
 
-es_site_samples <- suppressMessages(get_samples_per_es_site(raw_data$es))
+es_site_samples <- suppressMessages(get_samples_per_es_site(raw_data$es)) |>
+    sirfunctions:::add_risk_category(ctry_col = "ADM0_NAME") |>
+  dplyr::select(-Region) |>
+  dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "ADM0_NAME")
 es_site_samples <- es_site_samples |>
   dplyr::rename(
     Country = "ADM0_NAME",
@@ -370,7 +407,10 @@ datatable(
 #| include: false
 
 
-lab_intervals <- lab_timely_indicators(lab_data)
+lab_intervals <- lab_timely_indicators(lab_data) |>
+  sirfunctions:::add_risk_category(ctry_col = "country") |>
+  dplyr::select(-Region) |>
+  dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "country")
 lab_intervals <- lab_intervals |>
   dplyr::rename(
     Region = "whoregion",
@@ -694,7 +734,10 @@ datatable(
 #| include: false
 #| echo: false
 
-lab_workload <- suppressMessages(lab_workload(lab_data))
+lab_workload <- suppressMessages(lab_workload(lab_data)) |>
+  sirfunctions:::add_risk_category(ctry_col = "country") |>
+  dplyr::select(-Region) |>
+  dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "country")
 lab_workload <- lab_workload |>
   dplyr::rename(
     `Culture/ITD Lab` = "culture.itd.lab",
