@@ -70,8 +70,12 @@ lab_timely_indicators <- function(lab_data, end_date = Sys.Date()) {
 
   lab_interval_summary <- lab_interval_summary |>
     dplyr::mutate(
-      comparison = .data[[paste0(current_year, " Median")]] - `Median of Last 3 Years`
+      comparison = as.numeric(.data[[paste0(current_year, " Median")]] - `Median of Last 3 Years`)
     ) |>
+    dplyr::mutate(prop_diff = round((comparison / as.numeric(!!dplyr::sym("Median of Last 3 Years")) * 100), 0)) |>
+    dplyr::mutate(prop_diff = dplyr::if_else(prop_diff == Inf,
+                                             as.numeric(!!dplyr::sym(paste0(current_year, " Median"))) * 100,
+                                             prop_diff)) |>
     dplyr::arrange(interval, dplyr::desc(comparison))
 
   # Create combinations of region, country, and interval
