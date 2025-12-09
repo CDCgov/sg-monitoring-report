@@ -82,7 +82,7 @@ prop_60 <- get_prop_60_day_follow_up(raw_data$afp) |>
 
 datatable(
   afp_cases_reported |>
-    rename(
+    dplyr::rename(
       Region = "whoregion",
       Country = "place.admin.0",
       Month = "month"
@@ -128,7 +128,7 @@ Shows the proportion of lab samples not yet received in the culturing lab, with 
 
 datatable(
   lab_pending |>
-    rename(
+    dplyr::rename(
       Country = "country",
       Region = "whoregion",
       Year = "year",
@@ -203,12 +203,12 @@ datatable(
 
 datatable(
   afp_shipment_timeliness |>
-    rename(
-      Country = "country",
-      Region = "whoregion",
-      Month = "month",
-      Difference = "comparison",
-      Trend = "trend"
+    dplyr::rename_with(recode, 
+      country = "Country",
+      whoregion = "Region",
+      month = "Month",
+      comparison = "Difference",
+      trend = "Trend"
     ),
   filter = "top",
   extensions = 'Buttons',
@@ -227,7 +227,7 @@ datatable(
 
 datatable(
   afp_lab_processing |>
-    rename(
+    dplyr::rename(
       Country = "country",
       Month = "month",
       Region = "whoregion",
@@ -385,6 +385,35 @@ es_site_samples <- es_site_samples |>
     `Is Active Site` = "active_site"
   )
 
+failing_sites <- es_site_samples |>
+  dplyr::filter(stringr::str_detect(failing_performance, "Yes \\(")) |>
+  dplyr::group_by(ADM0_NAME) |>
+  dplyr::summarize(n = dplyr::n()) |>
+  dplyr::arrange(dplyr::desc(ADM0_NAME))
+
+failing_active_sites <- es_site_samples |>
+  dplyr::filter(stringr::str_detect(failing_performance, "Yes \\("),
+                active_site == "Yes") |>
+  dplyr::group_by(ADM0_NAME) |>
+  dplyr::summarize(n = dplyr::n()) |>
+  dplyr::arrange(dplyr::desc(ADM0_NAME))
+
+es_failure_summary <- paste0(
+  "There are ", nrow(failing_sites), " countries with failing sites, ",
+  "with a total of ", sum(failing_sites$n, na.rm = TRUE), " sites.",
+  " Failing sites are those who have been open for at least 12 months", 
+  " with no collections in the last two months or",
+  " have less than 10 samples in the past rolling 12-month period. Of the failing sites, ",
+  sum(failing_active_sites$n, na.rm = TRUE),
+  " are considered active sites (sites with at least 10 collections in the past rolling 12-month period), ",
+  "with no EV detection in the past two months."
+)
+
+```
+`r es_failure_summary`
+```{r}
+#| include: false
+#| echo: false
 datatable(
   es_site_samples,
   filter = "top",
@@ -397,6 +426,7 @@ datatable(
 )
 
 ```
+
 :::
 
 ## Lab Surveillance Indicators
