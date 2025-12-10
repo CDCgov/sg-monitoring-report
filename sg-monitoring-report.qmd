@@ -29,17 +29,16 @@ lapply(list.files("R"), \(fx) source(file.path("R", fx)))
 
 raw_data <- get_all_polio_data(attach.spatial.data = FALSE)
 sirfunctions_io("read", file_loc = get_constant("CLEANED_LAB_DATA"))
+max_lab_date <- max(lab_data$CaseDate, na.rm = TRUE)
+max_date_notif <- paste0("Lab data recent as of ", max_lab_date, ".")
 ```
 
-## AFP Surveillance Indicators
-
-::: panel-tabset
-
 ```{r}
-#| label: afp-indicators
+#| label: calculate-afp-tables
 #| include: false
 #| echo: false
 
+# AFP indicators
 afp_cases_reported <- get_afp_cases_reported(raw_data$afp) |>
   sirfunctions:::add_risk_category(ctry_col = "place.admin.0") |>
   dplyr::select(-Region) |>
@@ -56,17 +55,17 @@ afp_wpv_vdpv <- get_wpv_vdpv_timeliness(raw_data$pos) |>
   dplyr::select(-Region) |>
   dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "country")
 
-negative_lab_processing <- get_negative_lab_processing_timeliness(lab_data) |>
+negative_lab_processing <- get_negative_lab_processing_timeliness(lab_data, max_lab_date) |>
   sirfunctions:::add_risk_category(ctry_col = "country") |>
   dplyr::select(-Region) |>
   dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "country")
 
-afp_shipment_timeliness <- get_stool_shipment_timeliness(lab_data) |>
+afp_shipment_timeliness <- get_stool_shipment_timeliness(lab_data, max_lab_date) |>
   sirfunctions:::add_risk_category(ctry_col = "country") |>
   dplyr::select(-Region) |>
   dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "country")
 
-afp_lab_processing <- get_afp_lab_processing_timeliness(lab_data) |>
+afp_lab_processing <- get_afp_lab_processing_timeliness(lab_data, max_lab_date) |>
   sirfunctions:::add_risk_category(ctry_col = "country") |>
   dplyr::select(-Region) |>
   dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "country")
@@ -76,6 +75,120 @@ prop_60 <- get_prop_60_day_follow_up(raw_data$afp) |>
   dplyr::select(-Region) |>
   dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "ctry")
 ```
+
+```{r}
+#| label: calculate-es-tables
+#| include: false
+#| echo: false
+
+# ES indicators
+es_shipment_timeliness <- get_es_timeliness(raw_data$es) |>
+  sirfunctions:::add_risk_category(ctry_col = "country") |>
+  dplyr::select(-Region) |>
+  dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "country")
+
+es_shipment <- es_shipment_timeliness |>
+  dplyr::filter(category == "median_lab_shipment") |>
+  dplyr::select(-category) |>
+  dplyr::rename(
+    Month = "month",
+    Country = "country",
+    `Lab Type` = "es.lab.type",
+    Region = "who.region",
+    Difference = "diff",
+    Trend = "trend",
+    `Current Year Timeliness` = "current_year_timeliness",
+    `Trend Summary` = "trend_summary"
+  )
+
+es_wpv_vdpv <- es_shipment_timeliness |>
+  dplyr::filter(category == "median_wpv_vdpv_detection") |>
+  dplyr::select(-category) |>
+  dplyr::rename(
+    Month = "month",
+    Country = "country",
+    `Lab Type` = "es.lab.type",
+    Region = "who.region",
+    Difference = "diff",
+    Trend = "trend",
+    `Current Year Timeliness` = "current_year_timeliness",
+    `Trend Summary` = "trend_summary"
+  )
+
+es_sites <- suppressMessages(get_operational_sites(raw_data$es)) |>
+  sirfunctions:::add_risk_category(ctry_col = "ctry") |>
+  dplyr::select(-Region) |>
+  dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "ctry")
+
+es_sites <- es_sites |>
+  dplyr::rename(
+    Country = "ctry",
+    Difference = "comparison",
+    `Difference, %` = "prop_diff",
+    Trend = "trend"
+  )
+
+es_site_samples <- suppressMessages(get_samples_per_es_site(raw_data$es)) |>
+    sirfunctions:::add_risk_category(ctry_col = "ADM0_NAME") |>
+  dplyr::select(-Region) |>
+  dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "ADM0_NAME")
+es_site_samples <- es_site_samples |>
+  dplyr::rename(
+    Country = "ADM0_NAME",
+    `Site Name` = "site.name",
+    `Site Age` = "site_age",
+    `Samples In Last 12 Months` = "n_samples_12_mo",
+    `POLIS Site Status` = "site.status",
+    `Earliest Collection` = "earliest_collection",
+    `Last Collection` = "last_collection",
+    `Days Since Last Collection` = "days_since_last_collection",
+    `Collection In Two Months` = "collection_two_mo",
+    `Last Detection` = "last_detection",
+    `Days Since Last Detection` = "days_since_last_det",
+    `Detection In Two Months` = "detection_two_mo",
+    `Is Active Site` = "active_site"
+  )
+```
+
+```{r}
+#| label: calculate-lab-tables
+#| include: false
+#| echo: false
+
+# Lab indicators
+lab_intervals <- lab_timely_indicators(lab_data) |>
+  sirfunctions:::add_risk_category(ctry_col = "country") |>
+  dplyr::select(-Region) |>
+  dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "country")
+lab_intervals <- lab_intervals |>
+  dplyr::rename(
+    Region = "whoregion",
+    `Culture/ITD Lab` = "culture.itd.lab",
+    `Sequencing Lab` = "seq.lab",
+    Country = "country",
+    Difference = "comparison",
+    `Difference, %` = "prop_diff",
+    Trend = "trend"
+  )
+lab_workload <- suppressMessages(lab_workload(lab_data)) |>
+  sirfunctions:::add_risk_category(ctry_col = "country") |>
+  dplyr::select(-Region) |>
+  dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "country")
+lab_workload <- lab_workload |>
+  dplyr::rename(
+    `Culture/ITD Lab` = "culture.itd.lab",
+    Country = "country",
+    Month = "month",
+    Difference = "comparison",
+    `Difference (%)` = "comparison_pct",
+    Trend = "trend"
+  )
+
+```
+
+## AFP Surveillance Indicators
+
+::: panel-tabset
 
 ### Number of AFP cases reported
 ```{r}
@@ -228,12 +341,13 @@ datatable(
 
 datatable(
   afp_lab_processing |>
-    rename(
-      Country = "country",
-      Month = "month",
-      Region = "whoregion",
-      Difference = "comparison",
-      Trend = "trend"
+    dplyr::rename_with(recode,
+      country = "Country",
+      month = "Month",
+      quarter = "Quarter",
+      whoregion = "Region",
+      comparison = "Difference",
+      trend = "Trend"
     ),
   filter = "top",
   extensions = 'Buttons',
@@ -248,38 +362,12 @@ datatable(
 
 ## Environmental Surveillance Indicators
 
-```{r}
-#| label: es-sample-shipment
-#| include: false
-#| echo: false
-
-es_shipment_timeliness <- get_es_timeliness(raw_data$es) |>
-  sirfunctions:::add_risk_category(ctry_col = "country") |>
-  dplyr::select(-Region) |>
-  dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "country")
-```
-
 ::: panel-tabset
 ### Timeliness of ES sample shipment
 
 ```{r}
 #| label: es-lab-shipment
 #| echo: false
-
-es_shipment <- es_shipment_timeliness |>
-  dplyr::filter(category == "median_lab_shipment") |>
-  dplyr::select(-category) |>
-  dplyr::rename(
-    Month = "month",
-    Country = "country",
-    `Lab Type` = "es.lab.type",
-    Region = "who.region",
-    Difference = "diff",
-    Trend = "trend",
-    `Current Year Timeliness` = "current_year_timeliness",
-    `Trend Summary` = "trend_summary"
-  )
-
 
 datatable(
   es_shipment,
@@ -300,20 +388,6 @@ datatable(
 #| label: es-wpv-vdpv
 #| echo: false
 
-es_wpv_vdpv <- es_shipment_timeliness |>
-  dplyr::filter(category == "median_wpv_vdpv_detection") |>
-  dplyr::select(-category) |>
-  dplyr::rename(
-    Month = "month",
-    Country = "country",
-    `Lab Type` = "es.lab.type",
-    Region = "who.region",
-    Difference = "diff",
-    Trend = "trend",
-    `Current Year Timeliness` = "current_year_timeliness",
-    `Trend Summary` = "trend_summary"
-  )
-
 datatable(
   es_wpv_vdpv,
   filter = "top",
@@ -331,19 +405,6 @@ datatable(
 ```{r}
 #| label: es-sites
 #| echo: false
-
-es_sites <- suppressMessages(get_operational_sites(raw_data$es)) |>
-  sirfunctions:::add_risk_category(ctry_col = "ctry") |>
-  dplyr::select(-Region) |>
-  dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "ctry")
-
-es_sites <- es_sites |>
-  dplyr::rename(
-    Country = "ctry",
-    Difference = "comparison",
-    `Difference, %` = "prop_diff",
-    Trend = "trend"
-  )
 
 datatable(
   es_sites,
@@ -365,27 +426,6 @@ datatable(
 #| include: true
 #| echo: false
 
-es_site_samples <- suppressMessages(get_samples_per_es_site(raw_data$es)) |>
-    sirfunctions:::add_risk_category(ctry_col = "ADM0_NAME") |>
-  dplyr::select(-Region) |>
-  dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "ADM0_NAME")
-es_site_samples <- es_site_samples |>
-  dplyr::rename(
-    Country = "ADM0_NAME",
-    `Site Name` = "site.name",
-    `Site Age` = "site_age",
-    `Samples In Last 12 Months` = "n_samples_12_mo",
-    `POLIS Site Status` = "site.status",
-    `Earliest Collection` = "earliest_collection",
-    `Last Collection` = "last_collection",
-    `Days Since Last Collection` = "days_since_last_collection",
-    `Collection In Two Months` = "collection_two_mo",
-    `Last Detection` = "last_detection",
-    `Days Since Last Detection` = "days_since_last_det",
-    `Detection In Two Months` = "detection_two_mo",
-    `Is Active Site` = "active_site"
-  )
-
 datatable(
   es_site_samples,
   filter = "top",
@@ -401,28 +441,6 @@ datatable(
 :::
 
 ## Lab Surveillance Indicators
-
-```{r}
-#| label: lab-intervals
-#| echo: false
-#| include: false
-
-
-lab_intervals <- lab_timely_indicators(lab_data) |>
-  sirfunctions:::add_risk_category(ctry_col = "country") |>
-  dplyr::select(-Region) |>
-  dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "country")
-lab_intervals <- lab_intervals |>
-  dplyr::rename(
-    Region = "whoregion",
-    `Culture/ITD Lab` = "culture.itd.lab",
-    `Sequencing Lab` = "seq.lab",
-    Country = "country",
-    Difference = "comparison",
-    `Difference, %` = "prop_diff",
-    Trend = "trend"
-  )
-```
 
 ::: panel-tabset
 ### Timeliness of virus isolation results
@@ -734,21 +752,6 @@ datatable(
 ```{r}
 #| include: false
 #| echo: false
-
-lab_workload <- suppressMessages(lab_workload(lab_data)) |>
-  sirfunctions:::add_risk_category(ctry_col = "country") |>
-  dplyr::select(-Region) |>
-  dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "country")
-lab_workload <- lab_workload |>
-  dplyr::rename(
-    `Culture/ITD Lab` = "culture.itd.lab",
-    Country = "country",
-    Month = "month",
-    Difference = "comparison",
-    `Difference (%)` = "comparison_pct",
-    Trend = "trend"
-  )
-
 last_month <- lab_workload |>
   filter(Month == lubridate::month(lubridate::month(Sys.Date()) - 1, TRUE))
 
