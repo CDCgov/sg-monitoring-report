@@ -57,9 +57,6 @@ generate_perfomance_tile_plot <- function(afp_cases_reported = NULL,
 
   ## Proportion of lab pending ----
   lab_pending_filtered <- lab_pending |>
-    dplyr::filter(month == lubridate::month(lubridate::floor_date(end_date,
-                                                                  unit = "month") %m-% months(1),
-                                            label = TRUE)) |>
     dplyr::mutate(prop = stringr::str_extract(prop_label, "[0-9]+"),
                   n_sample = str_extract(prop_label, "(?<=/)\\d+")) |>
     dplyr::mutate(prop = as.numeric(prop),
@@ -125,13 +122,12 @@ generate_perfomance_tile_plot <- function(afp_cases_reported = NULL,
     dplyr::filter(quarter == lubridate::quarter(end_date) - 1) |>
     dplyr::select(country, culture.itd.cat, dplyr::starts_with("2")) |>
     tidyr::pivot_longer(dplyr::starts_with("2"), names_to = "year", values_to = "median") |>
-    dplyr::group_by(country, culture.itd.cat) |>
-    dplyr::summarize(monthly_median = median(median, na.rm = TRUE)) |>
+    dplyr::filter(year == as.character(lubridate::year(lab_end_date))) |>
     dplyr::mutate(I6 = dplyr::case_when(
-      monthly_median <= 3 & culture.itd.cat == "In-country culture/ITD" ~ "Good",
-      monthly_median > 3 & culture.itd.cat == "In-country culture/ITD" ~ "Failing",
-      monthly_median <= 7 & culture.itd.cat == "International culture/ITD" ~ "Good",
-      monthly_median > 7 & culture.itd.cat == "International culture/ITD" ~ "Failing",
+      median <= 3 & culture.itd.cat == "In-country culture/ITD" ~ "Good",
+      median > 3 & culture.itd.cat == "In-country culture/ITD" ~ "Failing",
+      median <= 7 & culture.itd.cat == "International culture/ITD" ~ "Good",
+      median > 7 & culture.itd.cat == "International culture/ITD" ~ "Failing",
       .default = "Unable to determine"
     )) |>
     dplyr::select(place.admin.0 = country, I6)
@@ -143,12 +139,10 @@ generate_perfomance_tile_plot <- function(afp_cases_reported = NULL,
                                             label = TRUE)) |>
     dplyr::select(country, month, dplyr::starts_with("2")) |>
     tidyr::pivot_longer(dplyr::starts_with("2"), names_to = "year", values_to = "median") |>
-    dplyr::ungroup() |>
-    dplyr::group_by(country) |>
-    dplyr::summarize(monthly_median = median(median, na.rm = TRUE)) |>
+    dplyr::filter(stringr::str_detect(year, as.character(lubridate::year(lab_end_date)))) |>
     dplyr::mutate(I7 = dplyr::case_when(
-      monthly_median <= 14 ~ "Good",
-      monthly_median > 14 ~ "Failing",
+      median <= 14 ~ "Good",
+      median > 14 ~ "Failing",
       .default = "Unable to determine"
     )) |>
     dplyr::select(place.admin.0 = country, I7)
