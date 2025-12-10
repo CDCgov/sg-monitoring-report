@@ -1,5 +1,5 @@
 ---
-title: "Surveillance Group Monitoring Report"
+title: "Surveillance Group Monitoring Report (DRAFT)"
 author: Mervin Keith Cuadera
 date: today
 date-format: "MMMM D, YYYY"  # e.g., September 24, 2025
@@ -29,6 +29,8 @@ lapply(list.files("R"), \(fx) source(file.path("R", fx)))
 
 raw_data <- get_all_polio_data(attach.spatial.data = FALSE)
 sirfunctions_io("read", file_loc = get_constant("CLEANED_LAB_DATA"))
+max_lab_date <- max(lab_data$CaseDate, na.rm = TRUE)
+max_date_notif <- paste0("Lab data recent as of ", max_lab_date, ".")
 ```
 
 ## AFP Surveillance Indicators
@@ -66,7 +68,7 @@ afp_shipment_timeliness <- get_stool_shipment_timeliness(lab_data) |>
   dplyr::select(-Region) |>
   dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "country")
 
-afp_lab_processing <- get_afp_lab_processing_timeliness(lab_data) |>
+afp_lab_processing <- get_afp_lab_processing_timeliness(lab_data, max_lab_date) |>
   sirfunctions:::add_risk_category(ctry_col = "country") |>
   dplyr::select(-Region) |>
   dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "country")
@@ -223,6 +225,8 @@ datatable(
 ```
 
 ### Timeliness of lab processing of AFP samples
+`r max_date_notif`
+
 ```{r}
 #| echo: false
 
@@ -330,6 +334,7 @@ datatable(
 
 ```{r}
 #| label: es-sites
+#| include: false
 #| echo: false
 
 es_sites <- suppressMessages(get_operational_sites(raw_data$es)) |>
@@ -344,6 +349,11 @@ es_sites <- es_sites |>
     `Difference, %` = "prop_diff",
     Trend = "trend"
   )
+```
+
+```{r}
+#| include: true
+#| echo: false
 
 datatable(
   es_sites,
@@ -357,34 +367,17 @@ datatable(
 )
 
 ```
-
 ### Number of samples per sites
 
 ```{r}
 #| label: es-site-samples
-#| include: true
+#| include: false
 #| echo: false
 
 es_site_samples <- suppressMessages(get_samples_per_es_site(raw_data$es)) |>
     sirfunctions:::add_risk_category(ctry_col = "ADM0_NAME") |>
   dplyr::select(-Region) |>
   dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "ADM0_NAME")
-es_site_samples <- es_site_samples |>
-  dplyr::rename(
-    Country = "ADM0_NAME",
-    `Site Name` = "site.name",
-    `Site Age` = "site_age",
-    `Samples In Last 12 Months` = "n_samples_12_mo",
-    `POLIS Site Status` = "site.status",
-    `Earliest Collection` = "earliest_collection",
-    `Last Collection` = "last_collection",
-    `Days Since Last Collection` = "days_since_last_collection",
-    `Collection In Two Months` = "collection_two_mo",
-    `Last Detection` = "last_detection",
-    `Days Since Last Detection` = "days_since_last_det",
-    `Detection In Two Months` = "detection_two_mo",
-    `Is Active Site` = "active_site"
-  )
 
 failing_sites <- es_site_samples |>
   dplyr::filter(stringr::str_detect(failing_performance, "Yes \\(")) |>
@@ -410,10 +403,28 @@ es_failure_summary <- paste0(
   "with no EV detection in the past two months."
 )
 
+es_site_samples <- es_site_samples |>
+  dplyr::rename(
+    Country = "ADM0_NAME",
+    `Site Name` = "site.name",
+    `Site Age` = "site_age",
+    `Samples In Last 12 Months` = "n_samples_12_mo",
+    `POLIS Site Status` = "site.status",
+    `Earliest Collection` = "earliest_collection",
+    `Last Collection` = "last_collection",
+    `Days Since Last Collection` = "days_since_last_collection",
+    `Collection In Two Months` = "collection_two_mo",
+    `Last Detection` = "last_detection",
+    `Days Since Last Detection` = "days_since_last_det",
+    `Detection In Two Months` = "detection_two_mo",
+    `Is Active Site` = "active_site",
+    `Failing Performance` = "failing_performance"
+  )
+
 ```
 `r es_failure_summary`
 ```{r}
-#| include: false
+#| include: true
 #| echo: false
 datatable(
   es_site_samples,
@@ -437,8 +448,7 @@ datatable(
 #| echo: false
 #| include: false
 
-
-lab_intervals <- lab_timely_indicators(lab_data) |>
+lab_intervals <- lab_timely_indicators(lab_data, max_lab_date) |>
   sirfunctions:::add_risk_category(ctry_col = "country") |>
   dplyr::select(-Region) |>
   dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "country")
@@ -765,7 +775,7 @@ datatable(
 #| include: false
 #| echo: false
 
-lab_workload <- suppressMessages(lab_workload(lab_data)) |>
+lab_workload <- suppressMessages(lab_workload(lab_data, max_lab_date)) |>
   sirfunctions:::add_risk_category(ctry_col = "country") |>
   dplyr::select(-Region) |>
   dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "country")
@@ -780,7 +790,7 @@ lab_workload <- lab_workload |>
   )
 
 last_month <- lab_workload |>
-  filter(Month == lubridate::month(lubridate::month(Sys.Date()) - 1, TRUE))
+  filter(Month == lubridate::month(lubridate::month(max_lab_date) - 1, TRUE))
 
 top_10 <- last_month |>
   filter(Trend == "Increase") |>
@@ -819,7 +829,8 @@ overall <- paste0("Overall, ",
 
 #### Summary
 
-**For the previous month** 
+**For the previous month from the latest date available in the lab dataset** 
+*`r max_date_notif`*
 
 `r final_summary_top` 
 
