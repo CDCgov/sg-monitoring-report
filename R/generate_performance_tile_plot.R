@@ -1,6 +1,7 @@
-generate_perfomance_tile_plot <- function(afp_cases_reported = NULL,
+generate_performance_tile_plot <- function(afp_cases_reported = NULL,
                                           prop_60 = NULL,
                                           lab_pending = NULL,
+                                          prop_classified = NULL,
                                           afp_wpv_vdpv = NULL,
                                           negative_lab_processing = NULL,
                                           afp_shipment_timeliness = NULL,
@@ -15,6 +16,17 @@ generate_perfomance_tile_plot <- function(afp_cases_reported = NULL,
                                           who_region = "AFRO",
                                           lab_locs = NULL
                                           ) {
+
+
+  # Calculate previous quarter/semesters
+  prev_quarter_to_report <- (lubridate::quarter(end_date) - 1)
+  if (prev_quarter_to_report == 0) {
+    prev_quarter_to_report <- 4
+  }
+  prev_sem_to_report <- (lubridate::semester(end_date) - 1)
+  if (prev_sem_to_report == 0) {
+    prev_sem_to_report <- 2
+  }
 
   # AFP ----
   ## Number of AFP cases reported ----
@@ -35,9 +47,9 @@ generate_perfomance_tile_plot <- function(afp_cases_reported = NULL,
   afp_cases_reported_filtered["I1"] <- afp_cases_reported_filtered[[9]] < afp_cases_reported_filtered[[10]]
   afp_cases_reported_filtered <- afp_cases_reported_filtered |>
     dplyr::mutate(I1 = dplyr::case_when(
-      I1 == TRUE ~ "Failing",
-      I1 == FALSE ~ "Good",
-      is.na(I1) ~ "Unable to determine"
+      I1 == TRUE ~ "Below target",
+      I1 == FALSE ~ "On target",
+      is.na(I1) ~ "To Be Determined"
       ))
 
   # AFP reported final
@@ -46,12 +58,12 @@ generate_perfomance_tile_plot <- function(afp_cases_reported = NULL,
 
   ## Proportion of 60-days follow-up done ----
   prop_60_filtered <- prop_60 |>
-    dplyr::filter(quarter == (lubridate::quarter(end_date) - 1)) |>
+    dplyr::filter(semester == prev_sem_to_report) |>
     dplyr::select(place.admin.0 = ctry, comparison) |>
     dplyr::mutate(I2 = dplyr::case_when(
-      is.na(comparison) ~ "Unable to determine",
-      comparison <= -50 ~ "Failing",
-      comparison > -50 ~ "Good"
+      is.na(comparison) ~ "To Be Determined",
+      comparison <= -80 ~ "Below target",
+      comparison > -80 ~ "On target"
     )) |>
     dplyr::select(-comparison)
 
@@ -66,8 +78,8 @@ generate_perfomance_tile_plot <- function(afp_cases_reported = NULL,
                      total = sum(n_sample, na.rm = TRUE)) |>
     dplyr::mutate(prop = pending/total * 100) |>
     dplyr::mutate(I3 = dplyr::case_when(
-      prop >= 75 ~ "Failing",
-      prop < 75 ~ "Good"
+      prop >= 80 ~ "Below target",
+      prop < 80 ~ "On target"
     )) |>
     dplyr::select(place.admin.0 = country, I3)
 
@@ -91,11 +103,11 @@ generate_perfomance_tile_plot <- function(afp_cases_reported = NULL,
                        dplyr::select(place.admin.0 = country, seq.capacity)) |>
     dplyr::mutate(
       I4 =
-        case_when(stringr::str_detect(.data$seq.capacity, "[Yy]es") & median <= 35 ~ "Good",
-                  stringr::str_detect(.data$seq.capacity, "[Yy]es") & median > 35 ~ "Failing",
-                  seq.capacity == "no" & median <= 46 ~ "Good",
-                  seq.capacity == "no" & median > 46 ~ "Failing",
-                  .default = "Unable to determine"
+        case_when(stringr::str_detect(.data$seq.capacity, "[Yy]es") & median <= 35 ~ "On target",
+                  stringr::str_detect(.data$seq.capacity, "[Yy]es") & median > 35 ~ "Below target",
+                  seq.capacity == "no" & median <= 46 ~ "On target",
+                  seq.capacity == "no" & median > 46 ~ "Below target",
+                  .default = "To Be Determined"
         )
     )
 
@@ -109,11 +121,11 @@ generate_perfomance_tile_plot <- function(afp_cases_reported = NULL,
     dplyr::group_by(country, culture.itd.cat) |>
     dplyr::summarize(monthly_median = median(median, na.rm = TRUE)) |>
     dplyr::mutate(I5 = dplyr::case_when(
-      monthly_median <= 35 & culture.itd.cat == "In-country culture/ITD" ~ "Good",
-      monthly_median > 35 & culture.itd.cat == "In-country culture/ITD" ~ "Failing",
-      monthly_median <= 46 & culture.itd.cat == "International culture/ITD" ~ "Good",
-      monthly_median > 46 & culture.itd.cat == "International culture/ITD" ~ "Failing",
-      .default = "Unable to determine"
+      monthly_median <= 35 & culture.itd.cat == "In-country culture/ITD" ~ "On target",
+      monthly_median > 35 & culture.itd.cat == "In-country culture/ITD" ~ "Below target",
+      monthly_median <= 46 & culture.itd.cat == "International culture/ITD" ~ "On target",
+      monthly_median > 46 & culture.itd.cat == "International culture/ITD" ~ "Below target",
+      .default = "To Be Determined"
     )) |>
     dplyr::select(place.admin.0 = country, I5)
 
@@ -124,11 +136,11 @@ generate_perfomance_tile_plot <- function(afp_cases_reported = NULL,
     tidyr::pivot_longer(dplyr::starts_with("2"), names_to = "year", values_to = "median") |>
     dplyr::filter(year == as.character(lubridate::year(lab_end_date))) |>
     dplyr::mutate(I6 = dplyr::case_when(
-      median <= 3 & culture.itd.cat == "In-country culture/ITD" ~ "Good",
-      median > 3 & culture.itd.cat == "In-country culture/ITD" ~ "Failing",
-      median <= 7 & culture.itd.cat == "International culture/ITD" ~ "Good",
-      median > 7 & culture.itd.cat == "International culture/ITD" ~ "Failing",
-      .default = "Unable to determine"
+      median <= 3 & culture.itd.cat == "In-country culture/ITD" ~ "On target",
+      median > 3 & culture.itd.cat == "In-country culture/ITD" ~ "Below target",
+      median <= 7 & culture.itd.cat == "International culture/ITD" ~ "On target",
+      median > 7 & culture.itd.cat == "International culture/ITD" ~ "Below target",
+      .default = "To Be Determined"
     )) |>
     dplyr::select(place.admin.0 = country, I6)
 
@@ -141,12 +153,23 @@ generate_perfomance_tile_plot <- function(afp_cases_reported = NULL,
     tidyr::pivot_longer(dplyr::starts_with("2"), names_to = "year", values_to = "median") |>
     dplyr::filter(stringr::str_detect(year, as.character(lubridate::year(lab_end_date)))) |>
     dplyr::mutate(I7 = dplyr::case_when(
-      median <= 14 ~ "Good",
-      median > 14 ~ "Failing",
-      .default = "Unable to determine"
+      median <= 14 ~ "On target",
+      median > 14 ~ "Below target",
+      .default = "To Be Determined"
     )) |>
     dplyr::select(place.admin.0 = country, I7)
 
+
+  ## Proportion cases classified ----
+  prop_classified_filtered <- prop_classified |>
+    dplyr::filter(quarter == (lubridate::quarter(end_date) - 1)) |>
+    dplyr::select(place.admin.0 = ctry, comparison = diff) |>
+    dplyr::mutate(I8 = dplyr::case_when(
+      is.na(comparison) ~ "To Be Determined",
+      comparison <= -80 ~ "Below target",
+      comparison > -80 ~ "On target"
+    )) |>
+    dplyr::select(-comparison)
 
   # ES ----
   ## Timeliness of ES shipment ----
@@ -176,17 +199,19 @@ generate_perfomance_tile_plot <- function(afp_cases_reported = NULL,
     dplyr::left_join(negative_lab_processing_filtered) |>
     dplyr::left_join(afp_shipment_timeliness_filtered) |>
     dplyr::left_join(afp_lab_processing_filtered) |>
+    dplyr::left_join(prop_classified_filtered) |>
     tidyr::pivot_longer(cols = dplyr::starts_with("I", ignore.case = FALSE), values_to = "value", names_to = "indicator") |>
     dplyr::filter(whoregion == who_region) |>
-    dplyr::mutate(value = dplyr::if_else(is.na(value), "Unable to determine", value),
+    dplyr::mutate(value = dplyr::if_else(is.na(value), "To Be Determined", value),
                   indicator = dplyr::case_when(
-                    indicator == "I1" ~ "I1. Number of AFP cases reported",
-                    indicator == "I2" ~ "I2. Prop 60-day follow-up done",
-                    indicator == "I3" ~ "I3. Prop lab pending",
-                    indicator == "I4" ~ "I4. Timely AFP WPV/VDPV detection",
-                    indicator == "I5" ~ "I5. Timely detection of negative AFP samples",
-                    indicator == "I6" ~ "I6. Timely stool shipment",
-                    indicator == "I7" ~ "I7. Timely lab processing",
+                    indicator == "I1" ~ "Number of AFP \ncases reported",
+                    indicator == "I2" ~ "Proportion 60-day\nfollow-up done",
+                    indicator == "I3" ~ "Proportion lab\npending",
+                    indicator == "I4" ~ "Timely AFP WPV/VDPV \ndetection",
+                    indicator == "I5" ~ "Timely detection of \nnegative AFP samples",
+                    indicator == "I6" ~ "Timely stool\nshipment",
+                    indicator == "I7" ~ "Timely lab\nprocessing",
+                    indicator == "I8" ~ "Proportion inadequate\ncases classified",
                     .default = indicator
                   ))
 
@@ -197,9 +222,9 @@ generate_perfomance_tile_plot <- function(afp_cases_reported = NULL,
               linetype = 1) +
     ggplot2::scale_fill_manual(
       values = c(
-        "Good" = "#0070c0",
-        "Failing" = "#FF4021",
-        "Unable to determine" = "lightgrey"),
+        "On target" = "#0070c0",
+        "Below target" = "darkorange",
+        "To Be Determined" = "lightgrey"),
       name = "Indicator Performance",
       na.value = "lightgrey"
     ) +
@@ -208,9 +233,10 @@ generate_perfomance_tile_plot <- function(afp_cases_reported = NULL,
     ggplot2::xlab("") +
     ggplot2::theme(
       legend.position = "bottom",
+      legend.title = element_blank(),
       axis.title.x = element_blank(),
       axis.title.y = element_blank(),
-      axis.text.x = element_text(size = 6, color = "black"),
+      axis.text.x = element_text(size = 9, color = "black"),
       axis.ticks = element_blank(),
       panel.grid.minor = element_blank(),
       panel.grid.major = element_blank(),
