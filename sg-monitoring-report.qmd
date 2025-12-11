@@ -773,6 +773,7 @@ lab_workload <- lab_workload |>
     `Culture/ITD Lab` = "culture.itd.lab",
     Country = "country",
     Month = "month",
+    `Countries Served` = "from_ctry",
     Difference = "comparison",
     `Difference (%)` = "comparison_pct",
     Trend = "trend"
