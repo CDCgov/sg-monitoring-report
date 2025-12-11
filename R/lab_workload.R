@@ -22,27 +22,29 @@ lab_workload <- function(lab_data, end_date = Sys.Date()) {
                                  prev_year_start_date, prev_year_end_date)) |>
     dplyr::mutate(month = lubridate::month(DateStoolReceivedinLab, label = TRUE),
                   year = lubridate::year(DateStoolReceivedinLab)) |>
-    dplyr::group_by(culture.itd.lab, country, year, month) |>
-    dplyr::summarise(n = dplyr::n())
+    dplyr::group_by(culture.itd.lab, year, month) |>
+    dplyr::summarize(
+      from_ctry = paste(unique(country), collapse = ", "),
+      n = dplyr::n())
 
   current_year_load <- lab_data |>
     dplyr::filter(dplyr::between(DateStoolReceivedinLab,
                                  start_date, end_date)) |>
     dplyr::mutate(month = lubridate::month(DateStoolReceivedinLab, label = TRUE),
                   year = lubridate::year(DateStoolReceivedinLab)) |>
-    dplyr::group_by(culture.itd.lab, country, year, month) |>
-    dplyr::summarise(n = dplyr::n())
+    dplyr::group_by(culture.itd.lab, year, month) |>
+    dplyr::summarize(
+      from_ctry = paste(unique(country), collapse = ", "),
+      n = dplyr::n())
 
   summary <- dplyr::bind_rows(prev_year_load, current_year_load)
 
   # Create combinations of region, country, and interval
   complete_table <- tidyr::expand_grid(
-    country = unique(lab_data$country),
+    culture.itd.lab = unique(lab_data$culture.itd.lab),
     year = c(lubridate::year(end_date) - 1, lubridate::year(end_date)),
     month = lubridate::month(seq(1, 12), TRUE)) |>
-    dplyr::filter(month <= lubridate::month(end_date, TRUE)) |>
-    dplyr::left_join(lab_data |>
-                       dplyr::distinct(country, culture.itd.lab))
+    dplyr::filter(month <= lubridate::month(end_date, TRUE))
 
   # Full join
   summary <- dplyr::full_join(complete_table, summary)
