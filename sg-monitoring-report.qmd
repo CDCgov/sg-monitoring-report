@@ -93,65 +93,21 @@ es_shipment_timeliness <- get_es_timeliness(raw_data$es) |>
 
 es_shipment <- es_shipment_timeliness |>
   dplyr::filter(category == "median_lab_shipment") |>
-  dplyr::select(-category) |>
-  dplyr::rename(
-    Month = "month",
-    Country = "country",
-    `Lab Type` = "es.lab.type",
-    Region = "who.region",
-    Difference = "diff",
-    Trend = "trend",
-    `Current Year Timeliness` = "current_year_timeliness",
-    `Trend Summary` = "trend_summary"
-  )
+  dplyr::select(-category)
 
 es_wpv_vdpv <- es_shipment_timeliness |>
   dplyr::filter(category == "median_wpv_vdpv_detection") |>
-  dplyr::select(-category) |>
-  dplyr::rename(
-    Month = "month",
-    Country = "country",
-    `Lab Type` = "es.lab.type",
-    Region = "who.region",
-    Difference = "diff",
-    Trend = "trend",
-    `Current Year Timeliness` = "current_year_timeliness",
-    `Trend Summary` = "trend_summary"
-  )
+  dplyr::select(-category)
 
 es_sites <- suppressMessages(get_operational_sites(raw_data$es)) |>
   sirfunctions:::add_risk_category(ctry_col = "ctry") |>
   dplyr::select(-Region) |>
   dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "ctry")
 
-es_sites <- es_sites |>
-  dplyr::rename(
-    Country = "ctry",
-    Difference = "comparison",
-    `Difference, %` = "prop_diff",
-    Trend = "trend"
-  )
-
 es_site_samples <- suppressMessages(get_samples_per_es_site(raw_data$es)) |>
     sirfunctions:::add_risk_category(ctry_col = "ADM0_NAME") |>
   dplyr::select(-Region) |>
   dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "ADM0_NAME")
-es_site_samples <- es_site_samples |>
-  dplyr::rename(
-    Country = "ADM0_NAME",
-    `Site Name` = "site.name",
-    `Site Age` = "site_age",
-    `Samples In Last 12 Months` = "n_samples_12_mo",
-    `POLIS Site Status` = "site.status",
-    `Earliest Collection` = "earliest_collection",
-    `Last Collection` = "last_collection",
-    `Days Since Last Collection` = "days_since_last_collection",
-    `Collection In Two Months` = "collection_two_mo",
-    `Last Detection` = "last_detection",
-    `Days Since Last Detection` = "days_since_last_det",
-    `Detection In Two Months` = "detection_two_mo",
-    `Is Active Site` = "active_site"
-  )
 ```
 
 ```{r}
@@ -190,6 +146,35 @@ lab_workload <- lab_workload |>
   )
 
 ```
+
+
+## System-Level Performance
+
+### AFP Indicators
+::: panel-tabset
+
+#### AFRO
+```{r}
+generate_performance_tile_plot(afp_cases_reported,
+                               prop_60,
+                               lab_pending,
+                               prop_classified,
+                               afp_wpv_vdpv,
+                               negative_lab_processing,
+                               afp_shipment_timeliness,
+                               afp_lab_processing,
+                               #es_shipment,
+                               #es_wpv_vdpv,
+                               #es_sites,
+                               #es_site_samples,
+                               #lab_intervals,
+                               end_date = Sys.Date(),
+                               lab_end_date = max_lab_date,
+                               who_region = "AFRO",
+                               lab_locs = NULL)
+
+```
+:::
 
 ## AFP Surveillance Indicators
 
@@ -399,6 +384,17 @@ datatable(
 ```{r}
 #| label: es-lab-shipment
 #| echo: false
+es_shipment <- es_shipment |>
+  dplyr::rename(
+    Month = "month",
+    Country = "country",
+    `Lab Type` = "es.lab.type",
+    Region = "who.region",
+    Difference = "diff",
+    Trend = "trend",
+    `Current Year Timeliness` = "current_year_timeliness",
+    `Trend Summary` = "trend_summary"
+  )
 
 datatable(
   es_shipment,
@@ -419,6 +415,18 @@ datatable(
 #| label: es-wpv-vdpv
 #| echo: false
 
+es_wpv_vdpv <- es_wpv_vdpv |>
+  dplyr::rename(
+    Month = "month",
+    Country = "country",
+    `Lab Type` = "es.lab.type",
+    Region = "who.region",
+    Difference = "diff",
+    Trend = "trend",
+    `Current Year Timeliness` = "current_year_timeliness",
+    `Trend Summary` = "trend_summary"
+  )
+
 datatable(
   es_wpv_vdpv,
   filter = "top",
@@ -436,6 +444,14 @@ datatable(
 ```{r}
 #| label: es-sites
 #| echo: false
+
+es_sites <- es_sites |>
+  dplyr::rename(
+    Country = "ctry",
+    Difference = "comparison",
+    `Difference, %` = "prop_diff",
+    Trend = "trend"
+  )
 
 datatable(
   es_sites,
@@ -456,6 +472,23 @@ datatable(
 #| label: es-site-samples
 #| include: true
 #| echo: false
+
+es_site_samples <- es_site_samples |>
+  dplyr::rename(
+    Country = "ADM0_NAME",
+    `Site Name` = "site.name",
+    `Site Age` = "site_age",
+    `Samples In Last 12 Months` = "n_samples_12_mo",
+    `POLIS Site Status` = "site.status",
+    `Earliest Collection` = "earliest_collection",
+    `Last Collection` = "last_collection",
+    `Days Since Last Collection` = "days_since_last_collection",
+    `Collection In Two Months` = "collection_two_mo",
+    `Last Detection` = "last_detection",
+    `Days Since Last Detection` = "days_since_last_det",
+    `Detection In Two Months` = "detection_two_mo",
+    `Is Active Site` = "active_site"
+  )
 
 datatable(
   es_site_samples,
