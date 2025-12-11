@@ -25,7 +25,7 @@ get_prop_case_classified <- function(afp_data, end_date = Sys.Date()) {
   summary <- stool_data |>
     dplyr::mutate(month = lubridate::month(date, label = TRUE),
                   quarter = lubridate::quarter(date),
-                  case_age = as.numeric(difftime(Sys.Date(), date, units = "days"))) |>
+                  case_age = as.numeric(difftime(end_date, date, units = "days"))) |>
     dplyr::filter(year >= lubridate::year(end_date) - 1,
                   case_age >= 90,
                   adequacy.final2 == "Inadequate") |>
@@ -37,7 +37,7 @@ get_prop_case_classified <- function(afp_data, end_date = Sys.Date()) {
 
   pending_summary <- summary |>
     dplyr::group_by(ctry, year, quarter) |>
-    dplyr::summarise(no_pending = sum(classification != "Pending", na.rm = TRUE),
+    dplyr::summarise(no_pending = sum(cdc.classification.all2 != "PENDING", na.rm = TRUE), # pending classification
                      cases = dplyr::n())
 
   full_grid <- tidyr::expand_grid(
