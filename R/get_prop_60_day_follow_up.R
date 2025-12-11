@@ -22,7 +22,7 @@ get_prop_60_day_follow_up <- function(afp_data, end_date = Sys.Date(), temporal_
   temporal_scale <- stringr::str_to_lower(temporal_scale)
 
   if (!temporal_scale %in% c("month", "quarter", "semester")) {
-    cli::cli_abort("Only 'month' and 'quarter' are valid arguments for temporal_scale.")
+    cli::cli_abort("Only 'month', 'quarter', and 'semester' are valid arguments for temporal_scale.")
   }
 
   end_date <- lubridate::as_date(end_date)
