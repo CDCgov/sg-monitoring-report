@@ -77,6 +77,10 @@ prop_60 <- get_prop_60_day_follow_up(raw_data$afp) |>
   sirfunctions:::add_risk_category(ctry_col = "ctry") |>
   dplyr::select(-Region) |>
   dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "ctry")
+prop_classified <- get_prop_case_classified(raw_data$afp) |>
+  sirfunctions:::add_risk_category(ctry_col = "ctry") |>
+  dplyr::select(-Region) |>
+  dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "ctry")
 ```
 
 ### Number of AFP cases reported
@@ -148,6 +152,31 @@ datatable(
   )
 )
 
+```
+
+### Proportion of cases classified
+Proportion of cases with inadequate samples classified by the ERC.
+
+```{r}
+#| echo: false
+
+datatable(
+  prop_classified |>
+    dplyr::rename(
+      Country = "ctry",
+      Quarter = "quarter",
+      `% Difference` = "diff",
+      Trend = "trend",
+      `Current Year Performance` = "performance"
+    ),
+  filter = "top",
+  extensions = 'Buttons',
+  options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'csv', 'excel'),
+    pageLength = 10
+  )
+)
 ```
 
 ### Timeliness of detection for WPV/VDPV samples
@@ -784,6 +813,7 @@ lab_workload <- lab_workload |>
     `Culture/ITD Lab` = "culture.itd.lab",
     Country = "country",
     Month = "month",
+    `Countries Served` = "from_ctry",
     Difference = "comparison",
     `Difference (%)` = "comparison_pct",
     Trend = "trend"
