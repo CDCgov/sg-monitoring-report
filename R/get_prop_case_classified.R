@@ -55,6 +55,29 @@ get_prop_case_classified <- function(afp_data, end_date = Sys.Date()) {
     tidyr::pivot_wider(names_from = year, values_from = prop_pending_label) |>
     dplyr::arrange(ctry, quarter)
 
+  final_summary_props <- pending_summary |>
+    dplyr::mutate(prop_pending = round(no_pending / cases * 100, 0)) |>
+    dplyr::select(-dplyr::all_of(c("no_pending", "cases"))) |>
+    tidyr::pivot_wider(names_from = year, values_from = prop_pending) |>
+    dplyr::arrange(ctry, quarter)
+
+  final_summary_props["diff"] <- final_summary_props[[4]] - final_summary_props[[3]]
+  final_summary_props <- final_summary_props |>
+    dplyr::mutate(trend = dplyr::case_when(
+      diff == 0 ~ "Same",
+      diff > 0 ~ "Increase",
+      diff < 0 ~ "Decrease",
+      .default = "No data from both years"
+    )) |>
+    dplyr::mutate(performance = dplyr::case_when(
+      !!dplyr::sym(names(final_summary_props)[4]) >= 80 ~ "On target",
+      !!dplyr::sym(names(final_summary_props)[4]) < 80 ~ "Below target",
+      .default = "To Be Determined"
+    )) |>
+    dplyr::select(-c(3,4))
+
+  final_summary <- dplyr::left_join(final_summary, final_summary_props)
+
   return(final_summary)
 
 }
