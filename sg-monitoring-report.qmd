@@ -162,7 +162,10 @@ datatable(
   prop_classified |>
     dplyr::rename(
       Country = "ctry",
-      Quarter = "quarter"
+      Quarter = "quarter",
+      `% Difference` = "diff",
+      Trend = "trend",
+      `Current Year Performance` = "performance"
     ),
   filter = "top",
   extensions = 'Buttons',
