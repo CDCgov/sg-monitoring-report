@@ -116,10 +116,8 @@ es_site_samples <- suppressMessages(get_samples_per_es_site(raw_data$es)) |>
 #| echo: false
 
 # Lab indicators
-lab_intervals <- lab_timely_indicators(lab_data, end_date = max_lab_date) |>
-  sirfunctions:::add_risk_category(ctry_col = "country") |>
-  dplyr::select(-Region) |>
-  dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "country")
+culture_lab_intervals <- lab_timely_indicators(lab_data,"culture", end_date = max_lab_date)
+seq_lab_interval <- lab_timely_indicators(lab_data,"seq", end_date = max_lab_date)
 lab_workload <- suppressMessages(lab_workload(lab_data, end_date = max_lab_date))
 ```
 
@@ -489,18 +487,14 @@ datatable(
 #| include: false
 #| echo: false
 
-lab_intervals <- lab_intervals |>
-  dplyr::rename(
-    Region = "whoregion",
-    `Culture/ITD Lab` = "culture.itd.lab",
-    `Sequencing Lab` = "seq.lab",
-    Country = "country",
-    Difference = "comparison",
-    `Difference, %` = "prop_diff",
-    Trend = "trend"
-  )
+culture_lab_intervals <- culture_lab_intervals |>
+  dplyr::rename_with(recode,
+                     culture.itd.lab = "Culture/ITD Lab",
+                     comparison = "Difference",
+                     prop_diff = "Difference, %",
+                     trend = "Trend")
 
-interval_summary <- lab_intervals |> 
+interval_summary <- culture_lab_intervals |> 
     dplyr::filter(interval == "days.lab.culture") |>
     dplyr::select(-interval)
 top_10 <- interval_summary |> 
@@ -516,31 +510,39 @@ bottom_10 <-interval_summary |>
 
 summary_string_top <- glue::glue_data(
   top_10,
-  "{str_to_title(Country)} ({round(Difference, 1)})"
+  "{str_to_title(`Culture/ITD Lab`)} ({round(Difference, 1)})"
 )
 summary_string_bottom <- glue::glue_data(
   bottom_10,
-  "{str_to_title(Country)} ({round(Difference, 1)})"
+  "{str_to_title(`Culture/ITD Lab`)} ({round(Difference, 1)})"
 )
 
 # Combine into a single sentence
-final_summary_top <- paste0("The top 10 countries with increased median timeliness compared to the three year median (difference in days shown) are: ", paste(summary_string_top, collapse = ", "), ".")
-final_summary_bottom <- paste0("The top 10 countries with the biggest improvement in median timeliness compared to the three year median (difference in days shown) are: ", paste(summary_string_bottom, collapse = ", "), ".")
+final_summary_top <- paste0("The top labs with increased median timeliness compared to the three year median (difference in days shown) are: ", paste(summary_string_top, collapse = ", "), ".")
+final_summary_bottom <- paste0("The top 10 labs with the biggest improvement in median timeliness compared to the three year median (difference in days shown) are: ", paste(summary_string_bottom, collapse = ", "), ".")
 comparible <- paste("There were", interval_summary |> 
                       filter(Trend == "Same") |> 
-                      nrow(), "countries the stayed in the same levels and", 
+                      nrow(), "labss the stayed in the same levels and", 
                     interval_summary |> 
                       filter(Trend == "No data available for both years") |> 
-                      nrow(), "countries with missing 3-year medians or 2025 medians.")
-overall <- paste0("Overall, ", length(unique(interval_summary$Country)), " countries had data in the lab dataset. ",
+                      nrow(), "labs with missing 3-year medians or 2025 medians.")
+overall <- paste0("Overall, ", 
                   interval_summary |> 
+                    filter(!is.na(`Culture/ITD Lab`), 
+                           Trend != "No data available for both years") |>
+                    pull(`Culture/ITD Lab`) |> 
+                    unique() |> 
+                    length(), " labs had data in the lab dataset. ",
+                  interval_summary |>
+                    filter(!is.na(`Culture/ITD Lab`)) |>
                     select(4) |> 
                     filter(if_all(1, \(x) !is.na(x))) |>
-                    nrow(), " countries had medians for the current year and ",
+                    nrow(), " labs had medians for the current year and ",
                   interval_summary |> 
+                    filter(!is.na(`Culture/ITD Lab`)) |>
                     select(3) |> 
                     filter(if_all(1, \(x) !is.na(x))) |>
-                    nrow(), " countries had 3-year medians."
+                    nrow(), " labs had 3-year medians."
                   )
 
 ```
@@ -576,7 +578,7 @@ datatable(interval_summary,
 #| include: false
 #| echo: false
 
-interval_summary <- lab_intervals |> 
+interval_summary <- culture_lab_intervals |> 
     dplyr::filter(interval == "days.culture.itd") |>
     dplyr::select(-interval)
 top_10 <- interval_summary |> 
@@ -592,30 +594,40 @@ bottom_10 <-interval_summary |>
 
 summary_string_top <- glue::glue_data(
   top_10,
-  "{str_to_title(Country)} ({round(Difference, 1)})"
+  "{str_to_title(`Culture/ITD Lab`)} ({round(Difference, 1)})"
 )
 summary_string_bottom <- glue::glue_data(
   bottom_10,
-  "{str_to_title(Country)} ({round(Difference, 1)})"
+  "{str_to_title(`Culture/ITD Lab`)} ({round(Difference, 1)})"
 )
 
 # Combine into a single sentence
-final_summary_top <- paste0("The top 10 countries with increased median timeliness compared to the three year median (difference in days shown) are: ", paste(summary_string_top, collapse = ", "), ".")
-final_summary_bottom <- paste0("The top 10 countries with the biggest improvement in median timeliness compared to the three year median (difference in days shown) are: ", paste(summary_string_bottom, collapse = ", "), ".")
-comparible <- paste("There were", interval_summary |> filter(Trend == "Same") |> nrow(), "countries the stayed in the same levels and", interval_summary |> 
+final_summary_top <- paste0("The top labs with increased median timeliness compared to the three year median (difference in days shown) are: ", paste(summary_string_top, collapse = ", "), ".")
+final_summary_bottom <- paste0("The top 10 labs with the biggest improvement in median timeliness compared to the three year median (difference in days shown) are: ", paste(summary_string_bottom, collapse = ", "), ".")
+comparible <- paste("There were", interval_summary |> 
+                      filter(Trend == "Same") |> 
+                      nrow(), "labss the stayed in the same levels and", 
+                    interval_summary |> 
                       filter(Trend == "No data available for both years") |> 
-                      nrow(), "countries with missing 3-year medians or 2025 medians.")
-overall <- paste0("Overall, ", length(unique(interval_summary$Country)), " countries had data in the lab dataset. ",
+                      nrow(), "labs with missing 3-year medians or 2025 medians.")
+overall <- paste0("Overall, ", 
                   interval_summary |> 
+                    filter(!is.na(`Culture/ITD Lab`), 
+                           Trend != "No data available for both years") |>
+                    pull(`Culture/ITD Lab`) |> 
+                    unique() |> 
+                    length(), " labs had data in the lab dataset. ",
+                  interval_summary |>
+                    filter(!is.na(`Culture/ITD Lab`)) |>
                     select(4) |> 
                     filter(if_all(1, \(x) !is.na(x))) |>
-                    nrow(), " countries had medians for the current year and ",
+                    nrow(), " labs had medians for the current year and ",
                   interval_summary |> 
+                    filter(!is.na(`Culture/ITD Lab`)) |>
                     select(3) |> 
                     filter(if_all(1, \(x) !is.na(x))) |>
-                    nrow(), " countries had 3-year medians."
+                    nrow(), " labs had 3-year medians."
                   )
-
 ```
 
 #### Summary
@@ -652,7 +664,7 @@ datatable(
 #| include: false
 #| echo: false
 
-interval_summary <- lab_intervals |> 
+interval_summary <- culture_lab_intervals |> 
     dplyr::filter(interval == "days.seq.ship") |>
     dplyr::select(-interval)
 top_10 <- interval_summary |> 
@@ -668,28 +680,39 @@ bottom_10 <-interval_summary |>
 
 summary_string_top <- glue::glue_data(
   top_10,
-  "{str_to_title(Country)} ({round(Difference, 1)})"
+  "{str_to_title(`Culture/ITD Lab`)} ({round(Difference, 1)})"
 )
 summary_string_bottom <- glue::glue_data(
   bottom_10,
-  "{str_to_title(Country)} ({round(Difference, 1)})"
+  "{str_to_title(`Culture/ITD Lab`)} ({round(Difference, 1)})"
 )
 
 # Combine into a single sentence
-final_summary_top <- paste0("The top 10 countries with increased median timeliness compared to the three year median (difference in days shown) are: ", paste(summary_string_top, collapse = ", "), ".")
-final_summary_bottom <- paste0("The top 10 countries with the biggest improvement in median timeliness compared to the three year median (difference in days shown) are: ", paste(summary_string_bottom, collapse = ", "), ".")
-comparible <- paste("There were", interval_summary |> filter(Trend == "Same") |> nrow(), "countries the stayed in the same levels and", interval_summary |> 
+final_summary_top <- paste0("The top labs with increased median timeliness compared to the three year median (difference in days shown) are: ", paste(summary_string_top, collapse = ", "), ".")
+final_summary_bottom <- paste0("The top 10 labs with the biggest improvement in median timeliness compared to the three year median (difference in days shown) are: ", paste(summary_string_bottom, collapse = ", "), ".")
+comparible <- paste("There were", interval_summary |> 
+                      filter(Trend == "Same") |> 
+                      nrow(), "labss the stayed in the same levels and", 
+                    interval_summary |> 
                       filter(Trend == "No data available for both years") |> 
-                      nrow(), "countries with missing 3-year medians or 2025 medians.")
-overall <- paste0("Overall, ", length(unique(interval_summary$Country)), " countries had data in the lab dataset. ",
+                      nrow(), "labs with missing 3-year medians or 2025 medians.")
+overall <- paste0("Overall, ", 
                   interval_summary |> 
+                    filter(!is.na(`Culture/ITD Lab`), 
+                           Trend != "No data available for both years") |>
+                    pull(`Culture/ITD Lab`) |> 
+                    unique() |> 
+                    length(), " labs had data in the lab dataset. ",
+                  interval_summary |>
+                    filter(!is.na(`Culture/ITD Lab`)) |>
                     select(4) |> 
                     filter(if_all(1, \(x) !is.na(x))) |>
-                    nrow(), " countries had medians for the current year and ",
+                    nrow(), " labs had medians for the current year and ",
                   interval_summary |> 
+                    filter(!is.na(`Culture/ITD Lab`)) |>
                     select(3) |> 
                     filter(if_all(1, \(x) !is.na(x))) |>
-                    nrow(), " countries had 3-year medians."
+                    nrow(), " labs had 3-year medians."
                   )
 
 ```
@@ -727,8 +750,14 @@ datatable(
 ```{r}
 #| include: false
 #| echo: false
+seq_lab_interval <- seq_lab_interval |>
+  dplyr::rename_with(recode,
+                     seq.lab = "Sequencing Lab",
+                     comparison = "Difference",
+                     prop_diff = "Difference, %",
+                     trend = "Trend")
 
-interval_summary <- lab_intervals |> 
+interval_summary <- seq_lab_interval |> 
     dplyr::filter(interval == "days.seq.rec.res") |>
     dplyr::select(-interval)
 top_10 <- interval_summary |> 
@@ -744,28 +773,39 @@ bottom_10 <-interval_summary |>
 
 summary_string_top <- glue::glue_data(
   top_10,
-  "{str_to_title(Country)} ({round(Difference, 1)})"
+  "{str_to_title(`Sequencing Lab`)} ({round(Difference, 1)})"
 )
 summary_string_bottom <- glue::glue_data(
   bottom_10,
-  "{str_to_title(Country)} ({round(Difference, 1)})"
+  "{str_to_title(`Sequencing Lab`)} ({round(Difference, 1)})"
 )
 
 # Combine into a single sentence
-final_summary_top <- paste0("The top 10 countries with increased median timeliness compared to the three year median (difference in days shown) are: ", paste(summary_string_top, collapse = ", "), ".")
-final_summary_bottom <- paste0("The top 10 countries with the biggest improvement in median timeliness compared to the three year median (difference in days shown) are: ", paste(summary_string_bottom, collapse = ", "), ".")
-comparible <- paste("There were", interval_summary |> filter(Trend == "Same") |> nrow(), "countries the stayed in the same levels and", interval_summary |> 
+final_summary_top <- paste0("The top labs with increased median timeliness compared to the three year median (difference in days shown) are: ", paste(summary_string_top, collapse = ", "), ".")
+final_summary_bottom <- paste0("The top 10 labs with the biggest improvement in median timeliness compared to the three year median (difference in days shown) are: ", paste(summary_string_bottom, collapse = ", "), ".")
+comparible <- paste("There were", interval_summary |> 
+                      filter(Trend == "Same") |> 
+                      nrow(), "labss the stayed in the same levels and", 
+                    interval_summary |> 
                       filter(Trend == "No data available for both years") |> 
-                      nrow(), "countries with missing 3-year medians or 2025 medians.")
-overall <- paste0("Overall, ", length(unique(interval_summary$Country)), " countries had data in the lab dataset. ",
+                      nrow(), "labs with missing 3-year medians or 2025 medians.")
+overall <- paste0("Overall, ", 
                   interval_summary |> 
+                    filter(!is.na(`Sequencing Lab`), 
+                           Trend != "No data available for both years") |>
+                    pull(`Sequencing Lab`) |> 
+                    unique() |> 
+                    length(), " labs had data in the lab dataset. ",
+                  interval_summary |>
+                    filter(!is.na(`Sequencing Lab`)) |>
                     select(4) |> 
                     filter(if_all(1, \(x) !is.na(x))) |>
-                    nrow(), " countries had medians for the current year and ",
+                    nrow(), " labs had medians for the current year and ",
                   interval_summary |> 
+                    filter(!is.na(`Sequencing Lab`)) |>
                     select(3) |> 
                     filter(if_all(1, \(x) !is.na(x))) |>
-                    nrow(), " countries had 3-year medians."
+                    nrow(), " labs had 3-year medians."
                   )
 
 ```
@@ -807,7 +847,6 @@ datatable(
 lab_workload <- lab_workload |>
   dplyr::rename(
     `Culture/ITD Lab` = "culture.itd.lab",
-    Country = "country",
     Month = "month",
     `Countries Served` = "from_ctry",
     Difference = "comparison",
@@ -816,7 +855,7 @@ lab_workload <- lab_workload |>
   )
 
 last_month <- lab_workload |>
-  filter(Month == lubridate::month(lubridate::month(Sys.Date()) - 1, TRUE))
+  filter(Month == lubridate::month(lubridate::month(max_lab_date) - 1, TRUE))
 
 top_10 <- last_month |>
   filter(Trend == "Increase") |>
@@ -831,25 +870,25 @@ bottom_10 <- last_month |>
 
 summary_string_top <- glue::glue_data(
   top_10,
-  "{str_to_title(Country)} ({round(Difference, 1)})"
+  "{str_to_title(`Culture/ITD Lab`)} ({round(Difference, 1)})"
 )
 summary_string_bottom <- glue::glue_data(
   bottom_10,
-  "{str_to_title(Country)} ({round(Difference, 1)})"
+  "{str_to_title(`Culture/ITD Lab`)} ({round(Difference, 1)})"
 )
 
 # Combine into a single sentence
-final_summary_top <- paste0("The top 10 countries with increased lab samples sent to lab compared to the previous year (difference in samples shown) are: ", paste(summary_string_top, collapse = ", "), ".")
-final_summary_bottom <- paste0("The top 10 countries with reduced lab samples sent to lab compared to the previous year (difference in samples shown) are: ", paste(summary_string_bottom, collapse = ", "), ".")
+final_summary_top <- paste0("The top 10 labs with increased lab samples compared to the previous year (difference in samples shown) are: ", paste(summary_string_top, collapse = ", "), ".")
+final_summary_bottom <- paste0("The top 10 labs with reduced lab samples compared to the previous year (difference in samples shown) are: ", paste(summary_string_bottom, collapse = ", "), ".")
 comparible <- paste("There were", last_month |> 
-                      filter(Trend == "Same") |> nrow(), "countries the stayed in the same levels and", last_month |> 
+                      filter(Trend == "Same") |> nrow(), "labs the stayed in the same levels and", last_month |> 
                       filter(Trend == "No data available for both years") |> 
-                      nrow(), "countries with missing data for the current year and previous year.")
+                      nrow(), "labs with missing data for the current year and previous year.")
 overall <- paste0("Overall, ", 
                   last_month |> 
                     filter(if_any(5, \(x) !is.na(x))) |> 
                     nrow(), 
-                  " countries had data in the lab dataset from the previous month of the current year.")
+                  " labs had data from the previous month of the current year using the latest month available in the lab dataset.")
 
 ```
 
