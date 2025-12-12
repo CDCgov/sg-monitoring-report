@@ -15,6 +15,7 @@
 #' @param lab_data `tibble` Lab data.
 #' @param type `str` Either 'culture' or 'seq'.
 #' @param end_date `str` End date of the calculations. Defaults to `Sys.Date()`.
+#' @param lab_loc `str` Information on lab locations.
 #'
 #' @returns `tibble` A summary of median timeliness
 #' @export
@@ -24,7 +25,8 @@
 #' lab_data <- readr::read_csv("lab_data.csv")
 #' lab_timely_indicators(lab_data)
 #' }
-lab_timely_indicators <- function(lab_data, type, end_date = Sys.Date()) {
+lab_timely_indicators <- function(lab_data, type, end_date = Sys.Date(),
+                                  lab_loc = get_lab_locs()) {
 
   if (!type %in% c("culture", "seq")) {
     cli::cli_abort("'culture' and 'seq' are the only valid arguments for type.")
