@@ -7,18 +7,25 @@ generate_afp_tile_plot <- function(afp_cases_reported = NULL,
                                    afp_shipment_timeliness = NULL,
                                    afp_lab_processing = NULL,
                                    end_date = Sys.Date(),
-                                   lab_end_date = Sys.Date()) {
+                                   lab_end_date = Sys.Date(),
+                                   lab_locs = get_lab_locs(),
+                                   who_region = NULL) {
 
   final_table <- process_afp_performance(afp_cases_reported,
-                                             prop_60,
-                                             lab_pending,
-                                             prop_classified,
-                                             afp_wpv_vdpv,
-                                             negative_lab_processingL,
-                                             afp_shipment_timeliness,
-                                             afp_lab_processing,
-                                             end_date,
-                                             lab_end_date)
+                                         prop_60,
+                                         lab_pending,
+                                         prop_classified,
+                                         afp_wpv_vdpv,
+                                         negative_lab_processing,
+                                         afp_shipment_timeliness,
+                                         afp_lab_processing,
+                                         end_date,
+                                         lab_end_date,
+                                         lab_locs)
+  if (!is.null(who_region)) {
+    final_table <- final_table |>
+      dplyr::filter(whoregion == who_region)
+  }
   plot <- generate_performance_tile_plot(final_table, "place.admin.0", "Country")
 
   return(plot)
@@ -34,7 +41,8 @@ process_afp_performance <- function(afp_cases_reported = NULL,
                                     afp_shipment_timeliness = NULL,
                                     afp_lab_processing = NULL,
                                     end_date = Sys.Date(),
-                                    lab_end_date = Sys.Date()) {
+                                    lab_end_date = Sys.Date(),
+                                    lab_locs = NULL) {
   # Calculate previous quarter/semesters
   prev_quarter_to_report <- (lubridate::quarter(end_date) - 1)
   if (prev_quarter_to_report == 0) {
@@ -102,24 +110,24 @@ process_afp_performance <- function(afp_cases_reported = NULL,
 
   ## Timeliness of AFP VDPV/WILD detection ----
   afp_wpv_vdpv_filtered <- afp_wpv_vdpv |>
+    dplyr::filter(month == lubridate::month(lubridate::floor_date(end_date,unit = "month") %m-% months(1),
+                                            label = TRUE)) |>
     dplyr::select(place.admin.0 = country,
-                  month == lubridate::month(lubridate::floor_date(end_date,unit = "month") %m-% months(1),
-                                            label = TRUE),
                   dplyr::starts_with("2")) |>
     tidyr::pivot_longer(cols = dplyr::starts_with("2"),
                         names_to = "year",
                         values_to = "median_timely") |>
-    dplyr::arrange(place.admin.0, year, month) |>
+    dplyr::arrange(place.admin.0, year) |>
     dplyr::filter(year == lubridate::year(end_date)) |>
     dplyr::group_by(place.admin.0) |>
     dplyr:: summarize(median = median(median_timely, na.rm = TRUE))
 
   if (is.null(lab_locs)) {
-    lab_loc_info <- sirfunctions::get_lab_locs(lab_locs)
+    lab_locs <- sirfunctions::get_lab_locs(lab_locs)
   }
 
   afp_wpv_vdpv_filtered <- afp_wpv_vdpv_filtered |>
-    dplyr::left_join(lab_loc_info |>
+    dplyr::left_join(lab_locs |>
                        dplyr::select(place.admin.0 = country, seq.capacity)) |>
     dplyr::mutate(
       I4 =
