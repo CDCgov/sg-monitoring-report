@@ -129,23 +129,14 @@ lab_workload <- suppressMessages(lab_workload(lab_data, end_date = max_lab_date)
 
 #### AFRO
 ```{r}
-generate_performance_tile_plot(afp_cases_reported,
-                               prop_60,
-                               lab_pending,
-                               prop_classified,
-                               afp_wpv_vdpv,
-                               negative_lab_processing,
-                               afp_shipment_timeliness,
-                               afp_lab_processing,
-                               #es_shipment,
-                               #es_wpv_vdpv,
-                               #es_sites,
-                               #es_site_samples,
-                               #lab_intervals,
-                               end_date = Sys.Date(),
-                               lab_end_date = max_lab_date,
-                               who_region = "AFRO",
-                               lab_locs = NULL)
+#| echo: false
+#| message: false
+#| warning: false
+
+
+generate_afp_tile_plot(afp_cases_reported, prop_60, lab_pending, prop_classified,
+                       afp_wpv_vdpv, negative_lab_processing, afp_shipment_timeliness,
+                       afp_lab_processing, end_date = Sys.Date(), lab_end_date = max_lab_date, who_region = "AFRO")
 
 ```
 :::
