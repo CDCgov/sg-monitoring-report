@@ -10,7 +10,8 @@ generate_performance_tile_plot <- function(afp_cases_reported = NULL,
                                           es_wpv_vdpv = NULL,
                                           es_sites = NULL,
                                           es_site_samples = NULL,
-                                          lab_intervals = NULL,
+                                          culture_lab_intervals = NULL,
+                                          seq_lab_interval = NULL,
                                           lab_workload = NULL,
                                           end_date = Sys.Date(),
                                           lab_end_date = Sys.Date(),
@@ -356,19 +357,84 @@ process_es_performance <- function(es_shipment = NULL,
 
 }
 
-process_lab_performance <- function(lab_intervals = NULL,
+process_culture_lab_performance <- function(culture_lab_intervals = NULL,
                                     lab_workload = NULL,
                                     lab_end_date = NULL) {
 
   ## Timeliness of virus isolation results ----
-  lab_isolation_filtered <- lab_intervals |>
-    dplyr::filter(inter)
+  lab_isolation_filtered <- culture_lab_intervals |>
+    dplyr::filter(interval == "days.lab.culture") |>
+    dplyr::mutate(I13  = dplyr::case_when(
+      prop_diff > 30 ~ "Below target",
+      prop_diff <=30 ~ "On target",
+      is.na(prop_diff) ~ "To Be Determined"
+    )) |>
+    dplyr::select(culture.itd.lab, I13)
+
   ## Timeliness of ITD results ----
+  lab_itd_filtered <- culture_lab_intervals |>
+    dplyr::filter(interval == "days.culture.itd") |>
+    dplyr::mutate(I14  = dplyr::case_when(
+      prop_diff > 30 ~ "Below target",
+      prop_diff <=30 ~ "On target",
+      is.na(prop_diff) ~ "To Be Determined"
+    )) |>
+    dplyr::select(culture.itd.lab, I14)
 
   ## Timeliness of shipment for sequencing ----
-
-  ## Timeliness of sequencing results ----
+  lab_ship_filtered <- culture_lab_intervals |>
+    dplyr::filter(interval == "days.seq.ship") |>
+    dplyr::mutate(I15  = dplyr::case_when(
+      prop_diff > 30 ~ "Below target",
+      prop_diff <=30 ~ "On target",
+      is.na(prop_diff) ~ "To Be Determined"
+    )) |>
+    dplyr::select(culture.itd.lab, I15)
 
   ## Lab workload ----
+  lab_workload_filtered <- lab_workload |>
+    dplyr::filter(month == lubridate::month(lubridate::floor_date(lab_end_date,
+                                                                  unit = "month") %m-% months(1),
+                                            label = TRUE)) |>
+    dplyr::mutate(I16  = dplyr::case_when(
+      comparison_pct > 30 ~ "Below target",
+      comparison_pct <= 30 ~ "On target",
+      is.na(comparison_pct) ~ "To Be Determined"
+    )) |>
+    dplyr::select(culture.itd.lab, I16)
 
+  final_table <- dplyr::left_join(lab_isolation_filtered, lab_itd_filtered) |>
+    dplyr::left_join(lab_ship_filtered) |>
+    dplyr::left_join(lab_workload_filtered) |>
+    tidyr::pivot_longer(cols = dplyr::starts_with("I", ignore.case = FALSE), values_to = "value", names_to = "indicator") |>
+    dplyr::mutate(value = dplyr::if_else(is.na(value), "To Be Determined", value),
+                  indicator = dplyr::case_when(
+                    indicator == "I13" ~ "Timeliness of\nvirus isolation",
+                    indicator == "I14" ~ "Timeliness of\nITD results",
+                    indicator == "I15" ~ "Timeliness of\nshipment for sequencing",
+                    indicator == "I16" ~ "Lab workload",
+                    .default = indicator
+                  ))
+
+  return(final_table)
+
+}
+
+process_seq_lab_performance <- function(seq_lab_interval) {
+  ## Timeliness of sequencing results ----
+  lab_seq_filtered <- seq_lab_interval |>
+    dplyr::mutate(I17  = dplyr::case_when(
+      prop_diff > 30 ~ "Below target",
+      prop_diff <=30 ~ "On target",
+      is.na(prop_diff) ~ "To Be Determined"
+    )) |>
+    dplyr::select(seq.lab, I17) |>
+    tidyr::pivot_longer(cols = dplyr::starts_with("I", ignore.case = FALSE), values_to = "value", names_to = "indicator") |>
+    dplyr::mutate(value = dplyr::if_else(is.na(value), "To Be Determined", value),
+                  indicator = dplyr::case_when(
+                    indicator == "I17" ~ "Timeliness of\nsequencing results",
+                    .default = indicator
+                  ))
+
+  return(lab_seq_filtered)
 }
