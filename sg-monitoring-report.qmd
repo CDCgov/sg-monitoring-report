@@ -128,7 +128,7 @@ lab_workload <- suppressMessages(lab_workload(lab_data, end_date = max_lab_date)
 ::: panel-tabset
 
 #### AFRO
-```{r}
+```{r, fig.width=14, fig.height=8}
 #| echo: false
 #| message: false
 #| warning: false
@@ -146,6 +146,7 @@ generate_afp_tile_plot(afp_cases_reported, prop_60, lab_pending, prop_classified
 ::: panel-tabset
 
 ### Number of AFP cases reported
+
 ```{r}
 #| echo: false
 
@@ -192,7 +193,6 @@ datatable(
 ### Proportion of lab pending
 
 Shows the proportion of lab samples not yet received in the culturing lab, with pending classification.
-
 ```{r}
 #| echo: false
 
@@ -219,7 +219,6 @@ datatable(
 
 ### Proportion of cases classified
 Proportion of cases with inadequate samples classified by the ERC.
-
 ```{r}
 #| echo: false
 
@@ -298,12 +297,13 @@ datatable(
 
 datatable(
   afp_shipment_timeliness |>
-    rename(
-      Country = "country",
-      Region = "whoregion",
-      Month = "month",
-      Difference = "comparison",
-      Trend = "trend"
+    rename_with(recode,
+      country = "Country",
+      whoregion = "Region",
+      month = "Month",
+      comparison = "Difference",
+      culture.itd.cat = "Shipment Type",
+      trend = "Trend"
     ),
   filter = "top",
   extensions = 'Buttons',
@@ -636,7 +636,7 @@ overall <- paste0("Overall, ",
 #| echo: false
 
 datatable(
-  lab_intervals |> 
+  culture_lab_intervals |> 
     dplyr::filter(interval == "days.culture.itd") |>
     dplyr::select(-interval),
   filter = "top",
@@ -723,7 +723,7 @@ overall <- paste0("Overall, ",
 #| echo: false
 
 datatable(
-  lab_intervals |> 
+  culture_lab_intervals |> 
     dplyr::filter(interval == "days.seq.ship") |>
     dplyr::select(-interval),
   filter = "top",
@@ -816,7 +816,7 @@ overall <- paste0("Overall, ",
 #| echo: false
 
 datatable(
-  lab_intervals |> 
+  seq_lab_interval |> 
     dplyr::filter(interval == "days.seq.rec.res") |>
     dplyr::select(-interval),
   filter = "top",
