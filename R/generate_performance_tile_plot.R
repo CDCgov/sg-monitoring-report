@@ -11,6 +11,7 @@ generate_performance_tile_plot <- function(afp_cases_reported = NULL,
                                           es_sites = NULL,
                                           es_site_samples = NULL,
                                           lab_intervals = NULL,
+                                          lab_workload = NULL,
                                           end_date = Sys.Date(),
                                           lab_end_date = Sys.Date(),
                                           who_region = "AFRO",
@@ -36,15 +37,6 @@ generate_performance_tile_plot <- function(afp_cases_reported = NULL,
                                            es_site_samples,
                                            end_date)
   # Lab ----
-  ## Timeliness of virus isolation results ----
-
-  ## Timeliness of ITD results ----
-
-  ## Timeliness of shipment for sequencing ----
-
-  ## Timeliness of sequencing results ----
-
-  ## Lab workload ----
 
   # Synthesize
   final_table <- afp_cases_reported_filtered |>
@@ -361,5 +353,22 @@ process_es_performance <- function(es_shipment = NULL,
                   ))
 
   return(final_table)
+
+}
+
+process_lab_performance <- function(lab_intervals = NULL,
+                                    lab_workload = NULL,
+                                    lab_end_date = NULL) {
+
+  ## Timeliness of virus isolation results ----
+  lab_isolation_filtered <- lab_intervals |>
+    dplyr::filter(inter)
+  ## Timeliness of ITD results ----
+
+  ## Timeliness of shipment for sequencing ----
+
+  ## Timeliness of sequencing results ----
+
+  ## Lab workload ----
 
 }
