@@ -17,7 +17,100 @@ generate_performance_tile_plot <- function(afp_cases_reported = NULL,
                                           lab_locs = NULL
                                           ) {
 
+  # AFP ----
+  afp_performance <- process_afp_performance(afp_cases_reported,
+                                             prop_60,
+                                             lab_pending,
+                                             prop_classified,
+                                             afp_wpv_vdpv,
+                                             negative_lab_processingL,
+                                             afp_shipment_timeliness,
+                                             afp_lab_processing,
+                                             end_date,
+                                             lab_end_date)
 
+  # ES ----
+  es_performance <- process_es_performance(es_shipment,
+                                           es_wpv_vdpv,
+                                           es_sites,
+                                           es_site_samples,
+                                           end_date)
+  # Lab ----
+  ## Timeliness of virus isolation results ----
+
+  ## Timeliness of ITD results ----
+
+  ## Timeliness of shipment for sequencing ----
+
+  ## Timeliness of sequencing results ----
+
+  ## Lab workload ----
+
+  # Synthesize
+  final_table <- afp_cases_reported_filtered |>
+    dplyr::left_join(prop_60_filtered) |>
+    dplyr::left_join(lab_pending_filtered) |>
+    dplyr::left_join(afp_wpv_vdpv_filtered) |>
+    dplyr::left_join(negative_lab_processing_filtered) |>
+    dplyr::left_join(afp_shipment_timeliness_filtered) |>
+    dplyr::left_join(afp_lab_processing_filtered) |>
+    dplyr::left_join(prop_classified_filtered) |>
+    tidyr::pivot_longer(cols = dplyr::starts_with("I", ignore.case = FALSE), values_to = "value", names_to = "indicator") |>
+    dplyr::filter(whoregion == who_region) |>
+    dplyr::mutate(value = dplyr::if_else(is.na(value), "To Be Determined", value),
+                  indicator = dplyr::case_when(
+                    indicator == "I1" ~ "Number of AFP \ncases reported",
+                    indicator == "I2" ~ "Proportion 60-day\nfollow-up done",
+                    indicator == "I3" ~ "Proportion lab\npending",
+                    indicator == "I4" ~ "Timely AFP WPV/VDPV \ndetection",
+                    indicator == "I5" ~ "Timely detection of \nnegative AFP samples",
+                    indicator == "I6" ~ "Timely stool\nshipment",
+                    indicator == "I7" ~ "Timely lab\nprocessing",
+                    indicator == "I8" ~ "Proportion inadequate\ncases classified",
+                    .default = indicator
+                  ))
+
+  plot <- ggplot2::ggplot(data = final_table,
+                          ggplot2::aes(fill = value, x = indicator, y = stringr::str_to_title(place.admin.0))) +
+    geom_tile(color = "white",
+              lwd = 0.8,
+              linetype = 1) +
+    ggplot2::scale_fill_manual(
+      values = c(
+        "On target" = "#0070c0",
+        "Below target" = "darkorange",
+        "To Be Determined" = "lightgrey"),
+      name = "Indicator Performance",
+      na.value = "lightgrey"
+    ) +
+    ggplot2::theme_minimal() +
+    ggplot2::ylab("Country") +
+    ggplot2::xlab("") +
+    ggplot2::theme(
+      legend.position = "bottom",
+      legend.title = element_blank(),
+      axis.title.x = element_blank(),
+      axis.title.y = element_blank(),
+      axis.text.x = element_text(size = 9, color = "black"),
+      axis.ticks = element_blank(),
+      panel.grid.minor = element_blank(),
+      panel.grid.major = element_blank(),
+      strip.text.y.left = element_text(angle = 0, hjust = 1)
+    )
+
+  return(plot)
+}
+
+process_afp_performance <- function(afp_cases_reported = NULL,
+                                    prop_60 = NULL,
+                                    lab_pending = NULL,
+                                    prop_classified = NULL,
+                                    afp_wpv_vdpv = NULL,
+                                    negative_lab_processing = NULL,
+                                    afp_shipment_timeliness = NULL,
+                                    afp_lab_processing = NULL,
+                                    end_date = Sys.Date(),
+                                    lab_end_date = Sys.Date()) {
   # Calculate previous quarter/semesters
   prev_quarter_to_report <- (lubridate::quarter(end_date) - 1)
   if (prev_quarter_to_report == 0) {
@@ -50,7 +143,7 @@ generate_performance_tile_plot <- function(afp_cases_reported = NULL,
       I1 == TRUE ~ "Below target",
       I1 == FALSE ~ "On target",
       is.na(I1) ~ "To Be Determined"
-      ))
+    ))
 
   # AFP reported final
   afp_cases_reported_filtered <- afp_cases_reported_filtered |>
@@ -85,7 +178,10 @@ generate_performance_tile_plot <- function(afp_cases_reported = NULL,
 
   ## Timeliness of AFP VDPV/WILD detection ----
   afp_wpv_vdpv_filtered <- afp_wpv_vdpv |>
-    dplyr::select(place.admin.0 = country, month, dplyr::starts_with("2")) |>
+    dplyr::select(place.admin.0 = country,
+                  month == lubridate::month(lubridate::floor_date(end_date,unit = "month") %m-% months(1),
+                                                          label = TRUE),
+                  dplyr::starts_with("2")) |>
     tidyr::pivot_longer(cols = dplyr::starts_with("2"),
                         names_to = "year",
                         values_to = "median_timely") |>
@@ -171,26 +267,6 @@ generate_performance_tile_plot <- function(afp_cases_reported = NULL,
     )) |>
     dplyr::select(-comparison)
 
-  # ES ----
-  ## Timeliness of ES shipment ----
-
-  ## Timeliness for ES VDPV/WPV detection ----
-
-  ## Number of operational ES sites ----
-
-  ## Number of samples per site ----
-
-  # Lab ----
-  ## Timeliness of virus isolation results ----
-
-  ## Timeliness of ITD results ----
-
-  ## Timeliness of shipment for sequencing ----
-
-  ## Timeliness of sequencing results ----
-
-  ## Lab workload ----
-
   # Synthesize
   final_table <- afp_cases_reported_filtered |>
     dplyr::left_join(prop_60_filtered) |>
@@ -201,7 +277,6 @@ generate_performance_tile_plot <- function(afp_cases_reported = NULL,
     dplyr::left_join(afp_lab_processing_filtered) |>
     dplyr::left_join(prop_classified_filtered) |>
     tidyr::pivot_longer(cols = dplyr::starts_with("I", ignore.case = FALSE), values_to = "value", names_to = "indicator") |>
-    dplyr::filter(whoregion == who_region) |>
     dplyr::mutate(value = dplyr::if_else(is.na(value), "To Be Determined", value),
                   indicator = dplyr::case_when(
                     indicator == "I1" ~ "Number of AFP \ncases reported",
@@ -215,33 +290,76 @@ generate_performance_tile_plot <- function(afp_cases_reported = NULL,
                     .default = indicator
                   ))
 
-  plot <- ggplot2::ggplot(data = final_table,
-                          ggplot2::aes(fill = value, x = indicator, y = stringr::str_to_title(place.admin.0))) +
-    geom_tile(color = "white",
-              lwd = 0.8,
-              linetype = 1) +
-    ggplot2::scale_fill_manual(
-      values = c(
-        "On target" = "#0070c0",
-        "Below target" = "darkorange",
-        "To Be Determined" = "lightgrey"),
-      name = "Indicator Performance",
-      na.value = "lightgrey"
-    ) +
-    ggplot2::theme_minimal() +
-    ggplot2::ylab("Country") +
-    ggplot2::xlab("") +
-    ggplot2::theme(
-      legend.position = "bottom",
-      legend.title = element_blank(),
-      axis.title.x = element_blank(),
-      axis.title.y = element_blank(),
-      axis.text.x = element_text(size = 9, color = "black"),
-      axis.ticks = element_blank(),
-      panel.grid.minor = element_blank(),
-      panel.grid.major = element_blank(),
-      strip.text.y.left = element_text(angle = 0, hjust = 1)
-    )
+  return(final_table)
 
-  return(plot)
+}
+
+process_es_performance <- function(es_shipment = NULL,
+                                   es_wpv_vdpv = NULL,
+                                   es_sites = NULL,
+                                   es_site_samples = NULL,
+                                   end_date = Sys.Date()) {
+
+  ## Timeliness of ES shipment ----
+  es_shipment_filtered <- es_shipment |>
+    dplyr::filter(month == lubridate::month(lubridate::floor_date(end_date,
+                                                                  unit = "month") %m-% months(1),
+                                            label = TRUE)) |>
+    dplyr::mutate(I9 = dplyr::case_when(
+      is.na(current_year_timeliness) ~ "To Be Determined",
+      current_year_timeliness == "Not timely" ~ "Below target",
+      current_year_timeliness == "Timely" ~ "On target"
+    )) |>
+    dplyr::select(country, whoregion = who.region, I9)
+
+  ## Timeliness for ES VDPV/WPV detection ----
+  es_wpv_vdpv_filtered <- es_wpv_vdpv |>
+    dplyr::filter(month == lubridate::month(lubridate::floor_date(end_date,
+                                                                  unit = "month") %m-% months(1),
+                                            label = TRUE)) |>
+    dplyr::mutate(I10 = dplyr::case_when(
+      is.na(current_year_timeliness) ~ "To Be Determined",
+      current_year_timeliness == "Not timely" ~ "Below target",
+      current_year_timeliness == "Timely" ~ "On target"
+    )) |>
+    dplyr::select(country, whoregion = who.region, I10)
+
+  ## Number of operational ES sites ----
+  es_sites_filtered <- es_sites |>
+    dplyr::mutate(I11 = dplyr::case_when(
+      is.na(prop_diff) ~ "To Be Determined",
+      prop_diff <= -20 ~ "Below target",
+      prop_diff > -20 ~ "On target"
+    )) |>
+    dplyr::select(country = ctry, I11)
+
+  ## Number of samples per site ----
+  # Site-level indicator, rather than a country level...but here's an attempt
+  es_site_samples_filtered <- es_site_samples |>
+    dplyr::group_by(country = ADM0_NAME) |>
+    dplyr::summarize(good_active_sites = sum(active_site == "Yes" & collection_two_mo == "Yes", na.rm = TRUE),
+                     active_sites = sum(active_site == "Yes")) |>
+    dplyr::mutate(active_sites_performance = round(good_active_sites / active_sites * 100)) |>
+    dplyr::mutate(I12 = dplyr::case_when(
+      is.na(active_sites_performance) ~ "To Be Determined",
+      active_sites_performance < 80 ~ "Below target",
+      active_sites_performance >= 80 ~ "On target"
+    )) |>
+    dplyr::select(country, I12)
+
+  final_table <- dplyr::left_join(es_shipment_filtered, es_wpv_vdpv_filtered) |>
+    dplyr::left_join(es_sites_filtered) |>
+    dplyr::left_join(es_site_samples_filtered) |>
+    tidyr::pivot_longer(cols = dplyr::starts_with("I", ignore.case = FALSE), values_to = "value", names_to = "indicator") |>
+    dplyr::mutate(value = dplyr::if_else(is.na(value), "To Be Determined", value),
+                  indicator = dplyr::case_when(
+                    indicator == "I9" ~ "Timeliness of\nES shipment",
+                    indicator == "I10" ~ "Timeliness of\nES WPV/VDPV detection",
+                    indicator == "I11" ~ "Proportion operational\nES sites",
+                    indicator == "I12" ~ "Proportion of performant\nES active sites",
+                    .default = indicator
+                  ))
+
+  return(final_table)
+
 }
