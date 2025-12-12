@@ -116,35 +116,11 @@ es_site_samples <- suppressMessages(get_samples_per_es_site(raw_data$es)) |>
 #| echo: false
 
 # Lab indicators
-lab_intervals <- lab_timely_indicators(lab_data) |>
+lab_intervals <- lab_timely_indicators(lab_data, end_date = max_lab_date) |>
   sirfunctions:::add_risk_category(ctry_col = "country") |>
   dplyr::select(-Region) |>
   dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "country")
-lab_intervals <- lab_intervals |>
-  dplyr::rename(
-    Region = "whoregion",
-    `Culture/ITD Lab` = "culture.itd.lab",
-    `Sequencing Lab` = "seq.lab",
-    Country = "country",
-    Difference = "comparison",
-    `Difference, %` = "prop_diff",
-    Trend = "trend"
-  )
-lab_workload <- suppressMessages(lab_workload(lab_data)) |>
-  sirfunctions:::add_risk_category(ctry_col = "country") |>
-  dplyr::select(-Region) |>
-  dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "country")
-lab_workload <- lab_workload |>
-  dplyr::rename(
-    `Culture/ITD Lab` = "culture.itd.lab",
-    Country = "country",
-    Month = "month",
-    `Countries Served` = "from_ctry",
-    Difference = "comparison",
-    `Difference (%)` = "comparison_pct",
-    Trend = "trend"
-  )
-
+lab_workload <- suppressMessages(lab_workload(lab_data, end_date = max_lab_date))
 ```
 
 
@@ -513,6 +489,17 @@ datatable(
 #| include: false
 #| echo: false
 
+lab_intervals <- lab_intervals |>
+  dplyr::rename(
+    Region = "whoregion",
+    `Culture/ITD Lab` = "culture.itd.lab",
+    `Sequencing Lab` = "seq.lab",
+    Country = "country",
+    Difference = "comparison",
+    `Difference, %` = "prop_diff",
+    Trend = "trend"
+  )
+
 interval_summary <- lab_intervals |> 
     dplyr::filter(interval == "days.lab.culture") |>
     dplyr::select(-interval)
@@ -816,6 +803,17 @@ datatable(
 ```{r}
 #| include: false
 #| echo: false
+
+lab_workload <- lab_workload |>
+  dplyr::rename(
+    `Culture/ITD Lab` = "culture.itd.lab",
+    Country = "country",
+    Month = "month",
+    `Countries Served` = "from_ctry",
+    Difference = "comparison",
+    `Difference (%)` = "comparison_pct",
+    Trend = "trend"
+  )
 
 last_month <- lab_workload |>
   filter(Month == lubridate::month(lubridate::month(Sys.Date()) - 1, TRUE))
