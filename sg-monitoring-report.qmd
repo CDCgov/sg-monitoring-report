@@ -52,7 +52,7 @@ lab_pending <- get_proportion_lab_pending(raw_data$afp) |>
   dplyr::select(-Region) |>
   dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "country")
 
-afp_wpv_vdpv <- get_wpv_vdpv_timeliness(raw_data$pos) |>
+afp_wpv_vdpv <- get_wpv_vdpv_timeliness(raw_data$pos, temporal_scale = "quarter") |>
   sirfunctions:::add_risk_category(ctry_col = "country") |>
   dplyr::select(-Region) |>
   dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "country")
@@ -158,7 +158,7 @@ generate_afp_tile_plot(afp_cases_reported, prop_60, lab_pending, prop_classified
 
 datatable(
   afp_cases_reported |>
-    rename(
+    dplyr::rename(
       Region = "whoregion",
       Country = "place.admin.0",
       Month = "month"
@@ -253,13 +253,13 @@ datatable(
 
 datatable(
   afp_wpv_vdpv |>
-    rename(
-      Country = "country",
-      Region = "whoregion",
-      Month = "month",
-      Difference = "comparison",
-      Trend = "trend"
-    ),
+    dplyr::rename_with(recode,
+                country = "Country",
+                whoregion = "Region",
+                month = "Month",
+                quarter = "Quarter",
+                comparison = "Difference",
+                trend = "Trend"),
   filter = "top",
   extensions = 'Buttons',
   options = list(
@@ -303,7 +303,7 @@ datatable(
 
 datatable(
   afp_shipment_timeliness |>
-    rename_with(recode,
+    dplyr::rename_with(recode,
       country = "Country",
       whoregion = "Region",
       month = "Month",
@@ -352,7 +352,7 @@ datatable(
 
 datatable(
   prop_inad |>
-    rename(
+    dplyr::rename(
       Country = "ctry",
       Quarter = "quarter",
       Region = "whoregion",
