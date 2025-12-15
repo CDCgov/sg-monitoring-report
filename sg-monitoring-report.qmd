@@ -81,6 +81,10 @@ prop_classified <- get_prop_case_classified(raw_data$afp) |>
   sirfunctions:::add_risk_category(ctry_col = "ctry") |>
   dplyr::select(-Region) |>
   dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "ctry")
+prop_inad <- get_prop_inad_with_contacts(human_specimen, raw_data$afp) |>
+  sirfunctions:::add_risk_category(ctry_col = "ctry") |>
+  dplyr::select(-Region) |>
+  dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "ctry")
 ```
 
 ### Number of AFP cases reported
@@ -275,6 +279,31 @@ datatable(
   )
 )
 ```
+
+### Proportion of inadequates with contact sampling
+```{r}
+#| echo: false
+
+datatable(
+  prop_inad |>
+    rename(
+      Country = "ctry",
+      Quarter = "quarter",
+      Region = "whoregion",
+      `Difference, %` = "comparison",
+      Trend = "trend"
+    ),
+  filter = "top",
+  extensions = 'Buttons',
+  options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'csv', 'excel'),
+    pageLength = 10
+  )
+)
+
+```
+
 :::
 
 ## Environmental Surveillance Indicators
