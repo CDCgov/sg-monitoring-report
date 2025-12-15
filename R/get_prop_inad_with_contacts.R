@@ -13,6 +13,7 @@ get_prop_inad_with_contacts <- function(human_specimen, afp_data, end_date = Sys
   stool_data <- generate_stool_data(afp_data, start_date, end_date)
 
   prop_inad_contacts <- stool_data |>
+    dplyr::filter(whoregion %in% c("AFRO", "EMRO")) |>
     dplyr::mutate(quarter = lubridate::quarter(date)) |>
     dplyr::select(year, quarter, ctry, epid, adequacy.final2) |>
     dplyr::filter(adequacy.final2 == "Inadequate") |>
@@ -38,18 +39,22 @@ get_prop_inad_with_contacts <- function(human_specimen, afp_data, end_date = Sys
     tidyr::pivot_wider(names_from = year, values_from = prop_inad_w_contact_label)
 
   prop_inad_contacts_diff <- prop_inad_contacts |>
-    dplyr::select(year, ctry, quarter, w_contacts) |>
-    tidyr::pivot_wider(names_from = year, values_from = w_contacts)
+    dplyr::select(year, ctry, quarter, prop_inad_w_contact) |>
+    tidyr::pivot_wider(names_from = year, values_from = prop_inad_w_contact)
+
   prop_inad_contacts_diff["comparison"] <- prop_inad_contacts_diff[[4]] - prop_inad_contacts_diff[[3]]
-  prop_inad_contacts_diff["prop_diff"] <- round((prop_inad_contacts_diff["comparison"]) /
-                                                  prop_inad_contacts_diff[, 3]* 100, 0)
+
   prop_inad_contacts_diff <- prop_inad_contacts_diff |>
-    dplyr::mutate(prop_diff = dplyr::if_else(prop_diff == Inf,
-                                             !!dplyr::sym(names(prop_inad_contacts_diff)[4]) * 100,
-                                             prop_diff)) |>
-    dplyr::select(ctry, quarter, comparison, prop_diff)
+    dplyr::select(ctry, quarter, comparison)
 
   final_table <- dplyr::left_join(prop_inad_contacts_label, prop_inad_contacts_diff)
+  final_table <- final_table |>
+    dplyr::mutate(trend = dplyr::case_when(
+      comparison == 0 ~ "Same",
+      comparison > 0 ~ "Increase",
+      comparison < 0 ~ "Decrease",
+      .default = "No data from both years"
+    ))
 
   return(final_table)
 
