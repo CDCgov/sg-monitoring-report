@@ -29,6 +29,8 @@ lapply(list.files("R"), \(fx) source(file.path("R", fx)))
 
 raw_data <- get_all_polio_data(attach.spatial.data = FALSE)
 sirfunctions_io("read", file_loc = get_constant("CLEANED_LAB_DATA"))
+lab_data <- clean_lab_data(lab_data, "2019-01-01", Sys.Date(), afp_data = raw_data$afp)
+human_specimen <- sirfunctions_io("read", file_loc = "POLIS/data/human_specimen.rds")
 max_lab_date <- max(lab_data$CaseDate, na.rm = TRUE)
 max_date_notif <- paste0("Lab data recent as of ", max_lab_date, ".")
 ```
@@ -75,6 +77,10 @@ prop_60 <- get_prop_60_day_follow_up(raw_data$afp, temporal_scale = "semester") 
   dplyr::select(-Region) |>
   dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "ctry")
 prop_classified <- get_prop_case_classified(raw_data$afp) |>
+  sirfunctions:::add_risk_category(ctry_col = "ctry") |>
+  dplyr::select(-Region) |>
+  dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "ctry")
+prop_inad <- get_prop_inad_with_contacts(human_specimen, raw_data$afp) |>
   sirfunctions:::add_risk_category(ctry_col = "ctry") |>
   dplyr::select(-Region) |>
   dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "ctry")
@@ -338,6 +344,30 @@ datatable(
     pageLength = 10
   )
 )
+```
+
+### Proportion of inadequates with contact sampling
+```{r}
+#| echo: false
+
+datatable(
+  prop_inad |>
+    rename(
+      Country = "ctry",
+      Quarter = "quarter",
+      Region = "whoregion",
+      `Difference, %` = "comparison",
+      Trend = "trend"
+    ),
+  filter = "top",
+  extensions = 'Buttons',
+  options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'csv', 'excel'),
+    pageLength = 10
+  )
+)
+
 ```
 :::
 
