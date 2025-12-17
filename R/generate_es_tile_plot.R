@@ -2,12 +2,20 @@ generate_es_tile_plot <- function(es_shipment = NULL,
                                   es_wpv_vdpv = NULL,
                                   es_sites = NULL,
                                   es_site_samples = NULL,
-                                  end_date = NULL) {
+                                  who_region = NULL,
+                                  end_date = Sys.Date()
+                                  ) {
   final_table <- process_es_performance(es_shipment,
                                         es_wpv_vdpv,
                                         es_sites,
                                         es_site_samples,
                                         end_date)
+
+  if (!is.null(who_region)) {
+    final_table <- final_table |>
+      dplyr::filter(whoregion == who_region)
+  }
+
   plot <- generate_performance_tile_plot(final_table, "country", "Country")
 
   return(plot)
