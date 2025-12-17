@@ -109,9 +109,17 @@ process_afp_performance <- function(afp_cases_reported = NULL,
     dplyr::select(place.admin.0 = country, I3)
 
   ## Timeliness of AFP VDPV/WILD detection ----
-  afp_wpv_vdpv_filtered <- afp_wpv_vdpv |>
-    dplyr::filter(month == lubridate::month(lubridate::floor_date(end_date,unit = "month") %m-% months(1),
-                                            label = TRUE)) |>
+  month_or_quarter <- ifelse("quarter" %in% names(afp_wpv_vdpv), "quarter", "month")
+
+  afp_wpv_vdpv_filtered <- afp_wpv_vdpv %>%
+    {
+      if (month_or_quarter == "quarter") {
+        dplyr::filter(., quarter == prev_quarter_to_report)
+      } else {
+        dplyr::filter(., month == lubridate::month(lubridate::floor_date(end_date,unit = "month") %m-% months(1),
+                                                   label = TRUE))
+      }
+    } |>
     dplyr::select(place.admin.0 = country,
                   dplyr::starts_with("2")) |>
     tidyr::pivot_longer(cols = dplyr::starts_with("2"),

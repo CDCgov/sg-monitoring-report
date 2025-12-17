@@ -500,6 +500,7 @@ datatable(
 :::
 
 ## Lab Surveillance Indicators
+`{r} max_date_notif`
 
 ::: panel-tabset
 ### Timeliness of virus isolation results
