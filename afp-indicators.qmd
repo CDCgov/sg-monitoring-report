@@ -1,0 +1,132 @@
+---
+title: "Surveillance Group Monitoring Report"
+author: Mervin Keith Cuadera
+date: today
+date-format: "MMMM D, YYYY"  # e.g., September 24, 2025
+format: 
+  html:
+    page-layout: custom
+    embed-resources: true
+output-file: 
+---
+
+
+```{r}
+#| label: load-packages
+#| include: false
+#| echo: false
+
+library(sirfunctions)
+library(DT)
+library(tidyverse)
+library(plotly)
+library(crosstalk)
+
+source(file.path("R", "get_afp_cases_reported.R"))
+```
+
+```{r}
+#| label: load-data
+#| include: false
+#| echo: false
+
+raw_data <- get_all_polio_data(attach.spatial.data = FALSE)
+```
+
+## AFP Surveillance Indicators
+
+::: panel-tabset
+
+```{r}
+#| label: afp-indicators
+#| include: false
+#| echo: false
+
+afp_cases_reported <- get_afp_cases_reported(raw_data$afp) |>
+  sirfunctions:::add_risk_category(ctry_col = "place.admin.0") |>
+  dplyr::select(-Region) |>
+  dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "place.admin.0")
+```
+
+### Number of AFP cases reported
+```{js}
+#| echo: false
+
+function remove_all_option() {
+    document.getElementById("country-afp-case-report").getElementsByClassName("selectized")[0].selectize.removeOption("");
+}
+function filter_default() {
+    document.getElementById("country-afp-case-report").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
+}
+window.onload = function() {
+filter_default();
+remove_all_option();
+}
+
+```
+
+```{r}
+#| echo: false
+
+# Graph
+shared_afp_cases_reported <- afp_cases_reported |>
+  dplyr::rename(
+      Region = "whoregion",
+      Country = "place.admin.0",
+      Month = "month") |>
+  dplyr::mutate(Month = factor(Month, levels = month.abb, ordered = TRUE)) |>
+  SharedData$new()
+
+filter_select("country-afp-case-report", "Country: ", shared_afp_cases_reported,
+              ~Country, 
+              multiple = FALSE,
+              allLevels = FALSE)
+
+plot_ly(shared_afp_cases_reported, colors = c("steelblue", "lightsteelblue")) |>
+  add_trace(
+    x = ~Month,
+    y = ~`2025`,
+    type = "bar",
+    name = "2025",
+    color = as.factor("2025")
+  ) |>
+  add_trace(
+    x = ~Month,
+    y = ~`2022-2024 Median`,
+    error_y = ~list(array=`2022-2024 MAD` * 2, color = '#000000'),
+    type = "bar",
+    name = "2022-2024 Median",
+    color = as.factor("2022-2024 Median")
+  ) |>
+  config(displayModeBar = FALSE) |>
+  layout(title = list(
+    text = paste0("<b>Monthly AFP Cases Reported</b>",
+                  "<br>","<sup>Error bars represent 2 median absolute deviation (MAD)</sup>"),
+    x = 0,
+    xanchor = "left"),
+    yaxis = list(title = "AFP Cases Reported"),
+    xaxis = list(title = ""),
+    legend = list(orientation = "h",
+                           xanchor = "center", 
+                           x = 0.5,
+                           y = -0.2),
+    margin = list(t = 50)
+         )
+
+datatable(
+  afp_cases_reported |>
+    dplyr::rename(
+      Region = "whoregion",
+      Country = "place.admin.0",
+      Month = "month"
+    ),
+  filter = "top",
+  extensions = 'Buttons',
+  options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'csv', 'excel'),
+    pageLength = 10
+  )
+)
+
+```
