@@ -14,7 +14,7 @@
 #' @examples
 lab_workload <- function(lab_data, end_date = Sys.Date()) {
   start_date <- lubridate::floor_date(end_date, unit = "years")
-  prev_year_end_date <- Sys.Date() - lubridate::years(1)
+  prev_year_end_date <- end_date - lubridate::years(1)
   prev_year_start_date <- lubridate::floor_date(prev_year_end_date, unit = "years")
 
   prev_year_load <- lab_data |>
@@ -44,7 +44,8 @@ lab_workload <- function(lab_data, end_date = Sys.Date()) {
     culture.itd.lab = unique(lab_data$culture.itd.lab),
     year = c(lubridate::year(end_date) - 1, lubridate::year(end_date)),
     month = lubridate::month(seq(1, 12), TRUE)) |>
-    dplyr::filter(month <= lubridate::month(end_date, TRUE))
+    dplyr::filter(month <= lubridate::month(end_date, TRUE)) |>
+    dplyr::distinct()
 
   # Full join
   summary <- dplyr::full_join(complete_table, summary)
