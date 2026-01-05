@@ -30,6 +30,25 @@ lapply(list.files("R"), \(fx) source(file.path("R", fx)))
 raw_data <- get_all_polio_data(attach.spatial.data = FALSE)
 sirfunctions_io("read", file_loc = get_constant("CLEANED_LAB_DATA"))
 lab_data <- clean_lab_data(lab_data, "2019-01-01", Sys.Date(), afp_data = raw_data$afp)
+# Manual clean-up
+lab_data <- lab_data |>
+  mutate(seq.lab = case_when(
+    seq.lab == "CDC-Atlanta" & DateStoolCollected >= as_date("2025-02-01") & culture.itd.lab == "Cameroon" ~ "NICD-South Africa",
+    seq.lab == "CDC-Atlanta" & DateStoolCollected >= as_date("2025-02-01") & culture.itd.lab == "ETHIOPIA/ KEMRI-Kenya" ~ "UVRI-Uganda",
+    seq.lab == "CDC-Atlanta" & DateStoolCollected >= as_date("2025-02-01") & culture.itd.lab %in% c("Ibadan-Nigeria, Maiduguri-Nigeria", "Nigeria") ~ "Ibadan-Nigeria",
+    seq.lab == "CDC-Atlanta" & DateStoolCollected >= as_date("2025-02-01") & culture.itd.lab == "KEMRI-Kenya" ~ "UVRI-Uganda",
+    country == "UGANDA" & DateStoolCollected >= as_date("2025-02-01") ~ "UVRI-Uganda",
+    seq.lab == "CDC-Atlanta" & DateStoolCollected >= as_date("2025-02-01") & culture.itd.lab == "Senegal" ~ "NICD-South Africa",
+    seq.lab == "CDC-Atlanta" & DateStoolCollected >= as_date("2025-02-01") & culture.itd.lab == "Varied (KEMRI-Kenya/ Oman/ Jordan)" ~ "Varied (UVRI/ Oman/ Jordan)",
+    .default = seq.lab
+  )) |>
+  mutate(seq.cat = case_when(
+    DateStoolCollected >= as_date("2025-02-01") & culture.itd.lab %in% c("Ibadan-Nigeria, Maiduguri-Nigeria", "Nigeria") & seq.lab == "Ibadan-Nigeria" ~ "Not shipped for sequencing",
+    country == "UGANDA" & DateStoolCollected >= as_date("2025-02-01") ~ "Not shipped for sequencing",
+    .default = seq.cat
+  )) |>
+  mutate(seq.capacity = if_else(country %in% c("NIGERIA", "UGANDA") & DateStoolCollected >= as_date("2025-02-01"), "yes", seq.capacity))
+
 human_specimen <- sirfunctions_io("read", file_loc = "POLIS/data/human_specimen.rds")
 max_lab_date <- max(lab_data$CaseDate, na.rm = TRUE)
 max_date_notif <- paste0("Lab data recent as of ", max_lab_date, ".")
@@ -143,6 +162,8 @@ lab_workload <- suppressMessages(lab_workload(lab_data, end_date = max_lab_date)
 generate_afp_tile_plot(afp_cases_reported, prop_60, lab_pending, prop_classified,
                        afp_wpv_vdpv, negative_lab_processing, afp_shipment_timeliness,
                        afp_lab_processing, end_date = Sys.Date(), lab_end_date = max_lab_date, who_region = "AFRO")
+
+generate_es_tile_plot(es_shipment, es_wpv_vdpv, es_sites, es_site_samples, end_date = Sys.Date(), who_region = "AFRO")
 
 ```
 :::
