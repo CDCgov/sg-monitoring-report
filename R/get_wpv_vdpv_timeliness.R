@@ -7,6 +7,7 @@
 #' @param pos `tibble` Positives dataset.
 #' @param end_date `str` End date of analysis. Defaults to current date.
 #' @param type `str` Either AFP or ENV.
+#' @param temporal_scale `str` Temporal scale to summarize data. Either 'quarter' or 'month'.
 #'
 #' @returns `tibble` Summary of the timeliness interval
 #' @export
@@ -16,7 +17,7 @@
 #' raw_data <- sirfunctions::get_all_polio_data()
 #' get_wpv_vdpv_timeliness(raw_data$pos)
 #' }
-get_wpv_vdpv_timeliness <- function(pos, end_date = Sys.Date(), type = "AFP") {
+get_wpv_vdpv_timeliness <- function(pos, end_date = Sys.Date(), type = "AFP", temporal_scale = "quarter") {
 
   end_date <- lubridate::as_date(end_date)
   month_end_date <- lubridate::month(end_date, TRUE)
@@ -28,6 +29,7 @@ get_wpv_vdpv_timeliness <- function(pos, end_date = Sys.Date(), type = "AFP") {
   summary <- pos |>
     dplyr::filter(source == type, whoregion %in% c("AFRO", "EMRO")) |>
     dplyr::mutate(month = lubridate::month(dateonset, label = TRUE),
+                  quarter = lubridate::quarter(dateonset),
                   year = lubridate::year(dateonset),
                   days.on.notif.hq = as.numeric(lubridate::as_date(datenotificationtohq) - dateonset)) |>
     dplyr::filter(year >= lubridate::year(end_date) - 1,
@@ -35,16 +37,27 @@ get_wpv_vdpv_timeliness <- function(pos, end_date = Sys.Date(), type = "AFP") {
                   !is.na(days.on.notif.hq),
                   dplyr::between(days.on.notif.hq, 0, 365),
                   stringr::str_detect(measurement, "WILD|VDPV")) |>
-    dplyr::group_by(whoregion, country = place.admin.0, year, month) |>
+    dplyr::group_by(whoregion, country = place.admin.0, year, !!dplyr::sym(temporal_scale)) |>
     dplyr::summarize(median = median(days.on.notif.hq, na.rm = TRUE), .groups = "drop") |>
     dplyr::arrange(year)
 
   # Get for other countries not in the positives file
-  complete_dataset <- tidyr::expand_grid(
-    country = unique(pos$place.admin.0),
-    year = unique(summary$year),
-    month = unique(summary$month)
-  ) |>
+
+  if (temporal_scale == "month") {
+    complete_dataset <- tidyr::expand_grid(
+      country = unique(pos$place.admin.0),
+      year = unique(summary$year),
+      month = unique(summary$month)
+    )
+  } else if (temporal_scale == "quarter") {
+    complete_dataset <- tidyr::expand_grid(
+      country = unique(pos$place.admin.0),
+      year = unique(summary$year),
+      quarter = c(1,2,3,4)
+    )
+  }
+
+  complete_dataset <- complete_dataset |>
     dplyr::left_join(pos |>
                        dplyr::select(country = place.admin.0, whoregion) |>
                        dplyr::distinct())

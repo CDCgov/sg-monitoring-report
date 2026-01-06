@@ -47,7 +47,7 @@ get_es_timeliness <- function(es_data, lab_loc = sirfunctions::get_lab_locs(), e
     dplyr::summarize(median_wpv_vdpv_detection = median(days.col.notif.hq, na.rm = TRUE),
                      median_wpv_vdpv_detection_label = paste0(median_wpv_vdpv_detection, " (n=", dplyr::n(), ")"))
 
-  timeliness_summary_all <- dplyr::full_join(timeliness_summary,
+  timeliness_summary_all <- dplyr::left_join(timeliness_summary,
                                              timeliness_summary_vdpv_wpv)
 
   # Create combinations of year, month, country
@@ -56,13 +56,11 @@ get_es_timeliness <- function(es_data, lab_loc = sirfunctions::get_lab_locs(), e
     month = unique(valid_es_data$month),
     country = unique(valid_es_data$country)) |>
     dplyr::left_join(
-      es_data |>
-        dplyr::distinct(ADM0_NAME, who.region) |>
-        dplyr::rename(country = ADM0_NAME),
-      by = "country")
+      lab_loc |>
+        dplyr::distinct(country, who.region, es.lab.type))
 
   # Ensure that all countries and months are accounted for
-  timeliness_summary_labels <- dplyr::full_join(complete_table,
+  timeliness_summary_labels <- dplyr::left_join(complete_table,
                                                 timeliness_summary_all) |>
     dplyr::select(-median_lab_shipment, -median_wpv_vdpv_detection) |>
     dplyr::rename(median_lab_shipment = "median_lab_shipment_label",
@@ -72,7 +70,7 @@ get_es_timeliness <- function(es_data, lab_loc = sirfunctions::get_lab_locs(), e
                         values_to = "value") |>
     tidyr::pivot_wider(names_from = "year", values_from = "value")
 
-  timeliness_summary_full <- dplyr::full_join(complete_table,
+  timeliness_summary_full <- dplyr::left_join(complete_table,
                                               timeliness_summary_all) |>
     dplyr::select(-median_lab_shipment_label, -median_wpv_vdpv_detection_label) |>
     tidyr::pivot_longer(cols = dplyr::any_of(c("median_lab_shipment", "median_wpv_vdpv_detection")),

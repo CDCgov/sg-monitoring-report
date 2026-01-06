@@ -13,7 +13,9 @@
 #' 2022-2024 medians.
 #'
 #' @param lab_data `tibble` Lab data.
+#' @param type `str` Either 'culture' or 'seq'.
 #' @param end_date `str` End date of the calculations. Defaults to `Sys.Date()`.
+#' @param lab_loc `str` Information on lab locations.
 #'
 #' @returns `tibble` A summary of median timeliness
 #' @export
@@ -23,50 +25,82 @@
 #' lab_data <- readr::read_csv("lab_data.csv")
 #' lab_timely_indicators(lab_data)
 #' }
-lab_timely_indicators <- function(lab_data, end_date = Sys.Date()) {
+lab_timely_indicators <- function(lab_data, type, end_date = Sys.Date(),
+                                  lab_loc = get_lab_locs()) {
+
+  if (!type %in% c("culture", "seq")) {
+    cli::cli_abort("'culture' and 'seq' are the only valid arguments for type.")
+  }
+
   lab_data <- get_lab_intervals(lab_data)
   end_date <- lubridate::as_date(end_date)
   month_day_cutoff <- format(end_date, "%m-%d")
   current_year <- lubridate::year(end_date)
   previous_years <- (current_year - 3):(current_year - 1)
 
-  timely_intervals <- c(
+  culture_intervals <- c(
     "days.lab.culture",
     "days.culture.itd",
-    "days.seq.ship",
-    "days.seq.rec.res"
+    "days.seq.ship"
   )
 
+  seq_intervals <- "days.seq.rec.res"
+
   # Calculate medians for previous 3 years (same period as current year)
-  medians_3_years <- NULL
-  for (i in timely_intervals) {
+  culture_medians_3_years <- NULL
+  for (i in culture_intervals) {
     indicator_medians <- get_year_lab_median(lab_data, i, previous_years, month_day_cutoff)
     # Take median of the yearly medians for each region/country
     summary <- indicator_medians |>
-      dplyr::group_by(whoregion, country) |>
+      dplyr::group_by(culture.itd.lab) |>
       dplyr::summarize(
         interval = i,
         `Median of Last 3 Years` = median(median, na.rm = TRUE),
         .groups = "drop"
       )
-    medians_3_years <- dplyr::bind_rows(medians_3_years, summary)
+    culture_medians_3_years <- dplyr::bind_rows(culture_medians_3_years, summary)
+  }
+
+  seq_medians_3_years <- NULL
+  for (i in seq_intervals) {
+    indicator_medians <- get_year_lab_median(lab_data, i, previous_years, month_day_cutoff)
+    # Take median of the yearly medians for each region/country
+    summary <- indicator_medians |>
+      dplyr::group_by(seq.lab) |>
+      dplyr::summarize(
+        interval = i,
+        `Median of Last 3 Years` = median(median, na.rm = TRUE),
+        .groups = "drop"
+      )
+    seq_medians_3_years <- dplyr::bind_rows(seq_medians_3_years, summary)
   }
 
   # Current year median
-  median_current_year <- NULL
-  for (i in timely_intervals) {
+  culture_median_current_year <- NULL
+  for (i in culture_intervals) {
     indicator_medians <- get_year_lab_median(lab_data, i, current_year, month_day_cutoff)
     summary <- indicator_medians |>
       dplyr::mutate(interval = i) |>
       dplyr::rename(!!paste0(current_year, " Median") := median) |>
-      dplyr::select(whoregion, country, interval, !!paste0(current_year, " Median"))
-    median_current_year <- dplyr::bind_rows(median_current_year, summary)
+      dplyr::select(culture.itd.lab, interval, !!paste0(current_year, " Median"))
+    culture_median_current_year <- dplyr::bind_rows(culture_median_current_year, summary)
   }
 
-  lab_interval_summary <- dplyr::left_join(
-    medians_3_years, median_current_year,
-    by = c("whoregion", "country", "interval")
-  )
+  seq_median_current_year <- NULL
+  for (i in seq_intervals) {
+    indicator_medians <- get_year_lab_median(lab_data, i, current_year, month_day_cutoff)
+    summary <- indicator_medians |>
+      dplyr::mutate(interval = i) |>
+      dplyr::rename(!!paste0(current_year, " Median") := median) |>
+      dplyr::select(seq.lab, interval, !!paste0(current_year, " Median"))
+    seq_median_current_year <- dplyr::bind_rows(seq_median_current_year, summary)
+  }
+
+  if (type == "culture") {
+    lab_interval_summary <- dplyr::left_join(culture_medians_3_years, culture_median_current_year)
+  } else {
+    lab_interval_summary <- dplyr::left_join(seq_medians_3_years, seq_median_current_year)
+  }
 
   lab_interval_summary <- lab_interval_summary |>
     dplyr::mutate(
@@ -78,18 +112,17 @@ lab_timely_indicators <- function(lab_data, end_date = Sys.Date()) {
                                              prop_diff)) |>
     dplyr::arrange(interval, dplyr::desc(comparison))
 
+  if (type == "culture") {
+    complete_table <- tidyr::expand_grid(
+      interval = culture_intervals,
+      culture.itd.lab = unique(lab_loc$culture.itd.lab))
+  } else {
+    complete_table <- tidyr::expand_grid(
+      interval = seq_intervals,
+      seq.lab = unique(lab_loc$seq.lab))
+  }
+
   # Create combinations of region, country, and interval
-  complete_table <- tidyr::expand_grid(
-    country = unique(lab_data$country),
-    interval = c(
-      "days.lab.culture",
-      "days.culture.itd",
-      "days.seq.ship",
-      "days.seq.rec.res"
-    )) |>
-    dplyr::left_join(
-      lab_data |>
-        dplyr::distinct(country, whoregion, culture.itd.lab, seq.lab))
 
   # Full join
   lab_interval_summary <- dplyr::full_join(complete_table, lab_interval_summary)
@@ -148,6 +181,17 @@ get_year_lab_median <- function(lab_data, indicator, years, month_day_cutoff) {
     "days.seq.rec.res" = "t4"
   )
 
+  indicator_type <- dplyr::if_else(indicator %in% c("days.lab.culture",
+                                                    "days.culture.itd",
+                                                    "days.seq.ship"), "itd",
+                                   "seq")
+
+  if (indicator_type == "itd") {
+    grouping_var <- "culture.itd.lab"
+  } else {
+    grouping_var <- "seq.lab"
+  }
+
   # For each year, filter from Jan 1 to month_day_cutoff
   medians <- lapply(years, function(y) {
     start_date <- as.Date(sprintf("%d-01-01", y))
@@ -157,13 +201,15 @@ get_year_lab_median <- function(lab_data, indicator, years, month_day_cutoff) {
         dplyr::between(DateStoolCollected, start_date, end_date),
         !!dplyr::sym(indicator_filter)
       ) |>
-      dplyr::group_by(whoregion, country) |>
+      dplyr::group_by(!!dplyr::sym(grouping_var)) |>
       dplyr::summarize(
         median = median(.data[[indicator]], na.rm = TRUE),
+        from_ctry = paste(unique(country), collapse = ", "),
         .groups = "drop"
       ) |>
       dplyr::mutate(year = y)
   })
+
   medians <- dplyr::bind_rows(medians)
 
   return(medians)
