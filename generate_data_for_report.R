@@ -127,7 +127,7 @@ lapply(who_regions, \(x) {generate_afp_tile_plot(afp_cases_reported, prop_60, la
 
 # ES
 lapply(who_regions, \(x) {
-  generate_es_tile_plot(es_shipment, es_wpv_vdpv, es_sites, es_site_samples, end_date = Sys.Date(), who_region = "AFRO")
+  generate_es_tile_plot(es_shipment, es_wpv_vdpv, es_sites, es_site_samples, end_date = Sys.Date(), who_region = x)
   ggsave(paste0("images/", x, "_es_plot.jpg"), width = 14, height = 8)
   })
 
