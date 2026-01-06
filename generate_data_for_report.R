@@ -110,6 +110,34 @@ save(max_lab_date, max_date_notif, afp_cases_reported, lab_pending,
      es_shipment_timeliness, es_shipment, es_wpv_vdpv, es_sites, es_site_samples,
      culture_lab_intervals, seq_lab_interval, lab_workload,
      file = "data_cache/cache.rda")
+
+if (!dir.exists("images")) {
+  dir.create("images")
+}
+
+# Generate Individual Tile Plots
+who_regions <- c("AFRO", "AMRO", "EMRO", "EURO", "SEARO", "WPRO")
+
+# AFP
+lapply(who_regions, \(x) {generate_afp_tile_plot(afp_cases_reported, prop_60, lab_pending, prop_classified,
+                                                 afp_wpv_vdpv, negative_lab_processing, afp_shipment_timeliness,
+                                                 afp_lab_processing, end_date = Sys.Date(), lab_end_date = max_lab_date, who_region = x)
+  ggsave(paste0("images/", x, "_afp_plot.jpg"), width = 14, height = 8)
+  })
+
+# ES
+lapply(who_regions, \(x) {
+  generate_es_tile_plot(es_shipment, es_wpv_vdpv, es_sites, es_site_samples, end_date = Sys.Date(), who_region = "AFRO")
+  ggsave(paste0("images/", x, "_es_plot.jpg"), width = 14, height = 8)
+  })
+
+# Lab
+generate_culture_lab_tile_plot(culture_lab_intervals, lab_workload, lab_end_date = max_lab_date)
+ggsave(paste0("images/", "culture_lab_plot.jpg"), width = 14, height = 8)
+
+generate_seq_lab_tile_plot(seq_lab_interval)
+ggsave(paste0("images/", "seq_lab_plot.jpg"), width = 14, height = 8)
+
 rm(list = ls())
 gc()
 load("data_cache/cache.rda")
