@@ -21,8 +21,8 @@ get_prop_60_day_follow_up <- function(afp_data, end_date = Sys.Date(), temporal_
 
   temporal_scale <- stringr::str_to_lower(temporal_scale)
 
-  if (!temporal_scale %in% c("month", "quarter")) {
-    cli::cli_abort("Only 'month' and 'quarter' are valid arguments for temporal_scale.")
+  if (!temporal_scale %in% c("month", "quarter", "semester")) {
+    cli::cli_abort("Only 'month', 'quarter', and 'semester' are valid arguments for temporal_scale.")
   }
 
   end_date <- lubridate::as_date(end_date)
@@ -40,6 +40,9 @@ get_prop_60_day_follow_up <- function(afp_data, end_date = Sys.Date(), temporal_
   if (temporal_scale == "quarter") {
     case_60d <- case_60d |>
       dplyr::mutate(quarter = lubridate::quarter(date))
+  } else if (temporal_scale == "semester") {
+    case_60d <- case_60d |>
+      dplyr::mutate(semester = lubridate::semester(date))
   }
 
   summary <- case_60d |>
@@ -61,11 +64,16 @@ get_prop_60_day_follow_up <- function(afp_data, end_date = Sys.Date(), temporal_
       ctry = unique(afp_data$place.admin.0),
       year = c(current_year - 1, current_year),
       month = lubridate::month(seq(1, 12), T))
-  } else {
+  } else if (temporal_scale == "quarter") {
     full_grid <- tidyr::expand_grid(
       ctry = unique(afp_data$place.admin.0),
       year = c(current_year - 1, current_year),
       quarter = c(1, 2, 3, 4))
+  } else if (temporal_scale == "semester") {
+    full_grid <- tidyr::expand_grid(
+      ctry = unique(afp_data$place.admin.0),
+      year = c(current_year - 1, current_year),
+      semester = c(1, 2))
   }
 
   summary <- dplyr::left_join(full_grid, summary)

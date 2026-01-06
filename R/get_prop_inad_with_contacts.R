@@ -1,0 +1,66 @@
+get_prop_inad_with_contacts <- function(human_specimen, afp_data, end_date = Sys.Date()) {
+
+  start_date <- lubridate::floor_date(end_date %m-% lubridate::years(1), unit = "year")
+
+  contacts_hs_regex <- human_specimen |>
+    dplyr::mutate(is_contact = dplyr::if_else(stringr::str_detect(SpecimenEPID,
+                                                                  "-[Cc]+[0-9]+"),
+                                              TRUE, FALSE)) |>
+    dplyr::filter(is_contact)
+
+  case_epids_w_contacts <- unique(contacts_hs_regex$EPID)
+
+  stool_data <- generate_stool_data(afp_data, start_date, end_date)
+
+  prop_inad_contacts <- stool_data |>
+    dplyr::filter(whoregion %in% c("AFRO", "EMRO")) |>
+    dplyr::mutate(quarter = lubridate::quarter(date)) |>
+    dplyr::select(year, quarter, ctry, whoregion, epid, adequacy.final2) |>
+    dplyr::filter(adequacy.final2 == "Inadequate") |>
+    dplyr::mutate(has_contacts = dplyr::if_else(epid %in% case_epids_w_contacts, TRUE, FALSE)) |>
+    dplyr::group_by(year, whoregion, ctry, quarter) |>
+    dplyr::summarize(w_contacts = sum(has_contacts, na.rm = TRUE),
+                     n = dplyr::n()) |>
+    dplyr::mutate(prop_inad_w_contact = round(w_contacts / n * 100))
+
+  # Generate the full table
+  full_table <- tidyr::expand_grid(
+    year = c(year(end_date) - 1, year(end_date)),
+    ctry = unique(afp_data |>
+                    dplyr::filter(whoregion %in% c("AFRO", "EMRO")) |>
+                    dplyr::pull(place.admin.0)),
+    quarter = 1:4
+  ) |>
+    dplyr::mutate(whoregion = sirfunctions::get_region(ctry)) |>
+    dplyr::mutate(whoregion = dplyr::if_else(ctry == "SAO TOME AND PRINCIPE",
+                                             "AFRO", whoregion))
+
+  prop_inad_contacts <- dplyr::left_join(full_table, prop_inad_contacts) |>
+    tidyr::replace_na(list(w_contacts = 0, n = 0))
+
+  prop_inad_contacts_label <- prop_inad_contacts |>
+    dplyr::mutate(prop_inad_w_contact_label = paste0(prop_inad_w_contact, " (", w_contacts, "/", n, ")")) |>
+    dplyr::select(year, whoregion, ctry, quarter, prop_inad_w_contact_label) |>
+    tidyr::pivot_wider(names_from = year, values_from = prop_inad_w_contact_label)
+
+  prop_inad_contacts_diff <- prop_inad_contacts |>
+    dplyr::select(year, ctry, quarter, prop_inad_w_contact) |>
+    tidyr::pivot_wider(names_from = year, values_from = prop_inad_w_contact)
+
+  prop_inad_contacts_diff["comparison"] <- prop_inad_contacts_diff[[4]] - prop_inad_contacts_diff[[3]]
+
+  prop_inad_contacts_diff <- prop_inad_contacts_diff |>
+    dplyr::select(ctry, quarter, comparison)
+
+  final_table <- dplyr::left_join(prop_inad_contacts_label, prop_inad_contacts_diff)
+  final_table <- final_table |>
+    dplyr::mutate(trend = dplyr::case_when(
+      comparison == 0 ~ "Same",
+      comparison > 0 ~ "Increase",
+      comparison < 0 ~ "Decrease",
+      .default = "No data from both years"
+    ))
+
+  return(final_table)
+
+}
