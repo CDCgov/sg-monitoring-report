@@ -39,32 +39,90 @@ if (use_cache) {
 tile_plots <- list.files("R/", "_tile_plot.R")
 lapply(tile_plots, \(x) source(file.path("R", x)))
 
-
 ```
 
-## System-Level Performance
 
-### AFP Indicators
 ::: panel-tabset
 
-#### AFP Indicators
-```{r, fig.width=14, fig.height=8}
-#| echo: false
-#| message: false
-#| warning: false
+## Overview
 
-generate_afp_tile_plot(afp_cases_reported, prop_60, lab_pending, prop_classified,
-                       afp_wpv_vdpv, negative_lab_processing, afp_shipment_timeliness,
-                       afp_lab_processing, end_date = Sys.Date(), lab_end_date = max_lab_date, who_region = "AFRO")
+## Tile Plots
 
-generate_es_tile_plot(es_shipment, es_wpv_vdpv, es_sites, es_site_samples, end_date = Sys.Date(), who_region = "AFRO")
+```{=html}
+<select id="imageSelector" onchange="showImages();">
+  <option value="def">Select a region</option>
+  <option value="AFRO">AFRO</option>
+  <option value="AMRO">AMRO</option>
+  <option value="EMRO">EMRO</option>
+  <option value="EURO">EURO</option>
+  <option value="SEARO">SEARO</option>
+  <option value="WPRO">WPRO</option>
+</select>
 
+<script>
+  function showImages() {
+    var selector = document.getElementById("imageSelector");
+    var imageES = document.getElementById("selectedImageES");
+    var imageAFP = document.getElementById("selectedImageAFP");
+    var selectedValue = selector.value;
+    
+    var base = "images/";
+
+    // Don't try to load if the default placeholder is selected
+    if (selectedValue && selectedValue !== "def") {
+      imageES.src  = base + selectedValue + "_es_plot.jpg";
+      imageAFP.src = base + selectedValue + "_afp_plot.jpg";
+    } else {
+      imageES.src  = "";
+      imageAFP.src = "";
+    }
+
+    imageES.style.display  = imageES.src  ? "block" : "none";
+    imageAFP.style.display = imageAFP.src ? "block" : "none";
+  }
+</script>
 ```
+
+::: panel-tabset
+
+### ES Indicators
+```{=html}
+<div id="imageContainerES" style="margin-top: 20px;">
+  <img id="selectedImageES" src="" alt="ES Tile Plot" style="display:none; width: 14in; height: 8in;"/>
+</div>
+```
+
+### AFP Indicators
+
+```{=html}
+<div id="imageContainerAFP" style="margin-top: 20px;">
+  <img id="selectedImageAFP" src="" alt="AFP Tile Plot" style="display:none; width: 14in; height: 8in;"/>
+</div>
+```
+
+### Lab Indicators
+
+::: {layout-ncol=2}
+![](images/culture_lab_plot.jpg)
+
+![](images/seq_lab_plot.jpg)
 :::
+
+:::
+
+## Graphs
+In construction...
+
+::: panel-tabset
+
+:::
+
+## Detailed Tables
+:::panel-tabset
 
 ## AFP Surveillance Indicators
 
-::: panel-tabset
+::: panel-sidebar
 
 ### Number of AFP cases reported
 
@@ -288,7 +346,7 @@ datatable(
 
 ## Environmental Surveillance Indicators
 
-::: panel-tabset
+::: panel-sidebar
 ### Timeliness of ES sample shipment
 
 ```{r}
@@ -417,7 +475,7 @@ datatable(
 ## Lab Surveillance Indicators
 `{r} max_date_notif`
 
-::: panel-tabset
+::: panel-sidebar
 ### Timeliness of virus isolation results
 
 ```{r}
@@ -855,4 +913,6 @@ datatable(
   )
 )
 ```
+:::
+
 :::
