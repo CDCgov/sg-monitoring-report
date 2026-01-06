@@ -41,12 +41,37 @@ lapply(tile_plots, \(x) source(file.path("R", x)))
 
 ```
 
-
 ::: panel-tabset
 
 ## Overview
 
+The objective of the monthly SG Monitoring Report is as an early indicator warning
+for potential disruption in the surveillance system. Indicators are at the country level. 
+It is divided into three sections:
+
+**Tile Plots**
+
+The Tile Plots provide a system-wide view for various AFP, ES, and lab indicators
+across a region. It is a way to quickly sift through countries that are below the 
+surveillance targets.
+
+**Graphs**
+
+The Graphs tab provides a country-level view for various AFP, ES, and lab indicators. 
+It is meant to show trends in indicator performance across a temporal scale.
+
+**Detailed Tables**
+
+The Detailed Tables tab presents the data sources used to create the figures in this report.
+They are summary table based on available data obtained from POLIS.
+
+**Notes on Lab Data**
+
+Lab data is updated quarterly, hence end dates may not be the same as the end date used in the report.
+
 ## Tile Plots
+
+*Filter only applies to AFP and ES tile plots*
 
 ```{=html}
 <select id="imageSelector" onchange="showImages();">
@@ -80,23 +105,24 @@ lapply(tile_plots, \(x) source(file.path("R", x)))
     imageES.style.display  = imageES.src  ? "block" : "none";
     imageAFP.style.display = imageAFP.src ? "block" : "none";
   }
+  
 </script>
 ```
 
 ::: panel-tabset
-
-### ES Indicators
-```{=html}
-<div id="imageContainerES" style="margin-top: 20px;">
-  <img id="selectedImageES" src="" alt="ES Tile Plot" style="display:none; width: 14in; height: 8in;"/>
-</div>
-```
 
 ### AFP Indicators
 
 ```{=html}
 <div id="imageContainerAFP" style="margin-top: 20px;">
   <img id="selectedImageAFP" src="" alt="AFP Tile Plot" style="display:none; width: 14in; height: 8in;"/>
+</div>
+```
+
+### ES Indicators
+```{=html}
+<div id="imageContainerES" style="margin-top: 20px;">
+  <img id="selectedImageES" src="" alt="ES Tile Plot" style="display:none; width: 14in; height: 8in;"/>
 </div>
 ```
 
