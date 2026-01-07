@@ -83,7 +83,7 @@ process_afp_performance <- function(afp_cases_reported = NULL,
 
   ## Proportion of 60-days follow-up done ----
   prop_60_filtered <- prop_60 |>
-    dplyr::filter(semester == prev_sem_to_report) |>
+    dplyr::filter(quarter == prev_quarter_to_report) |>
     dplyr::select(place.admin.0 = ctry, comparison) |>
     dplyr::mutate(I2 = dplyr::case_when(
       is.na(comparison) ~ "To Be Determined",
