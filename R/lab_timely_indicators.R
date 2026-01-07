@@ -97,9 +97,9 @@ lab_timely_indicators <- function(lab_data, type, end_date = Sys.Date(),
   }
 
   if (type == "culture") {
-    lab_interval_summary <- dplyr::left_join(culture_medians_3_years, culture_median_current_year)
+    lab_interval_summary <- dplyr::full_join(culture_medians_3_years, culture_median_current_year)
   } else {
-    lab_interval_summary <- dplyr::left_join(seq_medians_3_years, seq_median_current_year)
+    lab_interval_summary <- dplyr::full_join(seq_medians_3_years, seq_median_current_year)
   }
 
   lab_interval_summary <- lab_interval_summary |>
