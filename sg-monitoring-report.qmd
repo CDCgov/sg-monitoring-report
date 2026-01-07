@@ -18,7 +18,7 @@ library(sirfunctions)
 library(DT)
 library(tidyverse)
 
-use_cache <- TRUE # Change if creating report using previous run or new run
+use_cache <- FALSE # Change if creating report using previous run or new run
 end_date <- "2025-12-31" # Change as needed. Only works for new runs
 
 if (use_cache) {
@@ -474,7 +474,6 @@ datatable(
 #| include: false
 #| echo: false
 
-
 failing_sites <- es_site_samples |>
   dplyr::filter(stringr::str_detect(failing_performance, "Yes \\(")) |>
   dplyr::group_by(ADM0_NAME) |>
@@ -489,11 +488,11 @@ failing_active_sites <- es_site_samples |>
   dplyr::arrange(dplyr::desc(ADM0_NAME))
 
 es_failure_summary <- paste0(
-  "There are ", nrow(failing_sites), " countries with failing sites, ",
+  "There are ", nrow(failing_sites), " countries with sites below target, ",
   "with a total of ", sum(failing_sites$n, na.rm = TRUE), " sites.",
   " Failing sites are those who have been open for at least 12 months", 
   " with no collections in the last two months or",
-  " have less than 10 samples in the past rolling 12-month period. Of the failing sites, ",
+  " have less than 10 samples in the past rolling 12-month period. Of the sites below target, ",
   sum(failing_active_sites$n, na.rm = TRUE),
   " are considered active sites (sites with at least 10 collections in the past rolling 12-month period), ",
   "with no EV detection in the past two months."
@@ -514,7 +513,7 @@ es_site_samples <- es_site_samples |>
     `Days Since Last Detection` = "days_since_last_det",
     `Detection In Two Months` = "detection_two_mo",
     `Is Active Site` = "active_site",
-    `Failing Performance` = "failing_performance"
+    `Below Target Performance` = "failing_performance"
   )
 
 ```
