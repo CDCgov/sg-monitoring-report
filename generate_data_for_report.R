@@ -62,7 +62,7 @@ afp_lab_processing <- get_afp_lab_processing_timeliness(lab_data, max_lab_date) 
   dplyr::select(-Region) |>
   dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "country")
 
-prop_60 <- get_prop_60_day_follow_up(raw_data$afp, end_date, temporal_scale = "semester") |>
+prop_60 <- get_prop_60_day_follow_up(raw_data$afp, end_date, temporal_scale = "quarter") |>
   sirfunctions:::add_risk_category(ctry_col = "ctry") |>
   dplyr::select(-Region) |>
   dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "ctry")
