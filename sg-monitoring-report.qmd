@@ -18,7 +18,7 @@ library(sirfunctions)
 library(DT)
 library(tidyverse)
 
-use_cache <- FALSE # Change if creating report using previous run or new run
+use_cache <- TRUE # Change if creating report using previous run or new run
 end_date <- "2025-12-31" # Change as needed. Only works for new runs
 
 if (use_cache) {
@@ -44,6 +44,7 @@ lapply(tile_plots, \(x) source(file.path("R", x)))
 ::: panel-tabset
 
 ## Overview
+End date used for the report is 2025-12-31.
 
 The objective of the monthly SG Monitoring Report is as an early indicator warning
 for potential disruption in the surveillance system. Indicators are at the country level. 
