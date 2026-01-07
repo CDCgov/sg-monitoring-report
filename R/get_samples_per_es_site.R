@@ -50,7 +50,16 @@ get_samples_per_es_site <- function(es_data, end_date = Sys.Date()) {
                                           site_age >= 12 &
                                           site.status != "CLOSED", "Yes", "No"),
                   site_age = round(site_age)) |>
-    dplyr::select(-sampling_interval)
+    dplyr::select(-sampling_interval) |>
+    dplyr::mutate(failing_performance = dplyr::case_when(
+      n_samples_12_mo < 10 & collection_two_mo == "No" & site_age >= 12 ~ "Yes (No collections two months, <10 samples in rolling 12-month period)",
+      collection_two_mo == "No" & site_age >= 12 ~ "Yes (No collections from last two months)",
+      n_samples_12_mo < 10 & site_age >= 12 ~ "Yes (<10 samples collected in 12-month rolling period)",
+      collection_two_mo == "Yes" & n_samples_12_mo >= 10 & site_age >= 12 ~ "No",
+      site_age < 12 ~ "Unable to assess, (Site < 12 months)",
+      .default = "Unable to assess"
+      )
+    )
 
   return(summary)
 

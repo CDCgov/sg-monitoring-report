@@ -1,5 +1,5 @@
 ---
-title: "Surveillance Group Monitoring Report"
+title: "Surveillance Group Monitoring Report (DRAFT)"
 author: Mervin Keith Cuadera
 date: today
 date-format: "MMMM D, YYYY"  # e.g., September 24, 2025
@@ -44,6 +44,7 @@ lapply(tile_plots, \(x) source(file.path("R", x)))
 ::: panel-tabset
 
 ## Overview
+End date used for the report is 2025-12-31.
 
 The objective of the monthly SG Monitoring Report is as an early indicator warning
 for potential disruption in the surveillance system. Indicators are at the country level. 
@@ -322,6 +323,8 @@ datatable(
 ```
 
 ### Timeliness of lab processing of AFP samples
+`r max_date_notif`
+
 ```{r}
 #| echo: false
 
@@ -437,6 +440,7 @@ datatable(
 
 ```{r}
 #| label: es-sites
+#| include: false
 #| echo: false
 
 es_sites <- es_sites |>
@@ -446,6 +450,11 @@ es_sites <- es_sites |>
     `Difference, %` = "prop_diff",
     Trend = "trend"
   )
+```
+
+```{r}
+#| include: true
+#| echo: false
 
 datatable(
   es_sites,
@@ -459,13 +468,36 @@ datatable(
 )
 
 ```
-
 ### Number of samples per sites
 
 ```{r}
 #| label: es-site-samples
-#| include: true
+#| include: false
 #| echo: false
+
+failing_sites <- es_site_samples |>
+  dplyr::filter(stringr::str_detect(failing_performance, "Yes \\(")) |>
+  dplyr::group_by(ADM0_NAME) |>
+  dplyr::summarize(n = dplyr::n()) |>
+  dplyr::arrange(dplyr::desc(ADM0_NAME))
+
+failing_active_sites <- es_site_samples |>
+  dplyr::filter(stringr::str_detect(failing_performance, "Yes \\("),
+                active_site == "Yes") |>
+  dplyr::group_by(ADM0_NAME) |>
+  dplyr::summarize(n = dplyr::n()) |>
+  dplyr::arrange(dplyr::desc(ADM0_NAME))
+
+es_failure_summary <- paste0(
+  "There are ", nrow(failing_sites), " countries with sites below target, ",
+  "with a total of ", sum(failing_sites$n, na.rm = TRUE), " sites.",
+  " Failing sites are those who have been open for at least 12 months", 
+  " with no collections in the last two months or",
+  " have less than 10 samples in the past rolling 12-month period. Of the sites below target, ",
+  sum(failing_active_sites$n, na.rm = TRUE),
+  " are considered active sites (sites with at least 10 collections in the past rolling 12-month period), ",
+  "with no EV detection in the past two months."
+)
 
 es_site_samples <- es_site_samples |>
   dplyr::rename(
@@ -481,9 +513,15 @@ es_site_samples <- es_site_samples |>
     `Last Detection` = "last_detection",
     `Days Since Last Detection` = "days_since_last_det",
     `Detection In Two Months` = "detection_two_mo",
-    `Is Active Site` = "active_site"
+    `Is Active Site` = "active_site",
+    `Below Target Performance` = "failing_performance"
   )
 
+```
+`r es_failure_summary`
+```{r}
+#| include: true
+#| echo: false
 datatable(
   es_site_samples,
   filter = "top",
@@ -496,6 +534,7 @@ datatable(
 )
 
 ```
+
 :::
 
 ## Lab Surveillance Indicators
@@ -915,7 +954,8 @@ overall <- paste0("Overall, ",
 
 #### Summary
 
-**For the previous month** 
+**For the previous month from the latest date available in the lab dataset** 
+*`r max_date_notif`*
 
 `r final_summary_top` 
 
