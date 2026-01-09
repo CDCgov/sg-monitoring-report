@@ -37,7 +37,7 @@ afp_cases_reported <- get_afp_cases_reported(raw_data$afp, end_date) |>
   dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "place.admin.0")
 
 lab_pending <- get_proportion_lab_pending(raw_data$afp, end_date) |>
-  dplyr::filter(year <= lubridate::year(Sys.Date())) |>
+  dplyr::filter(year <= lubridate::year(end_date)) |>
   sirfunctions:::add_risk_category(ctry_col = "country") |>
   dplyr::select(-Region) |>
   dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "country")
