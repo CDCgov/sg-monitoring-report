@@ -18,7 +18,7 @@
 get_proportion_lab_pending <- function(afp_data, end_date = Sys.Date()) {
 
   summary <- afp_data |>
-    dplyr::filter(stooltolabdate >= lubridate::floor_date(end_date - months(3), unit = "months")) |>
+    dplyr::filter(stooltolabdate >= lubridate::floor_date(end_date %m-% months(3), unit = "months")) |>
     dplyr::mutate(month = lubridate::month(stooltolabdate, label = TRUE),
                   year = lubridate::year(stooltolabdate)) |>
     dplyr::filter(year == lubridate::year(end_date)) |>
@@ -29,7 +29,7 @@ get_proportion_lab_pending <- function(afp_data, end_date = Sys.Date()) {
                      .groups = "drop") |>
     dplyr::select(-prop_pending_samples)
 
-  included_months <- lubridate::month(lubridate::floor_date(end_date - months(3), unit = "months")):
+  included_months <- lubridate::month(lubridate::floor_date(end_date %m-% months(3), unit = "months")):
     lubridate::month(lubridate::floor_date(end_date, unit = "months"))
   included_months <- month.abb[included_months]
 
