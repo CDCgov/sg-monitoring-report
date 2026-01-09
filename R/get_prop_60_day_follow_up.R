@@ -21,8 +21,8 @@ get_prop_60_day_follow_up <- function(afp_data, end_date = Sys.Date(), temporal_
 
   temporal_scale <- stringr::str_to_lower(temporal_scale)
 
-  if (!temporal_scale %in% c("month", "quarter", "semester")) {
-    cli::cli_abort("Only 'month', 'quarter', and 'semester' are valid arguments for temporal_scale.")
+  if (!temporal_scale %in% c("quarter", "semester")) {
+    cli::cli_abort("Only 'quarter' and 'semester' are valid arguments for temporal_scale.")
   }
 
   end_date <- lubridate::as_date(end_date)
@@ -48,7 +48,6 @@ get_prop_60_day_follow_up <- function(afp_data, end_date = Sys.Date(), temporal_
   summary <- case_60d |>
     dplyr::mutate(month = lubridate::month(date, TRUE)) |>
     dplyr::filter(year >= lubridate::year(end_date) - 1,
-                  month < current_month,
                   got60day %in% c(0, 1),
                   adequacy.final2 == "Inadequate") |>
     dplyr::group_by(dplyr::across(dplyr::all_of(c("year", "ctry", temporal_scale)))) |>
