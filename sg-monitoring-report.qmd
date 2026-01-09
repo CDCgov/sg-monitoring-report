@@ -135,9 +135,24 @@ Lab data is updated quarterly, hence end dates may not be the same as the end da
 :::
 
 ## Graphs
-In construction...
 
 ::: panel-tabset
+
+## AFP Surveillance Indicators
+
+::: panel-tabset
+
+### Number of AFP cases reported
+
+### Proportion of 60 days follow-up done
+
+### Proportion of lab pending
+
+### Proportion of cases classified
+
+### Timeliness of detection for WPV/VDPV 
+
+:::
 
 :::
 
