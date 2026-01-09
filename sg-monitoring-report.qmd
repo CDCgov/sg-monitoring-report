@@ -17,6 +17,8 @@ output-file:
 library(sirfunctions)
 library(DT)
 library(tidyverse)
+library(plotly)
+library(crosstalk)
 
 use_cache <- TRUE # Change if creating report using previous run or new run
 end_date <- "2025-12-31" # Change as needed. Only works for new runs
@@ -140,17 +142,177 @@ Lab data is updated quarterly, hence end dates may not be the same as the end da
 
 ## AFP Surveillance Indicators
 
+```{js}
+#| echo: false
+
+function remove_all_option() {
+    document.getElementById("country-afp-case-report").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("country-afp-lab-pending").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("country-afp-wpv-vdpv").getElementsByClassName("selectized")[0].selectize.removeOption("");
+}
+function filter_default() {
+    document.getElementById("country-afp-case-report").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
+        document.getElementById("country-afp-lab-pending").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
+        document.getElementById("country-afp-wpv-vdpv").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
+}
+window.onload = function() {
+filter_default();
+remove_all_option();
+}
+
+```
+
 ::: panel-tabset
 
 ### Number of AFP cases reported
+
+```{r}
+#| echo: false
+#| warning: false
+
+# Graph
+shared_afp_cases_reported <- afp_cases_reported |>
+  dplyr::rename(
+      Region = "whoregion",
+      Country = "place.admin.0",
+      Month = "month") |>
+  dplyr::mutate(Month = factor(Month, levels = month.abb, ordered = TRUE)) |>
+  SharedData$new()
+
+filter_select("country-afp-case-report", "Country: ", shared_afp_cases_reported,
+              ~Country, 
+              multiple = FALSE,
+              allLevels = FALSE)
+
+plot_ly(shared_afp_cases_reported, colors = c("lightsteelblue", "steelblue")) |>
+    add_trace(
+    x = ~Month,
+    y = ~`2022-2024 Median`,
+    error_y = ~list(array=`2022-2024 MAD` * 2, color = '#000000'),
+    type = "bar",
+    name = "2022-2024 Median",
+    color = as.factor("2022-2024 Median")
+  ) |>
+  add_trace(
+    x = ~Month,
+    y = ~`2025`,
+    type = "bar",
+    name = "2025",
+    color = as.factor("2025")
+  ) |>
+  config(displayModeBar = FALSE) |>
+  layout(title = list(
+    text = paste0("<b>Monthly AFP Cases Reported</b>",
+                  "<br>","<sup>Error bars represent 2 median absolute deviation (MAD)</sup>"),
+    x = 0,
+    xanchor = "left"),
+    yaxis = list(title = "AFP Cases Reported"),
+    xaxis = list(title = ""),
+    legend = list(orientation = "h",
+                           xanchor = "center", 
+                           x = 0.5,
+                           y = -0.2),
+    margin = list(t = 50)
+         )
+```
 
 ### Proportion of 60 days follow-up done
 
 ### Proportion of lab pending
 
+Shows the proportion of lab samples not yet received in the culturing lab, with pending classification.
+
+```{r}
+#| echo: false
+#| warning: false
+
+lab_pending_with_prop <- lab_pending |>
+  dplyr::mutate(prop = as.numeric(stringr::str_extract(prop_label, "[0-9]+")))
+
+shared_lab_pending <- lab_pending_with_prop |>
+  dplyr::rename(
+      Region = "whoregion",
+      Country = "country",
+      Month = "month") |>
+  dplyr::mutate(Month = factor(Month, levels = month.abb, ordered = TRUE)) |>
+  SharedData$new()
+
+filter_select("country-afp-lab-pending", "Country: ", shared_lab_pending,
+              ~Country, 
+              multiple = FALSE,
+              allLevels = FALSE)
+
+plot_ly(shared_lab_pending, colors = c("steelblue")) |>
+  add_trace(
+    x = ~Month,
+    y = ~prop,
+    text = ~prop_label,
+    textposition = 'outside',
+    type = "bar",
+    name = "Pending Samples",
+    color = as.factor("Pending Samples")
+  ) |>
+  config(displayModeBar = FALSE) |>
+  layout(title = list(
+    text = paste0("<b>Pending AFP Lab Samples from the Last Four Months</b>"),
+    x = 0,
+    xanchor = "left"),
+    yaxis = list(title = "% Pending Samples"),
+    xaxis = list(title = ""),
+    legend = list(orientation = "h",
+                           xanchor = "center", 
+                           x = 0.5,
+                           y = -0.2),
+    margin = list(t = 50)
+         )
+```
+
 ### Proportion of cases classified
 
 ### Timeliness of detection for WPV/VDPV 
+
+```{r}
+#| echo: false
+#| warning: false
+
+# Graph
+shared_afp_wpv_vdpv <- afp_wpv_vdpv |>
+  SharedData$new()
+
+filter_select("country-afp-wpv-vdpv", "Country: ", shared_afp_wpv_vdpv,
+              ~country, 
+              multiple = FALSE,
+              allLevels = FALSE)
+
+plot_ly(shared_afp_wpv_vdpv, colors = c("lightsteelblue", "steelblue")) |>
+    add_trace(
+    x = ~month,
+    y = ~`2024`,
+    type = "bar",
+    name = "2024",
+    color = as.factor("2024")
+  ) |>
+  add_trace(
+    x = ~month,
+    y = ~`2025`,
+    type = "bar",
+    name = "2025",
+    color = as.factor("2025")
+  ) |>
+  config(displayModeBar = FALSE) |>
+  layout(title = list(
+    text = paste0("<b>Timeliness of Detection for AFP WPV/VDPV Samples</b>"),
+    x = 0,
+    xanchor = "left"),
+    yaxis = list(title = "Median Days"),
+    xaxis = list(title = ""),
+    legend = list(orientation = "h",
+                           xanchor = "center", 
+                           x = 0.5,
+                           y = -0.2),
+    margin = list(t = 50)
+         )
+```
 
 :::
 
