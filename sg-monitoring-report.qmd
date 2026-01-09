@@ -36,9 +36,6 @@ if (use_cache) {
   source("generate_data_for_report.R")
 }
 
-tile_plots <- list.files("R/", "_tile_plot.R")
-lapply(tile_plots, \(x) source(file.path("R", x)))
-
 ```
 
 ::: panel-tabset
