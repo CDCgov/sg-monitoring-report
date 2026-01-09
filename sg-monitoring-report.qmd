@@ -1,5 +1,5 @@
 ---
-title: "Surveillance Group Monitoring Report"
+title: "Surveillance Group Monitoring Report (DRAFT)"
 author: Mervin Keith Cuadera
 date: today
 date-format: "MMMM D, YYYY"  # e.g., September 24, 2025
@@ -11,89 +11,154 @@ output-file:
 ---
 
 ```{r}
-#| label: load-packages
-#| include: false
 #| echo: false
+#| include: false
 
 library(sirfunctions)
 library(DT)
 library(tidyverse)
 
-lapply(list.files("R"), \(fx) source(file.path("R", fx)))
+use_cache <- TRUE # Change if creating report using previous run or new run
+end_date <- "2025-12-31" # Change as needed. Only works for new runs
+
+if (use_cache) {
+  if (!dir.exists("data_cache")) {
+    dir.create("data_cache")
+  }
+  
+  if (length(list.files("data_cache")) == 0) {
+    cli::cli_alert_warning("No data found in cache. Performing a new run.")
+    source("generate_data_for_report.R")
+  } else {
+    load("data_cache/cache.rda")
+  }
+} else {
+  source("generate_data_for_report.R")
+}
+
+tile_plots <- list.files("R/", "_tile_plot.R")
+lapply(tile_plots, \(x) source(file.path("R", x)))
+
 ```
-
-```{r}
-#| label: load-data
-#| include: false
-#| echo: false
-
-raw_data <- get_all_polio_data(attach.spatial.data = FALSE)
-sirfunctions_io("read", file_loc = get_constant("CLEANED_LAB_DATA"))
-lab_data <- clean_lab_data(lab_data, "2019-01-01", Sys.Date(), afp_data = raw_data$afp)
-human_specimen <- sirfunctions_io("read", file_loc = "POLIS/data/human_specimen.rds")
-```
-
-## AFP Surveillance Indicators
 
 ::: panel-tabset
 
-```{r}
-#| label: afp-indicators
-#| include: false
-#| echo: false
+## Overview
+End date used for the report is 2025-12-31.
 
-afp_cases_reported <- get_afp_cases_reported(raw_data$afp) |>
-  sirfunctions:::add_risk_category(ctry_col = "place.admin.0") |>
-  dplyr::select(-Region) |>
-  dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "place.admin.0")
+The objective of the monthly SG Monitoring Report is as an early indicator warning
+for potential disruption in the surveillance system. Indicators are at the country level. 
+It is divided into three sections:
 
-lab_pending <- get_proportion_lab_pending(raw_data$afp) |>
-  dplyr::filter(year <= lubridate::year(Sys.Date())) |>
-  sirfunctions:::add_risk_category(ctry_col = "country") |>
-  dplyr::select(-Region) |>
-  dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "country")
+**Tile Plots**
 
-afp_wpv_vdpv <- get_wpv_vdpv_timeliness(raw_data$pos) |>
-  sirfunctions:::add_risk_category(ctry_col = "country") |>
-  dplyr::select(-Region) |>
-  dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "country")
+The Tile Plots provide a system-wide view for various AFP, ES, and lab indicators
+across a region. It is a way to quickly sift through countries that are below the 
+surveillance targets.
 
-negative_lab_processing <- get_negative_lab_processing_timeliness(lab_data) |>
-  sirfunctions:::add_risk_category(ctry_col = "country") |>
-  dplyr::select(-Region) |>
-  dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "country")
+**Graphs**
 
-afp_shipment_timeliness <- get_stool_shipment_timeliness(lab_data) |>
-  sirfunctions:::add_risk_category(ctry_col = "country") |>
-  dplyr::select(-Region) |>
-  dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "country")
+The Graphs tab provides a country-level view for various AFP, ES, and lab indicators. 
+It is meant to show trends in indicator performance across a temporal scale.
 
-afp_lab_processing <- get_afp_lab_processing_timeliness(lab_data) |>
-  sirfunctions:::add_risk_category(ctry_col = "country") |>
-  dplyr::select(-Region) |>
-  dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "country")
+**Detailed Tables**
 
-prop_60 <- get_prop_60_day_follow_up(raw_data$afp) |>
-  sirfunctions:::add_risk_category(ctry_col = "ctry") |>
-  dplyr::select(-Region) |>
-  dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "ctry")
-prop_classified <- get_prop_case_classified(raw_data$afp) |>
-  sirfunctions:::add_risk_category(ctry_col = "ctry") |>
-  dplyr::select(-Region) |>
-  dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "ctry")
-prop_inad <- get_prop_inad_with_contacts(human_specimen, raw_data$afp) |>
-  sirfunctions:::add_risk_category(ctry_col = "ctry") |>
-  dplyr::select(-Region) |>
-  dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "ctry")
+The Detailed Tables tab presents the data sources used to create the figures in this report.
+They are summary table based on available data obtained from POLIS.
+
+**Notes on Lab Data**
+
+Lab data is updated quarterly, hence end dates may not be the same as the end date used in the report.
+
+## Tile Plots
+
+*Filter only applies to AFP and ES tile plots*
+
+```{=html}
+<select id="imageSelector" onchange="showImages();">
+  <option value="def">Select a region</option>
+  <option value="AFRO">AFRO</option>
+  <option value="AMRO">AMRO</option>
+  <option value="EMRO">EMRO</option>
+  <option value="EURO">EURO</option>
+  <option value="SEARO">SEARO</option>
+  <option value="WPRO">WPRO</option>
+</select>
+
+<script>
+  function showImages() {
+    var selector = document.getElementById("imageSelector");
+    var imageES = document.getElementById("selectedImageES");
+    var imageAFP = document.getElementById("selectedImageAFP");
+    var selectedValue = selector.value;
+    
+    var base = "images/";
+
+    // Don't try to load if the default placeholder is selected
+    if (selectedValue && selectedValue !== "def") {
+      imageES.src  = base + selectedValue + "_es_plot.jpg";
+      imageAFP.src = base + selectedValue + "_afp_plot.jpg";
+    } else {
+      imageES.src  = "";
+      imageAFP.src = "";
+    }
+
+    imageES.style.display  = imageES.src  ? "block" : "none";
+    imageAFP.style.display = imageAFP.src ? "block" : "none";
+  }
+  
+</script>
 ```
 
+::: panel-tabset
+
+### AFP Indicators
+
+```{=html}
+<div id="imageContainerAFP" style="margin-top: 20px;">
+  <img id="selectedImageAFP" src="" alt="AFP Tile Plot" style="display:none; width: 14in; height: 8in;"/>
+</div>
+```
+
+### ES Indicators
+```{=html}
+<div id="imageContainerES" style="margin-top: 20px;">
+  <img id="selectedImageES" src="" alt="ES Tile Plot" style="display:none; width: 14in; height: 8in;"/>
+</div>
+```
+
+### Lab Indicators
+
+::: {layout-ncol=2}
+![](images/culture_lab_plot.jpg)
+
+![](images/seq_lab_plot.jpg)
+:::
+
+:::
+
+## Graphs
+In construction...
+
+::: panel-tabset
+
+:::
+
+## Detailed Tables
+:::panel-tabset
+
+## AFP Surveillance Indicators
+
+::: panel-sidebar
+
 ### Number of AFP cases reported
+
 ```{r}
 #| echo: false
 
 datatable(
   afp_cases_reported |>
-    rename(
+    dplyr::rename(
       Region = "whoregion",
       Country = "place.admin.0",
       Month = "month"
@@ -117,6 +182,7 @@ datatable(
     dplyr::rename_with(dplyr::recode,
                 ctry = "Country",
                 quarter = "Quarter",
+                semester = "Semester",
                 month = "Month",
                 comparison = "Difference",
                 trend = "Trend"),
@@ -133,7 +199,6 @@ datatable(
 ### Proportion of lab pending
 
 Shows the proportion of lab samples not yet received in the culturing lab, with pending classification.
-
 ```{r}
 #| echo: false
 
@@ -160,7 +225,6 @@ datatable(
 
 ### Proportion of cases classified
 Proportion of cases with inadequate samples classified by the ERC.
-
 ```{r}
 #| echo: false
 
@@ -189,13 +253,13 @@ datatable(
 
 datatable(
   afp_wpv_vdpv |>
-    rename(
-      Country = "country",
-      Region = "whoregion",
-      Month = "month",
-      Difference = "comparison",
-      Trend = "trend"
-    ),
+    dplyr::rename_with(recode,
+                country = "Country",
+                whoregion = "Region",
+                month = "Month",
+                quarter = "Quarter",
+                comparison = "Difference",
+                trend = "Trend"),
   filter = "top",
   extensions = 'Buttons',
   options = list(
@@ -239,12 +303,13 @@ datatable(
 
 datatable(
   afp_shipment_timeliness |>
-    rename(
-      Country = "country",
-      Region = "whoregion",
-      Month = "month",
-      Difference = "comparison",
-      Trend = "trend"
+    dplyr::rename_with(recode,
+      country = "Country",
+      whoregion = "Region",
+      month = "Month",
+      comparison = "Difference",
+      culture.itd.cat = "Shipment Type",
+      trend = "Trend"
     ),
   filter = "top",
   extensions = 'Buttons',
@@ -258,17 +323,20 @@ datatable(
 ```
 
 ### Timeliness of lab processing of AFP samples
+`r max_date_notif`
+
 ```{r}
 #| echo: false
 
 datatable(
   afp_lab_processing |>
-    rename(
-      Country = "country",
-      Month = "month",
-      Region = "whoregion",
-      Difference = "comparison",
-      Trend = "trend"
+    dplyr::rename_with(recode,
+      country = "Country",
+      month = "Month",
+      quarter = "Quarter",
+      whoregion = "Region",
+      comparison = "Difference",
+      trend = "Trend"
     ),
   filter = "top",
   extensions = 'Buttons',
@@ -286,7 +354,7 @@ datatable(
 
 datatable(
   prop_inad |>
-    rename(
+    dplyr::rename(
       Country = "ctry",
       Quarter = "quarter",
       Region = "whoregion",
@@ -303,32 +371,17 @@ datatable(
 )
 
 ```
-
 :::
 
 ## Environmental Surveillance Indicators
 
-```{r}
-#| label: es-sample-shipment
-#| include: false
-#| echo: false
-
-es_shipment_timeliness <- get_es_timeliness(raw_data$es) |>
-  sirfunctions:::add_risk_category(ctry_col = "country") |>
-  dplyr::select(-Region) |>
-  dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "country")
-```
-
-::: panel-tabset
+::: panel-sidebar
 ### Timeliness of ES sample shipment
 
 ```{r}
 #| label: es-lab-shipment
 #| echo: false
-
-es_shipment <- es_shipment_timeliness |>
-  dplyr::filter(category == "median_lab_shipment") |>
-  dplyr::select(-category) |>
+es_shipment <- es_shipment |>
   dplyr::rename(
     Month = "month",
     Country = "country",
@@ -339,7 +392,6 @@ es_shipment <- es_shipment_timeliness |>
     `Current Year Timeliness` = "current_year_timeliness",
     `Trend Summary` = "trend_summary"
   )
-
 
 datatable(
   es_shipment,
@@ -360,9 +412,7 @@ datatable(
 #| label: es-wpv-vdpv
 #| echo: false
 
-es_wpv_vdpv <- es_shipment_timeliness |>
-  dplyr::filter(category == "median_wpv_vdpv_detection") |>
-  dplyr::select(-category) |>
+es_wpv_vdpv <- es_wpv_vdpv |>
   dplyr::rename(
     Month = "month",
     Country = "country",
@@ -390,12 +440,8 @@ datatable(
 
 ```{r}
 #| label: es-sites
+#| include: false
 #| echo: false
-
-es_sites <- suppressMessages(get_operational_sites(raw_data$es)) |>
-  sirfunctions:::add_risk_category(ctry_col = "ctry") |>
-  dplyr::select(-Region) |>
-  dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "ctry")
 
 es_sites <- es_sites |>
   dplyr::rename(
@@ -404,6 +450,11 @@ es_sites <- es_sites |>
     `Difference, %` = "prop_diff",
     Trend = "trend"
   )
+```
+
+```{r}
+#| include: true
+#| echo: false
 
 datatable(
   es_sites,
@@ -417,18 +468,37 @@ datatable(
 )
 
 ```
-
 ### Number of samples per sites
 
 ```{r}
 #| label: es-site-samples
-#| include: true
+#| include: false
 #| echo: false
 
-es_site_samples <- suppressMessages(get_samples_per_es_site(raw_data$es)) |>
-    sirfunctions:::add_risk_category(ctry_col = "ADM0_NAME") |>
-  dplyr::select(-Region) |>
-  dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "ADM0_NAME")
+failing_sites <- es_site_samples |>
+  dplyr::filter(stringr::str_detect(failing_performance, "Yes \\(")) |>
+  dplyr::group_by(ADM0_NAME) |>
+  dplyr::summarize(n = dplyr::n()) |>
+  dplyr::arrange(dplyr::desc(ADM0_NAME))
+
+failing_active_sites <- es_site_samples |>
+  dplyr::filter(stringr::str_detect(failing_performance, "Yes \\("),
+                active_site == "Yes") |>
+  dplyr::group_by(ADM0_NAME) |>
+  dplyr::summarize(n = dplyr::n()) |>
+  dplyr::arrange(dplyr::desc(ADM0_NAME))
+
+es_failure_summary <- paste0(
+  "There are ", nrow(failing_sites), " countries with sites below target, ",
+  "with a total of ", sum(failing_sites$n, na.rm = TRUE), " sites.",
+  " Failing sites are those who have been open for at least 12 months", 
+  " with no collections in the last two months or",
+  " have less than 10 samples in the past rolling 12-month period. Of the sites below target, ",
+  sum(failing_active_sites$n, na.rm = TRUE),
+  " are considered active sites (sites with at least 10 collections in the past rolling 12-month period), ",
+  "with no EV detection in the past two months."
+)
+
 es_site_samples <- es_site_samples |>
   dplyr::rename(
     Country = "ADM0_NAME",
@@ -443,9 +513,15 @@ es_site_samples <- es_site_samples |>
     `Last Detection` = "last_detection",
     `Days Since Last Detection` = "days_since_last_det",
     `Detection In Two Months` = "detection_two_mo",
-    `Is Active Site` = "active_site"
+    `Is Active Site` = "active_site",
+    `Below Target Performance` = "failing_performance"
   )
 
+```
+`r es_failure_summary`
+```{r}
+#| include: true
+#| echo: false
 datatable(
   es_site_samples,
   filter = "top",
@@ -458,40 +534,27 @@ datatable(
 )
 
 ```
+
 :::
 
 ## Lab Surveillance Indicators
+`{r} max_date_notif`
 
-```{r}
-#| label: lab-intervals
-#| echo: false
-#| include: false
-
-
-lab_intervals <- lab_timely_indicators(lab_data) |>
-  sirfunctions:::add_risk_category(ctry_col = "country") |>
-  dplyr::select(-Region) |>
-  dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "country")
-lab_intervals <- lab_intervals |>
-  dplyr::rename(
-    Region = "whoregion",
-    `Culture/ITD Lab` = "culture.itd.lab",
-    `Sequencing Lab` = "seq.lab",
-    Country = "country",
-    Difference = "comparison",
-    `Difference, %` = "prop_diff",
-    Trend = "trend"
-  )
-```
-
-::: panel-tabset
+::: panel-sidebar
 ### Timeliness of virus isolation results
 
 ```{r}
 #| include: false
 #| echo: false
 
-interval_summary <- lab_intervals |> 
+culture_lab_intervals <- culture_lab_intervals |>
+  dplyr::rename_with(recode,
+                     culture.itd.lab = "Culture/ITD Lab",
+                     comparison = "Difference",
+                     prop_diff = "Difference, %",
+                     trend = "Trend")
+
+interval_summary <- culture_lab_intervals |> 
     dplyr::filter(interval == "days.lab.culture") |>
     dplyr::select(-interval)
 top_10 <- interval_summary |> 
@@ -507,31 +570,39 @@ bottom_10 <-interval_summary |>
 
 summary_string_top <- glue::glue_data(
   top_10,
-  "{str_to_title(Country)} ({round(Difference, 1)})"
+  "{str_to_title(`Culture/ITD Lab`)} ({round(Difference, 1)})"
 )
 summary_string_bottom <- glue::glue_data(
   bottom_10,
-  "{str_to_title(Country)} ({round(Difference, 1)})"
+  "{str_to_title(`Culture/ITD Lab`)} ({round(Difference, 1)})"
 )
 
 # Combine into a single sentence
-final_summary_top <- paste0("The top 10 countries with increased median timeliness compared to the three year median (difference in days shown) are: ", paste(summary_string_top, collapse = ", "), ".")
-final_summary_bottom <- paste0("The top 10 countries with the biggest improvement in median timeliness compared to the three year median (difference in days shown) are: ", paste(summary_string_bottom, collapse = ", "), ".")
+final_summary_top <- paste0("The top labs with increased median timeliness compared to the three year median (difference in days shown) are: ", paste(summary_string_top, collapse = ", "), ".")
+final_summary_bottom <- paste0("The top 10 labs with the biggest improvement in median timeliness compared to the three year median (difference in days shown) are: ", paste(summary_string_bottom, collapse = ", "), ".")
 comparible <- paste("There were", interval_summary |> 
                       filter(Trend == "Same") |> 
-                      nrow(), "countries the stayed in the same levels and", 
+                      nrow(), "labss the stayed in the same levels and", 
                     interval_summary |> 
                       filter(Trend == "No data available for both years") |> 
-                      nrow(), "countries with missing 3-year medians or 2025 medians.")
-overall <- paste0("Overall, ", length(unique(interval_summary$Country)), " countries had data in the lab dataset. ",
+                      nrow(), "labs with missing 3-year medians or 2025 medians.")
+overall <- paste0("Overall, ", 
                   interval_summary |> 
+                    filter(!is.na(`Culture/ITD Lab`), 
+                           Trend != "No data available for both years") |>
+                    pull(`Culture/ITD Lab`) |> 
+                    unique() |> 
+                    length(), " labs had data in the lab dataset. ",
+                  interval_summary |>
+                    filter(!is.na(`Culture/ITD Lab`)) |>
                     select(4) |> 
                     filter(if_all(1, \(x) !is.na(x))) |>
-                    nrow(), " countries had medians for the current year and ",
+                    nrow(), " labs had medians for the current year and ",
                   interval_summary |> 
+                    filter(!is.na(`Culture/ITD Lab`)) |>
                     select(3) |> 
                     filter(if_all(1, \(x) !is.na(x))) |>
-                    nrow(), " countries had 3-year medians."
+                    nrow(), " labs had 3-year medians."
                   )
 
 ```
@@ -567,7 +638,7 @@ datatable(interval_summary,
 #| include: false
 #| echo: false
 
-interval_summary <- lab_intervals |> 
+interval_summary <- culture_lab_intervals |> 
     dplyr::filter(interval == "days.culture.itd") |>
     dplyr::select(-interval)
 top_10 <- interval_summary |> 
@@ -583,30 +654,40 @@ bottom_10 <-interval_summary |>
 
 summary_string_top <- glue::glue_data(
   top_10,
-  "{str_to_title(Country)} ({round(Difference, 1)})"
+  "{str_to_title(`Culture/ITD Lab`)} ({round(Difference, 1)})"
 )
 summary_string_bottom <- glue::glue_data(
   bottom_10,
-  "{str_to_title(Country)} ({round(Difference, 1)})"
+  "{str_to_title(`Culture/ITD Lab`)} ({round(Difference, 1)})"
 )
 
 # Combine into a single sentence
-final_summary_top <- paste0("The top 10 countries with increased median timeliness compared to the three year median (difference in days shown) are: ", paste(summary_string_top, collapse = ", "), ".")
-final_summary_bottom <- paste0("The top 10 countries with the biggest improvement in median timeliness compared to the three year median (difference in days shown) are: ", paste(summary_string_bottom, collapse = ", "), ".")
-comparible <- paste("There were", interval_summary |> filter(Trend == "Same") |> nrow(), "countries the stayed in the same levels and", interval_summary |> 
+final_summary_top <- paste0("The top labs with increased median timeliness compared to the three year median (difference in days shown) are: ", paste(summary_string_top, collapse = ", "), ".")
+final_summary_bottom <- paste0("The top 10 labs with the biggest improvement in median timeliness compared to the three year median (difference in days shown) are: ", paste(summary_string_bottom, collapse = ", "), ".")
+comparible <- paste("There were", interval_summary |> 
+                      filter(Trend == "Same") |> 
+                      nrow(), "labss the stayed in the same levels and", 
+                    interval_summary |> 
                       filter(Trend == "No data available for both years") |> 
-                      nrow(), "countries with missing 3-year medians or 2025 medians.")
-overall <- paste0("Overall, ", length(unique(interval_summary$Country)), " countries had data in the lab dataset. ",
+                      nrow(), "labs with missing 3-year medians or 2025 medians.")
+overall <- paste0("Overall, ", 
                   interval_summary |> 
+                    filter(!is.na(`Culture/ITD Lab`), 
+                           Trend != "No data available for both years") |>
+                    pull(`Culture/ITD Lab`) |> 
+                    unique() |> 
+                    length(), " labs had data in the lab dataset. ",
+                  interval_summary |>
+                    filter(!is.na(`Culture/ITD Lab`)) |>
                     select(4) |> 
                     filter(if_all(1, \(x) !is.na(x))) |>
-                    nrow(), " countries had medians for the current year and ",
+                    nrow(), " labs had medians for the current year and ",
                   interval_summary |> 
+                    filter(!is.na(`Culture/ITD Lab`)) |>
                     select(3) |> 
                     filter(if_all(1, \(x) !is.na(x))) |>
-                    nrow(), " countries had 3-year medians."
+                    nrow(), " labs had 3-year medians."
                   )
-
 ```
 
 #### Summary
@@ -624,7 +705,7 @@ overall <- paste0("Overall, ", length(unique(interval_summary$Country)), " count
 #| echo: false
 
 datatable(
-  lab_intervals |> 
+  culture_lab_intervals |> 
     dplyr::filter(interval == "days.culture.itd") |>
     dplyr::select(-interval),
   filter = "top",
@@ -643,7 +724,7 @@ datatable(
 #| include: false
 #| echo: false
 
-interval_summary <- lab_intervals |> 
+interval_summary <- culture_lab_intervals |> 
     dplyr::filter(interval == "days.seq.ship") |>
     dplyr::select(-interval)
 top_10 <- interval_summary |> 
@@ -659,28 +740,39 @@ bottom_10 <-interval_summary |>
 
 summary_string_top <- glue::glue_data(
   top_10,
-  "{str_to_title(Country)} ({round(Difference, 1)})"
+  "{str_to_title(`Culture/ITD Lab`)} ({round(Difference, 1)})"
 )
 summary_string_bottom <- glue::glue_data(
   bottom_10,
-  "{str_to_title(Country)} ({round(Difference, 1)})"
+  "{str_to_title(`Culture/ITD Lab`)} ({round(Difference, 1)})"
 )
 
 # Combine into a single sentence
-final_summary_top <- paste0("The top 10 countries with increased median timeliness compared to the three year median (difference in days shown) are: ", paste(summary_string_top, collapse = ", "), ".")
-final_summary_bottom <- paste0("The top 10 countries with the biggest improvement in median timeliness compared to the three year median (difference in days shown) are: ", paste(summary_string_bottom, collapse = ", "), ".")
-comparible <- paste("There were", interval_summary |> filter(Trend == "Same") |> nrow(), "countries the stayed in the same levels and", interval_summary |> 
+final_summary_top <- paste0("The top labs with increased median timeliness compared to the three year median (difference in days shown) are: ", paste(summary_string_top, collapse = ", "), ".")
+final_summary_bottom <- paste0("The top 10 labs with the biggest improvement in median timeliness compared to the three year median (difference in days shown) are: ", paste(summary_string_bottom, collapse = ", "), ".")
+comparible <- paste("There were", interval_summary |> 
+                      filter(Trend == "Same") |> 
+                      nrow(), "labss the stayed in the same levels and", 
+                    interval_summary |> 
                       filter(Trend == "No data available for both years") |> 
-                      nrow(), "countries with missing 3-year medians or 2025 medians.")
-overall <- paste0("Overall, ", length(unique(interval_summary$Country)), " countries had data in the lab dataset. ",
+                      nrow(), "labs with missing 3-year medians or 2025 medians.")
+overall <- paste0("Overall, ", 
                   interval_summary |> 
+                    filter(!is.na(`Culture/ITD Lab`), 
+                           Trend != "No data available for both years") |>
+                    pull(`Culture/ITD Lab`) |> 
+                    unique() |> 
+                    length(), " labs had data in the lab dataset. ",
+                  interval_summary |>
+                    filter(!is.na(`Culture/ITD Lab`)) |>
                     select(4) |> 
                     filter(if_all(1, \(x) !is.na(x))) |>
-                    nrow(), " countries had medians for the current year and ",
+                    nrow(), " labs had medians for the current year and ",
                   interval_summary |> 
+                    filter(!is.na(`Culture/ITD Lab`)) |>
                     select(3) |> 
                     filter(if_all(1, \(x) !is.na(x))) |>
-                    nrow(), " countries had 3-year medians."
+                    nrow(), " labs had 3-year medians."
                   )
 
 ```
@@ -700,7 +792,7 @@ overall <- paste0("Overall, ", length(unique(interval_summary$Country)), " count
 #| echo: false
 
 datatable(
-  lab_intervals |> 
+  culture_lab_intervals |> 
     dplyr::filter(interval == "days.seq.ship") |>
     dplyr::select(-interval),
   filter = "top",
@@ -718,8 +810,14 @@ datatable(
 ```{r}
 #| include: false
 #| echo: false
+seq_lab_interval <- seq_lab_interval |>
+  dplyr::rename_with(recode,
+                     seq.lab = "Sequencing Lab",
+                     comparison = "Difference",
+                     prop_diff = "Difference, %",
+                     trend = "Trend")
 
-interval_summary <- lab_intervals |> 
+interval_summary <- seq_lab_interval |> 
     dplyr::filter(interval == "days.seq.rec.res") |>
     dplyr::select(-interval)
 top_10 <- interval_summary |> 
@@ -735,28 +833,39 @@ bottom_10 <-interval_summary |>
 
 summary_string_top <- glue::glue_data(
   top_10,
-  "{str_to_title(Country)} ({round(Difference, 1)})"
+  "{str_to_title(`Sequencing Lab`)} ({round(Difference, 1)})"
 )
 summary_string_bottom <- glue::glue_data(
   bottom_10,
-  "{str_to_title(Country)} ({round(Difference, 1)})"
+  "{str_to_title(`Sequencing Lab`)} ({round(Difference, 1)})"
 )
 
 # Combine into a single sentence
-final_summary_top <- paste0("The top 10 countries with increased median timeliness compared to the three year median (difference in days shown) are: ", paste(summary_string_top, collapse = ", "), ".")
-final_summary_bottom <- paste0("The top 10 countries with the biggest improvement in median timeliness compared to the three year median (difference in days shown) are: ", paste(summary_string_bottom, collapse = ", "), ".")
-comparible <- paste("There were", interval_summary |> filter(Trend == "Same") |> nrow(), "countries the stayed in the same levels and", interval_summary |> 
+final_summary_top <- paste0("The top labs with increased median timeliness compared to the three year median (difference in days shown) are: ", paste(summary_string_top, collapse = ", "), ".")
+final_summary_bottom <- paste0("The top 10 labs with the biggest improvement in median timeliness compared to the three year median (difference in days shown) are: ", paste(summary_string_bottom, collapse = ", "), ".")
+comparible <- paste("There were", interval_summary |> 
+                      filter(Trend == "Same") |> 
+                      nrow(), "labss the stayed in the same levels and", 
+                    interval_summary |> 
                       filter(Trend == "No data available for both years") |> 
-                      nrow(), "countries with missing 3-year medians or 2025 medians.")
-overall <- paste0("Overall, ", length(unique(interval_summary$Country)), " countries had data in the lab dataset. ",
+                      nrow(), "labs with missing 3-year medians or 2025 medians.")
+overall <- paste0("Overall, ", 
                   interval_summary |> 
+                    filter(!is.na(`Sequencing Lab`), 
+                           Trend != "No data available for both years") |>
+                    pull(`Sequencing Lab`) |> 
+                    unique() |> 
+                    length(), " labs had data in the lab dataset. ",
+                  interval_summary |>
+                    filter(!is.na(`Sequencing Lab`)) |>
                     select(4) |> 
                     filter(if_all(1, \(x) !is.na(x))) |>
-                    nrow(), " countries had medians for the current year and ",
+                    nrow(), " labs had medians for the current year and ",
                   interval_summary |> 
+                    filter(!is.na(`Sequencing Lab`)) |>
                     select(3) |> 
                     filter(if_all(1, \(x) !is.na(x))) |>
-                    nrow(), " countries had 3-year medians."
+                    nrow(), " labs had 3-year medians."
                   )
 
 ```
@@ -776,7 +885,7 @@ overall <- paste0("Overall, ", length(unique(interval_summary$Country)), " count
 #| echo: false
 
 datatable(
-  lab_intervals |> 
+  seq_lab_interval |> 
     dplyr::filter(interval == "days.seq.rec.res") |>
     dplyr::select(-interval),
   filter = "top",
@@ -795,14 +904,9 @@ datatable(
 #| include: false
 #| echo: false
 
-lab_workload <- suppressMessages(lab_workload(lab_data)) |>
-  sirfunctions:::add_risk_category(ctry_col = "country") |>
-  dplyr::select(-Region) |>
-  dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "country")
 lab_workload <- lab_workload |>
   dplyr::rename(
     `Culture/ITD Lab` = "culture.itd.lab",
-    Country = "country",
     Month = "month",
     `Countries Served` = "from_ctry",
     Difference = "comparison",
@@ -811,7 +915,7 @@ lab_workload <- lab_workload |>
   )
 
 last_month <- lab_workload |>
-  filter(Month == lubridate::month(lubridate::month(Sys.Date()) - 1, TRUE))
+  filter(Month == lubridate::month(lubridate::month(max_lab_date) - 1, TRUE))
 
 top_10 <- last_month |>
   filter(Trend == "Increase") |>
@@ -826,31 +930,32 @@ bottom_10 <- last_month |>
 
 summary_string_top <- glue::glue_data(
   top_10,
-  "{str_to_title(Country)} ({round(Difference, 1)})"
+  "{str_to_title(`Culture/ITD Lab`)} ({round(Difference, 1)})"
 )
 summary_string_bottom <- glue::glue_data(
   bottom_10,
-  "{str_to_title(Country)} ({round(Difference, 1)})"
+  "{str_to_title(`Culture/ITD Lab`)} ({round(Difference, 1)})"
 )
 
 # Combine into a single sentence
-final_summary_top <- paste0("The top 10 countries with increased lab samples sent to lab compared to the previous year (difference in samples shown) are: ", paste(summary_string_top, collapse = ", "), ".")
-final_summary_bottom <- paste0("The top 10 countries with reduced lab samples sent to lab compared to the previous year (difference in samples shown) are: ", paste(summary_string_bottom, collapse = ", "), ".")
+final_summary_top <- paste0("The top 10 labs with increased lab samples compared to the previous year (difference in samples shown) are: ", paste(summary_string_top, collapse = ", "), ".")
+final_summary_bottom <- paste0("The top 10 labs with reduced lab samples compared to the previous year (difference in samples shown) are: ", paste(summary_string_bottom, collapse = ", "), ".")
 comparible <- paste("There were", last_month |> 
-                      filter(Trend == "Same") |> nrow(), "countries the stayed in the same levels and", last_month |> 
+                      filter(Trend == "Same") |> nrow(), "labs the stayed in the same levels and", last_month |> 
                       filter(Trend == "No data available for both years") |> 
-                      nrow(), "countries with missing data for the current year and previous year.")
+                      nrow(), "labs with missing data for the current year and previous year.")
 overall <- paste0("Overall, ", 
                   last_month |> 
                     filter(if_any(5, \(x) !is.na(x))) |> 
                     nrow(), 
-                  " countries had data in the lab dataset from the previous month of the current year.")
+                  " labs had data from the previous month of the current year using the latest month available in the lab dataset.")
 
 ```
 
 #### Summary
 
-**For the previous month** 
+**For the previous month from the latest date available in the lab dataset** 
+*`r max_date_notif`*
 
 `r final_summary_top` 
 
@@ -874,4 +979,6 @@ datatable(
   )
 )
 ```
+:::
+
 :::

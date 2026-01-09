@@ -5,5 +5,5 @@
 
 /.quarto/
 sg-monitoring-report.html
-afp-indicators.html
-afp-cases-reported.html
+/data_cache
+/images
