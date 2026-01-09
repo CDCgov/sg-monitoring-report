@@ -149,11 +149,13 @@ function remove_all_option() {
     document.getElementById("country-afp-case-report").getElementsByClassName("selectized")[0].selectize.removeOption("");
     document.getElementById("country-afp-lab-pending").getElementsByClassName("selectized")[0].selectize.removeOption("");
     document.getElementById("country-afp-wpv-vdpv").getElementsByClassName("selectized")[0].selectize.removeOption("");
+     document.getElementById("country-afp-prop-60").getElementsByClassName("selectized")[0].selectize.removeOption("");
 }
 function filter_default() {
     document.getElementById("country-afp-case-report").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
         document.getElementById("country-afp-lab-pending").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
         document.getElementById("country-afp-wpv-vdpv").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
+        document.getElementById("country-afp-prop-60").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
 }
 window.onload = function() {
 filter_default();
@@ -217,6 +219,66 @@ plot_ly(shared_afp_cases_reported, colors = c("lightsteelblue", "steelblue")) |>
 ```
 
 ### Proportion of 60 days follow-up done
+```{r}
+#| echo: false
+#| warning: false
+
+# Graph
+regex_exp <- "(?<=\\()\\d+(?:\\.\\d+)?(?=%\\))"
+shared_prop_60 <- prop_60 |>
+    dplyr::rename_with(dplyr::recode,
+                ctry = "Country",
+                quarter = "Quarter",
+                semester = "Semester",
+                month = "Month",
+                comparison = "Difference",
+                trend = "Trend") |>
+  dplyr::mutate(prop_prev = as.numeric(stringr::str_extract(!!dplyr::sym(names(prop_60)[length(names(prop_60)) - 1]),
+                                                            regex_exp)),
+                prop_cur = as.numeric(stringr::str_extract(!!dplyr::sym(names(prop_60)[length(names(prop_60))]),
+                                                           regex_exp)),
+                Quarter = factor(Quarter, ordered = TRUE)) |>
+  dplyr::select(Country, Quarter, 6:9) |>
+  SharedData$new()
+
+filter_select("country-afp-prop-60", "Country: ", shared_prop_60,
+              ~Country, 
+              multiple = FALSE,
+              allLevels = FALSE)
+
+plot_ly(shared_prop_60, colors = c("lightsteelblue", "steelblue")) |>
+    add_trace(
+    x = ~Quarter,
+    y = ~prop_prev,
+    type = "bar",
+    text = ~get(names(prop_60)[6]),
+    textposition = 'outside',
+    name = names(prop_60)[length(names(prop_60)) - 1],
+    color = as.factor(names(prop_60)[length(names(prop_60)) - 1])
+  ) |>
+  add_trace(
+    x = ~Quarter,
+    y = ~prop_cur,
+    type = "bar",
+    text = ~get(names(prop_60)[7]),
+    textposition = 'outside',
+    name = names(prop_60)[length(names(prop_60))],
+    color = as.factor(names(prop_60)[length(names(prop_60))])
+  ) |>
+  config(displayModeBar = FALSE) |>
+  layout(title = list(
+    text = paste0("<b>Proportion of 60 Days Follow-Up Done</b>"),
+    x = 0,
+    xanchor = "left"),
+    yaxis = list(title = "Proportion with Follow Up"),
+    xaxis = list(title = "Quarter"),
+    legend = list(orientation = "h",
+                           xanchor = "center", 
+                           x = 0.5,
+                           y = -0.2),
+    margin = list(t = 50)
+         )
+```
 
 ### Proportion of lab pending
 
