@@ -10,13 +10,15 @@ format:
 output-file: 
 ---
 
-```{r}
+```{r load}
 #| echo: false
 #| include: false
 
 library(sirfunctions)
 library(DT)
 library(tidyverse)
+library(plotly)
+library(crosstalk)
 
 use_cache <- TRUE # Change if creating report using previous run or new run
 end_date <- "2025-12-31" # Change as needed. Only works for new runs
@@ -35,9 +37,6 @@ if (use_cache) {
 } else {
   source("generate_data_for_report.R")
 }
-
-tile_plots <- list.files("R/", "_tile_plot.R")
-lapply(tile_plots, \(x) source(file.path("R", x)))
 
 ```
 
@@ -138,9 +137,300 @@ Lab data is updated quarterly, hence end dates may not be the same as the end da
 :::
 
 ## Graphs
-In construction...
 
 ::: panel-tabset
+
+## AFP Surveillance Indicators
+```{js enable-js-graphs}
+#| echo: false
+
+function remove_all_option() {
+    document.getElementById("country-afp-case-report").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("region-afp-lab-pending").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("country-afp-wpv-vdpv").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("country-afp-prop-60").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("country-afp-prop-classified").getElementsByClassName("selectized")[0].selectize.removeOption("");
+     
+}
+function filter_default() {
+    document.getElementById("country-afp-case-report").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
+        document.getElementById("region-afp-lab-pending").getElementsByClassName("selectized")[0].selectize.setValue("AFRO", false);
+        document.getElementById("country-afp-wpv-vdpv").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
+        document.getElementById("country-afp-prop-60").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
+        document.getElementById("country-afp-prop-classified").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
+}
+window.onload = function() {
+filter_default();
+remove_all_option();
+}
+
+```
+
+::: panel-tabset
+
+### Number of AFP cases reported
+
+```{r afp-case-reported-graph}
+#| echo: false
+#| warning: false
+
+# Graph
+shared_afp_cases_reported <- afp_cases_reported |>
+  dplyr::rename(
+      Region = "whoregion",
+      Country = "place.admin.0",
+      Month = "month") |>
+  dplyr::mutate(Month = factor(Month, levels = month.abb, ordered = TRUE)) |>
+  SharedData$new()
+
+filter_select("country-afp-case-report", "Country: ", shared_afp_cases_reported,
+              ~Country, 
+              multiple = FALSE,
+              allLevels = FALSE)
+
+plot_ly(shared_afp_cases_reported, colors = c("lightsteelblue", "steelblue")) |>
+    add_trace(
+    x = ~Month,
+    y = ~`2022-2024 Median`,
+    error_y = ~list(array=`2022-2024 MAD` * 2, color = '#000000'),
+    type = "bar",
+    name = "2022-2024 Median",
+    color = as.factor("2022-2024 Median")
+  ) |>
+  add_trace(
+    x = ~Month,
+    y = ~`2025`,
+    type = "bar",
+    name = "2025",
+    color = as.factor("2025")
+  ) |>
+  config(displayModeBar = FALSE) |>
+  layout(title = list(
+    text = paste0("<b>Monthly AFP Cases Reported</b>",
+                  "<br>","<sup>Error bars represent 2 median absolute deviation (MAD)</sup>"),
+    x = 0,
+    xanchor = "left"),
+    yaxis = list(title = "AFP Cases Reported"),
+    xaxis = list(title = ""),
+    legend = list(orientation = "h",
+                           xanchor = "center", 
+                           x = 0.5,
+                           y = -0.2),
+    margin = list(t = 50)
+         )
+```
+
+### Proportion of 60 days follow-up done
+
+```{r afp-60-day-follow-up}
+#| echo: false
+#| warning: false
+
+# Graph
+regex_exp <- "(?<=\\()\\d+(?:\\.\\d+)?(?=%\\))"
+shared_prop_60 <- prop_60 |>
+    dplyr::rename_with(dplyr::recode,
+                ctry = "Country",
+                quarter = "Quarter",
+                semester = "Semester",
+                month = "Month",
+                comparison = "Difference",
+                trend = "Trend") |>
+  dplyr::mutate(prop_prev = as.numeric(stringr::str_extract(!!dplyr::sym(names(prop_60)[length(names(prop_60)) - 1]),
+                                                            regex_exp)),
+                prop_cur = as.numeric(stringr::str_extract(!!dplyr::sym(names(prop_60)[length(names(prop_60))]),
+                                                           regex_exp)),
+                Quarter = factor(Quarter, ordered = TRUE)) |>
+  dplyr::select(Country, Quarter, 6:9) |>
+  SharedData$new()
+
+filter_select("country-afp-prop-60", "Country: ", shared_prop_60,
+              ~Country, 
+              multiple = FALSE,
+              allLevels = FALSE)
+
+plot_ly(shared_prop_60, colors = c("lightsteelblue", "steelblue")) |>
+    add_trace(
+    x = ~Quarter,
+    y = ~prop_prev,
+    type = "bar",
+    text = ~get(names(prop_60)[6]),
+    textposition = 'outside',
+    name = names(prop_60)[length(names(prop_60)) - 1],
+    color = as.factor(names(prop_60)[length(names(prop_60)) - 1])
+  ) |>
+  add_trace(
+    x = ~Quarter,
+    y = ~prop_cur,
+    type = "bar",
+    text = ~get(names(prop_60)[7]),
+    textposition = 'outside',
+    name = names(prop_60)[length(names(prop_60))],
+    color = as.factor(names(prop_60)[length(names(prop_60))])
+  ) |>
+  config(displayModeBar = FALSE) |>
+  layout(title = list(
+    text = paste0("<b>Proportion of 60 Days Follow-Up Done</b>"),
+    x = 0,
+    xanchor = "left"),
+    yaxis = list(title = "Proportion with Follow Up"),
+    xaxis = list(title = "Quarter"),
+    legend = list(orientation = "h",
+                           xanchor = "center", 
+                           x = 0.5,
+                           y = -0.2),
+    margin = list(t = 50)
+         )
+```
+
+### Proportion of lab pending
+
+Shows the proportion of lab samples not yet received in the culturing lab, with pending classification.
+
+```{r afp-prop-lab-pending}
+#| echo: false
+#| warning: false
+
+lab_pending_with_prop <- lab_pending |>
+  dplyr::mutate(prop = as.numeric(stringr::str_extract(prop_label, "[0-9]+")))
+
+shared_lab_pending <- lab_pending_with_prop |>
+  dplyr::rename(
+      Region = "whoregion",
+      Country = "country") |>
+  dplyr::arrange(dplyr::desc(prop)) |>
+  SharedData$new(key = ~Region)
+
+filter_select("region-afp-lab-pending", "Region: ", shared_lab_pending,
+              ~Region, 
+              multiple = FALSE,
+              allLevels = FALSE)
+
+plot_ly(shared_lab_pending) |>
+  add_trace(
+    x = ~Country,
+    y = ~prop,
+    type = "bar",
+    name = "Proportion of Samples Older Than 90 Days with Pending Status"
+  ) |>
+  config(displayModeBar = FALSE) |>
+  layout(title = list(
+    text = paste0("<b>AFP Lab Samples Older Than 90 Days With Pending Status</b>"),
+    x = 0,
+    xanchor = "left"),
+    yaxis = list(title = "% Pending Samples"),
+    xaxis = list(title = "Country"),
+    margin = list(t = 50)
+         )
+```
+
+### Proportion of cases classified
+```{r afp-prop-cases-classified}
+#| echo: false
+#| warning: false
+
+# Graph
+shared_prop_classified <- prop_classified |>
+    dplyr::rename(
+      Country = "ctry",
+      Quarter = "quarter",
+      `% Difference` = "diff",
+      Trend = "trend",
+      `Current Year Performance` = "performance"
+    ) |>
+  dplyr::mutate(prop_prev = stringr::str_extract(get(names(prop_classified)[4]), "[0-9]+|NaN"),
+                prop_cur = stringr::str_extract(get(names(prop_classified)[5]), "[0-9]+|NaN")
+                ) |>
+  dplyr::mutate(prop_cur = as.numeric(prop_cur),
+                prop_prev = as.numeric(prop_prev)) |>
+  dplyr::select(1,3:5, 9:10) |>
+  SharedData$new()
+
+filter_select("country-afp-prop-classified", "Country: ", shared_prop_classified,
+              ~Country, 
+              multiple = FALSE,
+              allLevels = FALSE)
+
+plot_ly(shared_prop_classified, colors = c("lightsteelblue", "steelblue")) |>
+    add_trace(
+    x = ~Quarter,
+    y = ~prop_prev,
+    type = "bar",
+    text = ~get(names(prop_classified)[4]),
+    textposition = 'outside',
+    name = names(prop_classified)[4],
+    color = as.factor(names(prop_classified)[4])
+  ) |>
+  add_trace(
+    x = ~Quarter,
+    y = ~prop_cur,
+    type = "bar",
+    text = ~get(names(prop_classified)[5]),
+    textposition = 'outside',
+    name = names(prop_classified)[5],
+    color = as.factor(names(prop_60)[5])
+  ) |>
+  config(displayModeBar = FALSE) |>
+  layout(title = list(
+    text = paste0("<b>Proportion of Cases Classified</b>"),
+    x = 0,
+    xanchor = "left"),
+    yaxis = list(title = "Proportion Classified"),
+    xaxis = list(title = "Quarter"),
+    legend = list(orientation = "h",
+                           xanchor = "center", 
+                           x = 0.5,
+                           y = -0.2),
+    margin = list(t = 50)
+         )
+
+```
+
+### Timeliness of detection for WPV/VDPV 
+
+```{r afp-det-wpv-vdpv}
+#| echo: false
+#| warning: false
+
+# Graph
+shared_afp_wpv_vdpv <- afp_wpv_vdpv |>
+  SharedData$new()
+
+filter_select("country-afp-wpv-vdpv", "Country: ", shared_afp_wpv_vdpv,
+              ~country, 
+              multiple = FALSE,
+              allLevels = FALSE)
+
+plot_ly(shared_afp_wpv_vdpv, colors = c("lightsteelblue", "steelblue")) |>
+    add_trace(
+    x = ~quarter,
+    y = ~get(names(afp_wpv_vdpv)[5]),
+    type = "bar",
+    name = names(afp_wpv_vdpv)[5],
+    color = as.factor(names(afp_wpv_vdpv)[5])
+  ) |>
+  add_trace(
+    x = ~quarter,
+    y = ~get(names(afp_wpv_vdpv)[6]),
+    type = "bar",
+    name = names(afp_wpv_vdpv)[6],
+    color = as.factor(names(afp_wpv_vdpv)[6])
+  ) |>
+  config(displayModeBar = FALSE) |>
+  layout(title = list(
+    text = paste0("<b>Timeliness of Detection for AFP WPV/VDPV Samples</b>"),
+    x = 0,
+    xanchor = "left"),
+    yaxis = list(title = "Median Days"),
+    xaxis = list(title = "Quarter"),
+    legend = list(orientation = "h",
+                           xanchor = "center", 
+                           x = 0.5,
+                           y = -0.2),
+    margin = list(t = 50)
+         )
+```
+:::
 
 :::
 
@@ -148,12 +438,10 @@ In construction...
 :::panel-tabset
 
 ## AFP Surveillance Indicators
-
 ::: panel-sidebar
-
 ### Number of AFP cases reported
 
-```{r}
+```{r afp-case-reported-table}
 #| echo: false
 
 datatable(
@@ -174,7 +462,7 @@ datatable(
 ```
 
 ### Proportion of 60 days follow-up done
-```{r}
+```{r afp-prop-60-table}
 #| echo: false
 
 datatable(
@@ -199,7 +487,7 @@ datatable(
 ### Proportion of lab pending
 
 Shows the proportion of lab samples not yet received in the culturing lab, with pending classification.
-```{r}
+```{r afp-prop-lab-pending-table}
 #| echo: false
 
 datatable(
@@ -207,8 +495,6 @@ datatable(
     dplyr::rename(
       Country = "country",
       Region = "whoregion",
-      Year = "year",
-      Month = "month",
       `Pending Samples` = "pending_samples",
       `% Lab Samples` = "prop_label"
     ),
@@ -225,7 +511,7 @@ datatable(
 
 ### Proportion of cases classified
 Proportion of cases with inadequate samples classified by the ERC.
-```{r}
+```{r afp-prop-case-classified-table}
 #| echo: false
 
 datatable(
@@ -248,7 +534,7 @@ datatable(
 ```
 
 ### Timeliness of detection for WPV/VDPV samples
-```{r}
+```{r afp-timely-wpv-vpdv-table}
 #| echo: false
 
 datatable(
@@ -273,7 +559,7 @@ datatable(
 
 ### Timeliness of detection for negative samples
 From date of collection to final cell culture results.
-```{r}
+```{r afp-timely-neg-samples-table}
 #| echo: false
 
 datatable(
@@ -298,7 +584,7 @@ datatable(
 ```
 
 ### Timeliness of stool specimen shipment
-```{r}
+```{r afp-stool-ship-table}
 #| echo: false
 
 datatable(
@@ -325,7 +611,7 @@ datatable(
 ### Timeliness of lab processing of AFP samples
 `r max_date_notif`
 
-```{r}
+```{r afp-timely-lab-process-table}
 #| echo: false
 
 datatable(
@@ -349,7 +635,7 @@ datatable(
 ```
 
 ### Proportion of inadequates with contact sampling
-```{r}
+```{r afp-prop-inad-table}
 #| echo: false
 
 datatable(
@@ -374,7 +660,6 @@ datatable(
 :::
 
 ## Environmental Surveillance Indicators
-
 ::: panel-sidebar
 ### Timeliness of ES sample shipment
 
