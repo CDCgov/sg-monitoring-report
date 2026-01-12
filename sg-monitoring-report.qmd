@@ -403,18 +403,18 @@ filter_select("country-afp-wpv-vdpv", "Country: ", shared_afp_wpv_vdpv,
 
 plot_ly(shared_afp_wpv_vdpv, colors = c("lightsteelblue", "steelblue")) |>
     add_trace(
-    x = ~month,
-    y = ~`2024`,
+    x = ~quarter,
+    y = ~get(names(afp_wpv_vdpv)[5]),
     type = "bar",
-    name = "2024",
-    color = as.factor("2024")
+    name = names(afp_wpv_vdpv)[5],
+    color = as.factor(names(afp_wpv_vdpv)[5])
   ) |>
   add_trace(
-    x = ~month,
-    y = ~`2025`,
+    x = ~quarter,
+    y = ~get(names(afp_wpv_vdpv)[6]),
     type = "bar",
-    name = "2025",
-    color = as.factor("2025")
+    name = names(afp_wpv_vdpv)[6],
+    color = as.factor(names(afp_wpv_vdpv)[6])
   ) |>
   config(displayModeBar = FALSE) |>
   layout(title = list(
@@ -422,7 +422,7 @@ plot_ly(shared_afp_wpv_vdpv, colors = c("lightsteelblue", "steelblue")) |>
     x = 0,
     xanchor = "left"),
     yaxis = list(title = "Median Days"),
-    xaxis = list(title = ""),
+    xaxis = list(title = "Quarter"),
     legend = list(orientation = "h",
                            xanchor = "center", 
                            x = 0.5,
