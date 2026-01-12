@@ -150,6 +150,7 @@ function remove_all_option() {
     document.getElementById("country-afp-wpv-vdpv").getElementsByClassName("selectized")[0].selectize.removeOption("");
     document.getElementById("country-afp-prop-60").getElementsByClassName("selectized")[0].selectize.removeOption("");
     document.getElementById("country-afp-prop-classified").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("country-es-sample-shipment").getElementsByClassName("selectized")[0].selectize.removeOption("");
      
 }
 function filter_default() {
@@ -158,6 +159,7 @@ function filter_default() {
         document.getElementById("country-afp-wpv-vdpv").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
         document.getElementById("country-afp-prop-60").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
         document.getElementById("country-afp-prop-classified").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
+        document.getElementById("country-es-sample-shipment").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
 }
 window.onload = function() {
 filter_default();
@@ -438,6 +440,58 @@ plot_ly(shared_afp_wpv_vdpv, colors = c("lightsteelblue", "steelblue")) |>
 
 ### Timeliness of ES sample shipment
 ```{r es-sample-shipment}
+#| echo: false
+#| warning: false
+
+shared_es_shipment <- es_shipment |>
+  dplyr::rename(
+      Region = "who.region",
+      Country = "country",
+      Month = "month") |>
+  dplyr::mutate(timely_prev = stringr::str_extract(get(names(es_shipment)[6]), "\\d+\\.?\\d*"),
+                timely_cur = stringr::str_extract(get(names(es_shipment)[7]), "\\d+\\.?\\d*")) |>
+  dplyr::mutate(timely_prev = as.numeric(timely_prev),
+                timely_cur = as.numeric(timely_cur)) |>
+  dplyr::select(1:2, 6:7, 12:13) |>
+  SharedData$new()
+
+filter_select("country-es-sample-shipment", "Country: ", shared_es_shipment,
+              ~Country, 
+              multiple = FALSE,
+              allLevels = FALSE)
+
+plot_ly(shared_es_shipment, colors = c("lightsteelblue", "steelblue")) |>
+    add_trace(
+    x = ~Month,
+    y = ~timely_prev,
+    text = ~get(names(shared_es_shipment$data())[3]),
+    textposition = 'outside',
+    type = "bar",
+    name = names(shared_es_shipment$data())[3],
+    color = as.factor(names(shared_es_shipment$data())[3])
+  ) |>
+  add_trace(
+    x = ~Month,
+    y = ~timely_cur,
+    text = ~get(names(shared_es_shipment$data())[4]),
+    textposition = 'outside',
+    type = "bar",
+    name = names(shared_es_shipment$data())[4],
+    color = as.factor(names(shared_es_shipment$data())[4])
+  ) |>
+  config(displayModeBar = FALSE) |>
+  layout(title = list(
+    text = paste0("<b>Timeliness of ES Sample Shipment Monthly AFP Cases Reported</b>"),
+    x = 0,
+    xanchor = "left"),
+    yaxis = list(title = "Median Days"),
+    xaxis = list(title = "Month"),
+    legend = list(orientation = "h",
+                           xanchor = "center", 
+                           x = 0.5,
+                           y = -0.2),
+    margin = list(t = 50)
+         )
 
 ```
 ### Timeliness of detection for WPV/VDPV ES Samples
@@ -684,6 +738,7 @@ datatable(
 ```
 :::
 
+
 ## Environmental Surveillance Indicators
 ::: panel-sidebar
 ### Timeliness of ES sample shipment
@@ -846,6 +901,7 @@ datatable(
 ```
 
 :::
+
 
 ## Lab Surveillance Indicators
 `{r} max_date_notif`
