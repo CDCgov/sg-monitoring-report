@@ -432,6 +432,31 @@ plot_ly(shared_afp_wpv_vdpv, colors = c("lightsteelblue", "steelblue")) |>
 ```
 :::
 
+## ES Surveillance Indicators
+
+::: panel-tabset
+
+### Timeliness of ES sample shipment
+```{r es-sample-shipment}
+
+```
+### Timeliness of detection for WPV/VDPV ES Samples
+```{r es-wpv-vdpv-det}
+
+```
+
+### Number of Operational ES Sites per Country
+```{r es-operational-sites}
+
+```
+
+### Number of Samples per Site
+```{r es-samples-per-site}
+
+```
+
+:::
+
 :::
 
 ## Detailed Tables
