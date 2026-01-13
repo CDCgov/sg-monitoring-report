@@ -106,6 +106,7 @@ culture_lab_intervals <- lab_timely_indicators(lab_data,"culture", end_date = ma
 seq_lab_interval <- lab_timely_indicators(lab_data,"seq", end_date = max_lab_date)
 lab_workload <- suppressMessages(lab_workload(lab_data, end_date = max_lab_date))
 
+# Save tables ----
 save(max_lab_date, max_date_notif, afp_cases_reported, lab_pending,
      afp_wpv_vdpv, negative_lab_processing, afp_shipment_timeliness,
      afp_lab_processing, prop_60, prop_classified, prop_inad,
@@ -113,11 +114,88 @@ save(max_lab_date, max_date_notif, afp_cases_reported, lab_pending,
      culture_lab_intervals, seq_lab_interval, lab_workload,
      file = "data_cache/cache.rda")
 
+# Save tables in an Excel File ----
+excel_output <- list()
+
+excel_output$`AFP Cases Reported` <- afp_cases_reported |>
+  dplyr::rename(Region = whoregion, Country = place.admin.0)
+
+excel_output$`Prop 60 Days Follow Up` <- prop_60 |>
+  dplyr::rename(Country = ctry, Quarter = quarter, Comparison = comparison,
+                Trend = trend)
+
+excel_output$`Prop Lab Pending` <- lab_pending |>
+  dplyr::rename(Country = country, Region = whoregion,
+                `Pending Samples` = pending_samples,
+                `Label` = prop_label)
+
+excel_output$`Prop Case Classified` <- prop_classified |>
+  dplyr::rename(Country = ctry, Quarter = quarter,
+                Difference = diff, Trend = trend, Performance = performance)
+
+excel_output$`Timely AFP WPV VDPV Det` <- afp_wpv_vdpv |>
+  dplyr::rename(Country = country, Quarter = quarter, Comparison = comparison,
+                Trend = trend)
+
+excel_output$`Timeliness of ES Shipment` <- es_shipment |>
+  dplyr::rename(
+    Month = month, Country = country, Region = who.region, `Lab Type` = es.lab.type,
+    Difference = diff, Trend = trend,
+    `Current Year Timeliness` = current_year_timeliness,
+    `Trend Summary` = trend_summary
+  )
+
+excel_output$`Timely ES WPV VDPV Det` <- es_wpv_vdpv |>
+  dplyr::rename(
+    Month = month, Country = country, Region = who.region, `Lab Type` = es.lab.type,
+    Difference = diff, Trend = trend, `Current Year Timeliness` = current_year_timeliness,
+    `Trend Summary` = trend_summary
+  )
+
+excel_output$`Operational Sites per Country` <- es_sites |>
+  dplyr::rename(
+    Country = ctry, Comparison = comparison, `% Diff` = prop_diff,
+    Trend = trend
+  ) |>
+  dplyr::relocate(Region, .after = Country)
+
+excel_output$`Samples by Operational Sites` <- es_site_samples |>
+  dplyr::rename(
+    Year = year, Country = country, Month = month, Median = median_collections,
+    `Year Month` = ym
+  ) |>
+  dplyr::relocate(Month, `Year Month`, .after = Year)
+
+excel_output$`Culture Lab Timeliness` <- culture_lab_intervals |>
+  dplyr::mutate(interval_name = dplyr::case_when(
+    interval == "days.lab.culture" ~ "Virus isolation results",
+    interval == "days.culture.itd" ~ "ITD results",
+    interval == "days.seq.ship" ~ "Shipment for Sequencing"
+  )) |>
+  dplyr::rename(Interval = interval_name, `Culture Lab` = culture.itd.lab,
+                Comparison = comparison, `% Diff` = prop_diff, Trend = trend) |>
+  dplyr::select(-interval) |>
+  dplyr::relocate(Interval, .before = `Culture Lab`)
+
+excel_output$`Sequencing Lab Timeliness` <- seq_lab_interval |>
+  dplyr::select(-interval) |>
+  dplyr::rename(`Sequencing Lab` = seq.lab, Comparison = comparison, `% Diff` = prop_diff,
+                Trend = trend)
+
+if (!dir.exists("Excel_Output")) {
+  dir.create("Excel_Output")
+}
+
+openxlsx::write.xlsx(excel_output,
+                     file = file.path("Excel_Output", "monitoring_report_tables.xlsx"),
+                     asTable = TRUE,
+                     colWidths = "auto")
+
+# Generate Individual Tile Plots ----
 if (!dir.exists("images")) {
   dir.create("images")
 }
 
-# Generate Individual Tile Plots ----
 who_regions <- c("AFRO", "AMRO", "EMRO", "EURO", "SEARO", "WPRO")
 
 # AFP
