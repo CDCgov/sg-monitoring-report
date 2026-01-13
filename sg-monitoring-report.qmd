@@ -201,18 +201,18 @@ filter_select("country-afp-case-report", "Country: ", shared_afp_cases_reported,
 plot_ly(shared_afp_cases_reported, colors = c("lightsteelblue", "steelblue")) |>
     add_trace(
     x = ~Month,
-    y = ~`2022-2024 Median`,
-    error_y = ~list(array=`2022-2024 MAD` * 2, color = '#000000'),
+    y = ~get(names(afp_cases_reported)[5]),
+    error_y = ~list(array=get(names(afp_cases_reported)[8]) * 2, color = '#000000'),
     type = "bar",
-    name = "2022-2024 Median",
-    color = as.factor("2022-2024 Median")
+    name = names(afp_cases_reported)[5],
+    color = as.factor(names(afp_cases_reported)[5])
   ) |>
   add_trace(
     x = ~Month,
-    y = ~`2025`,
+    y = ~get(names(afp_cases_reported)[9]),
     type = "bar",
-    name = "2025",
-    color = as.factor("2025")
+    name = names(afp_cases_reported)[9],
+    color = as.factor(names(afp_cases_reported)[9])
   ) |>
   config(displayModeBar = FALSE) |>
   layout(title = list(
@@ -406,6 +406,7 @@ plot_ly(shared_prop_classified, colors = c("lightsteelblue", "steelblue")) |>
 
 # Graph
 shared_afp_wpv_vdpv <- afp_wpv_vdpv |>
+  dplyr::mutate(quarter = factor(quarter, ordered = TRUE)) |>
   SharedData$new()
 
 filter_select("country-afp-wpv-vdpv", "Country: ", shared_afp_wpv_vdpv,
