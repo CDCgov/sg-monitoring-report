@@ -760,7 +760,9 @@ datatable(
       Region = "whoregion",
       Country = "place.admin.0",
       Month = "month"
-    ),
+    ) |>
+    dplyr::mutate(Month = factor(Month, month.abb, ordered = TRUE)) |>
+    dplyr::arrange(Country, Month),
   filter = "top",
   extensions = 'Buttons',
   options = list(
@@ -783,7 +785,8 @@ datatable(
                 semester = "Semester",
                 month = "Month",
                 comparison = "Difference",
-                trend = "Trend"),
+                trend = "Trend") |>
+    dplyr::arrange(Country, Quarter),
   filter = "top",
   extensions = 'Buttons',
   options = list(
@@ -807,7 +810,9 @@ datatable(
       Region = "whoregion",
       `Pending Samples` = "pending_samples",
       `% Lab Samples` = "prop_label"
-    ),
+    ) |>
+    dplyr::relocate(Region, .after = Country) |>
+    dplyr::arrange(Region, Country),
   filter = "top",
   extensions = 'Buttons',
   options = list(
@@ -832,7 +837,8 @@ datatable(
       `% Difference` = "diff",
       Trend = "trend",
       `Current Year Performance` = "performance"
-    ),
+    ) |>
+    dplyr::arrange(Country, Quarter),
   filter = "top",
   extensions = 'Buttons',
   options = list(
@@ -855,7 +861,9 @@ datatable(
                 month = "Month",
                 quarter = "Quarter",
                 comparison = "Difference",
-                trend = "Trend"),
+                trend = "Trend") |>
+    dplyr::relocate(Region, .after = Country) |>
+    dplyr::arrange(Region, Country, Quarter),
   filter = "top",
   extensions = 'Buttons',
   options = list(
@@ -881,7 +889,9 @@ datatable(
       Month = "month",
       Difference = "comparison",
       Trend = "trend"
-    ),
+    ) |>
+    dplyr::relocate(Region, .after = Country) |>
+    dplyr::arrange(Region, Country, Month),
   filter = "top",
   extensions = 'Buttons',
   options = list(
@@ -903,10 +913,13 @@ datatable(
       country = "Country",
       whoregion = "Region",
       month = "Month",
+      quarter = "Quarter",
       comparison = "Difference",
       culture.itd.cat = "Shipment Type",
       trend = "Trend"
-    ),
+    ) |>
+    dplyr::relocate(Region, .after = Country) |>
+    dplyr::arrange(Region, Country, Quarter),
   filter = "top",
   extensions = 'Buttons',
   options = list(
@@ -933,7 +946,10 @@ datatable(
       whoregion = "Region",
       comparison = "Difference",
       trend = "Trend"
-    ),
+    ) |>
+    dplyr::relocate(Country, .before = Region) |>
+    dplyr::mutate(Month = factor(Month, month.abb, ordered = TRUE)) |>
+    dplyr::arrange(Region, Country, Month),
   filter = "top",
   extensions = 'Buttons',
   options = list(
@@ -956,7 +972,9 @@ datatable(
       Region = "whoregion",
       `Difference, %` = "comparison",
       Trend = "trend"
-    ),
+    ) |>
+    dplyr::relocate(Region, .after = Country) |>
+    dplyr::arrange(Region, Country, Quarter),
   filter = "top",
   extensions = 'Buttons',
   options = list(
@@ -987,7 +1005,10 @@ es_shipment <- es_shipment |>
     Trend = "trend",
     `Current Year Timeliness` = "current_year_timeliness",
     `Trend Summary` = "trend_summary"
-  )
+  ) |>
+  dplyr::relocate(Region, .after = Country) |>
+  dplyr::relocate(Month, .after = `Lab Type`) |>
+  dplyr::arrange(Region, Country, Month)
 
 datatable(
   es_shipment,
@@ -1018,7 +1039,10 @@ es_wpv_vdpv <- es_wpv_vdpv |>
     Trend = "trend",
     `Current Year Timeliness` = "current_year_timeliness",
     `Trend Summary` = "trend_summary"
-  )
+  ) |>
+  dplyr::relocate(Region, .after = Country) |>
+  dplyr::relocate(Month, .after = `Lab Type`) |>
+  dplyr::arrange(Region, Country, Month)
 
 datatable(
   es_wpv_vdpv,
@@ -1045,7 +1069,9 @@ es_sites <- es_sites |>
     Difference = "comparison",
     `Difference, %` = "prop_diff",
     Trend = "trend"
-  )
+  ) |>
+  dplyr::relocate(Region, .after = Country) |>
+  dplyr::arrange(Region, Country)
 ```
 
 ```{r}
@@ -1064,6 +1090,7 @@ datatable(
 )
 
 ```
+
 ### Number of samples per sites
 
 ```{r}
@@ -1078,7 +1105,8 @@ es_site_samples <- es_site_samples |>
     Month = "month",
     `Median Collections` = "median_collections",
     `Year-Month` = "ym"
-  )
+  ) |>
+  dplyr::arrange(Country, Year, Month)
 ```
 
 ```{r}
@@ -1119,7 +1147,9 @@ culture_lab_intervals <- culture_lab_intervals |>
 
 interval_summary <- culture_lab_intervals |> 
     dplyr::filter(interval == "days.lab.culture") |>
-    dplyr::select(-interval)
+    dplyr::select(-interval) |>
+  dplyr::arrange(`Culture/ITD Lab`)
+
 top_10 <- interval_summary |> 
   filter(Trend == "Increase") |> 
   arrange(desc(Difference)) |>
@@ -1203,7 +1233,8 @@ datatable(interval_summary,
 
 interval_summary <- culture_lab_intervals |> 
     dplyr::filter(interval == "days.culture.itd") |>
-    dplyr::select(-interval)
+    dplyr::select(-interval) |>
+    dplyr::arrange(`Culture/ITD Lab`)
 top_10 <- interval_summary |> 
   filter(Trend == "Increase") |> 
   arrange(desc(Difference)) |>
@@ -1289,7 +1320,8 @@ datatable(
 
 interval_summary <- culture_lab_intervals |> 
     dplyr::filter(interval == "days.seq.ship") |>
-    dplyr::select(-interval)
+    dplyr::select(-interval) |>
+    dplyr::arrange(`Culture/ITD Lab`)
 top_10 <- interval_summary |> 
   filter(Trend == "Increase") |> 
   arrange(desc(Difference)) |>
@@ -1357,7 +1389,8 @@ overall <- paste0("Overall, ",
 datatable(
   culture_lab_intervals |> 
     dplyr::filter(interval == "days.seq.ship") |>
-    dplyr::select(-interval),
+    dplyr::select(-interval) |>
+    dplyr::arrange(`Culture/ITD Lab`),
   filter = "top",
   extensions = 'Buttons',
   options = list(
@@ -1382,7 +1415,8 @@ seq_lab_interval <- seq_lab_interval |>
 
 interval_summary <- seq_lab_interval |> 
     dplyr::filter(interval == "days.seq.rec.res") |>
-    dplyr::select(-interval)
+    dplyr::select(-interval) |>
+    dplyr::arrange(`Sequencing Lab`)
 top_10 <- interval_summary |> 
   filter(Trend == "Increase") |> 
   arrange(desc(Difference)) |>
@@ -1475,7 +1509,8 @@ lab_workload <- lab_workload |>
     Difference = "comparison",
     `Difference (%)` = "comparison_pct",
     Trend = "trend"
-  )
+  ) |>
+  dplyr::arrange(`Culture/ITD Lab`, Month)
 
 last_month <- lab_workload |>
   filter(Month == lubridate::month(lubridate::month(max_lab_date) - 1, TRUE))
