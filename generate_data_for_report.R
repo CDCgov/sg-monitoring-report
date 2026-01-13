@@ -1,13 +1,14 @@
 
-
+# Source functions ----
 lapply(list.files("R"), \(fx) source(file.path("R", fx)))
 
+# Load data ----
 end_date <- lubridate::as_date(end_date)
-
 raw_data <- get_all_polio_data(attach.spatial.data = FALSE)
 sirfunctions_io("read", file_loc = get_constant("CLEANED_LAB_DATA"))
 lab_data <- clean_lab_data(lab_data, "2019-01-01", end_date, afp_data = raw_data$afp)
-# Manual clean-up
+
+# Manual clean-up of lab data ----
 lab_data <- lab_data |>
   mutate(seq.lab = case_when(
     seq.lab == "CDC-Atlanta" & DateStoolCollected >= as_date("2025-02-01") & culture.itd.lab == "Cameroon" ~ "NICD-South Africa",
@@ -26,11 +27,14 @@ lab_data <- lab_data |>
   )) |>
   mutate(seq.capacity = if_else(country %in% c("NIGERIA", "UGANDA") & DateStoolCollected >= as_date("2025-02-01"), "yes", seq.capacity))
 
+# Load human specimen table ----
 human_specimen <- sirfunctions_io("read", file_loc = "POLIS/data/human_specimen.rds")
+
+# Calculate max lab dates ----
 max_lab_date <- max(lab_data$CaseDate, na.rm = TRUE)
 max_date_notif <- paste0("Lab data recent as of ", max_lab_date, ".")
 
-# AFP indicators
+# AFP indicators ----
 afp_cases_reported <- get_afp_cases_reported(raw_data$afp, end_date) |>
   sirfunctions:::add_risk_category(ctry_col = "place.admin.0") |>
   dplyr::select(-Region) |>
@@ -74,7 +78,7 @@ prop_inad <- get_prop_inad_with_contacts(human_specimen, raw_data$afp, end_date)
   dplyr::select(-Region) |>
   dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "ctry")
 
-# ES indicators
+# ES indicators ----
 es_shipment_timeliness <- get_es_timeliness(raw_data$es, end_date = end_date) |>
   sirfunctions:::add_risk_category(ctry_col = "country") |>
   dplyr::select(-Region) |>
@@ -98,7 +102,7 @@ es_site_samples <- suppressMessages(get_samples_per_es_site(raw_data$es, end_dat
   dplyr::select(-Region) |>
   dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "ADM0_NAME")
 
-# Lab indicators
+# Lab indicators ----
 culture_lab_intervals <- lab_timely_indicators(lab_data,"culture", end_date = max_lab_date)
 seq_lab_interval <- lab_timely_indicators(lab_data,"seq", end_date = max_lab_date)
 lab_workload <- suppressMessages(lab_workload(lab_data, end_date = max_lab_date))
@@ -114,7 +118,7 @@ if (!dir.exists("images")) {
   dir.create("images")
 }
 
-# Generate Individual Tile Plots
+# Generate Individual Tile Plots ----
 who_regions <- c("AFRO", "AMRO", "EMRO", "EURO", "SEARO", "WPRO")
 
 # AFP
