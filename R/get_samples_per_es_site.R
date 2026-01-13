@@ -22,45 +22,40 @@ get_samples_per_es_site <- function(es_data, end_date = Sys.Date()) {
   # Get age of sites
   site_ages <- sirfunctions:::get_es_site_age(es_data, end_date)
 
+  # Obtain operational sites
+  operational_sites <- site_ages |>
+    dplyr::filter(n_samples_12_mo >= 3, site_age >= 12) |>
+    dplyr::mutate(operational_site = TRUE)
+
   # Get latest collection date and see if there's a "missed" collection
   latest_collection <- es_data |>
-    dplyr::filter(who.region %in% c("AFRO", "EMRO")) |>
-    dplyr::group_by(ADM0_NAME, site.name, site.status) |>
-    dplyr::summarize(earliest_collection = min(collect.date, na.rm = TRUE),
-                     last_collection = max(collect.date, na.rm = TRUE)) |>
-    dplyr::mutate(days_since_last_collection = difftime(end_date, last_collection, units = "days"),
-                  collection_two_mo = dplyr::if_else(days_since_last_collection <= 60, "Yes", "No"))
+    dplyr::select(env.sample.id, site.name, country = ADM0_NAME, collect.date) |>
+    dplyr::filter(collect.date >= (end_date %m-% months(12))) |> # limit to last 12 months
+    dplyr::mutate(month = month(collect.date, label = TRUE),
+                  year = year(collect.date)) |>
+    dplyr::left_join(operational_sites) |>
+    dplyr::filter(operational_site) |>
+    dplyr::group_by(year, month, country, site.name) |>
+    dplyr::summarize(n_collections = dplyr::n()) |>
+    dplyr::ungroup()
 
-  # Latest EV detection
-  latest_ev_det <- es_data |>
-    dplyr::filter(who.region %in% c("AFRO", "EMRO"),
-                  ev.detect == 1) |>
-    dplyr::group_by(ADM0_NAME, site.name, site.status) |>
-    dplyr::summarize(last_detection = max(collect.date, na.rm = TRUE)) |>
-    dplyr::mutate(days_since_last_det = difftime(end_date, last_detection),
-                  detection_two_mo = dplyr::if_else(days_since_last_det <= 60, "Yes", "No"))
+  latest_collection_complete <- latest_collection |>
+    tidyr::complete(
+      month = month.abb,
+      year = unique(latest_collection$year),
+      nesting(country, site.name),
+      fill = list(n_collections = 0)
+    ) |>
+    dplyr::mutate(month = factor(month, ordered = TRUE, levels = month.abb))
 
-  # Combine
-  summary <- dplyr::left_join(latest_collection, latest_ev_det) |>
-    dplyr::left_join(site_ages)
+  monthly_summary <- latest_collection_complete |>
+    dplyr::group_by(year, country, month) |>
+    dplyr::summarize(median_collections = median(n_collections, na.rm = T)) |>
+    dplyr::ungroup() |>
+    dplyr::mutate(ym = paste0(year, "-", month, "-1")) |>
+    dplyr::mutate(ym = readr::parse_date(ym, format = "%Y-%b-%d")) |>
+    dplyr::filter(ym >= (end_date %m-% months(12)))
 
-  # Determine if considered an "active site"
-  summary <- summary |>
-    dplyr::mutate(active_site = dplyr::if_else(n_samples_12_mo >= 10 &
-                                          site_age >= 12 &
-                                          site.status != "CLOSED", "Yes", "No"),
-                  site_age = round(site_age)) |>
-    dplyr::select(-sampling_interval) |>
-    dplyr::mutate(failing_performance = dplyr::case_when(
-      n_samples_12_mo < 10 & collection_two_mo == "No" & site_age >= 12 ~ "Yes (No collections two months, <10 samples in rolling 12-month period)",
-      collection_two_mo == "No" & site_age >= 12 ~ "Yes (No collections from last two months)",
-      n_samples_12_mo < 10 & site_age >= 12 ~ "Yes (<10 samples collected in 12-month rolling period)",
-      collection_two_mo == "Yes" & n_samples_12_mo >= 10 & site_age >= 12 ~ "No",
-      site_age < 12 ~ "Unable to assess, (Site < 12 months)",
-      .default = "Unable to assess"
-      )
-    )
-
-  return(summary)
+  return(monthly_summary)
 
   }

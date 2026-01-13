@@ -150,6 +150,10 @@ function remove_all_option() {
     document.getElementById("country-afp-wpv-vdpv").getElementsByClassName("selectized")[0].selectize.removeOption("");
     document.getElementById("country-afp-prop-60").getElementsByClassName("selectized")[0].selectize.removeOption("");
     document.getElementById("country-afp-prop-classified").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("country-es-sample-shipment").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("country-es-wpv-vdpv").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("country-es-op-sites").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("country-es-med-samples").getElementsByClassName("selectized")[0].selectize.removeOption("");
      
 }
 function filter_default() {
@@ -158,6 +162,10 @@ function filter_default() {
         document.getElementById("country-afp-wpv-vdpv").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
         document.getElementById("country-afp-prop-60").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
         document.getElementById("country-afp-prop-classified").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
+        document.getElementById("country-es-sample-shipment").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
+        document.getElementById("country-es-wpv-vdpv").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
+        document.getElementById("country-es-op-sites").getElementsByClassName("selectized")[0].selectize.setValue("AFRO", false);
+        document.getElementById("country-es-med-samples").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
 }
 window.onload = function() {
 filter_default();
@@ -311,6 +319,8 @@ plot_ly(shared_lab_pending) |>
     x = ~Country,
     y = ~prop,
     type = "bar",
+    text = ~prop_label,
+    textposition = "outside",
     name = "Proportion of Samples Older Than 90 Days with Pending Status"
   ) |>
   config(displayModeBar = FALSE) |>
@@ -319,7 +329,7 @@ plot_ly(shared_lab_pending) |>
     x = 0,
     xanchor = "left"),
     yaxis = list(title = "% Pending Samples"),
-    xaxis = list(title = "Country"),
+    xaxis = list(title = "Country", categoryorder = "trace"),
     margin = list(t = 50)
          )
 ```
@@ -406,6 +416,8 @@ plot_ly(shared_afp_wpv_vdpv, colors = c("lightsteelblue", "steelblue")) |>
     x = ~quarter,
     y = ~get(names(afp_wpv_vdpv)[5]),
     type = "bar",
+    text = ~get(names(afp_wpv_vdpv)[5]),
+    textposition = "outside",
     name = names(afp_wpv_vdpv)[5],
     color = as.factor(names(afp_wpv_vdpv)[5])
   ) |>
@@ -413,6 +425,8 @@ plot_ly(shared_afp_wpv_vdpv, colors = c("lightsteelblue", "steelblue")) |>
     x = ~quarter,
     y = ~get(names(afp_wpv_vdpv)[6]),
     type = "bar",
+    text = ~get(names(afp_wpv_vdpv)[6]),
+    textposition = "outside",
     name = names(afp_wpv_vdpv)[6],
     color = as.factor(names(afp_wpv_vdpv)[6])
   ) |>
@@ -430,6 +444,205 @@ plot_ly(shared_afp_wpv_vdpv, colors = c("lightsteelblue", "steelblue")) |>
     margin = list(t = 50)
          )
 ```
+:::
+
+## ES Surveillance Indicators
+
+::: panel-tabset
+
+### Timeliness of ES sample shipment
+```{r es-sample-shipment}
+#| echo: false
+#| warning: false
+
+shared_es_shipment <- es_shipment |>
+  dplyr::rename(
+      Region = "who.region",
+      Country = "country",
+      Month = "month") |>
+  dplyr::mutate(timely_prev = stringr::str_extract(get(names(es_shipment)[6]), "\\d+\\.?\\d*"),
+                timely_cur = stringr::str_extract(get(names(es_shipment)[7]), "\\d+\\.?\\d*")) |>
+  dplyr::mutate(timely_prev = as.numeric(timely_prev),
+                timely_cur = as.numeric(timely_cur)) |>
+  dplyr::select(1:2, 6:7, 12:13) |>
+  SharedData$new()
+
+filter_select("country-es-sample-shipment", "Country: ", shared_es_shipment,
+              ~Country, 
+              multiple = FALSE,
+              allLevels = FALSE)
+
+plot_ly(shared_es_shipment, colors = c("lightsteelblue", "steelblue")) |>
+    add_trace(
+    x = ~Month,
+    y = ~timely_prev,
+    text = ~get(names(shared_es_shipment$data())[3]),
+    textposition = 'outside',
+    type = "bar",
+    name = names(shared_es_shipment$data())[3],
+    color = as.factor(names(shared_es_shipment$data())[3])
+  ) |>
+  add_trace(
+    x = ~Month,
+    y = ~timely_cur,
+    text = ~get(names(shared_es_shipment$data())[4]),
+    textposition = 'outside',
+    type = "bar",
+    name = names(shared_es_shipment$data())[4],
+    color = as.factor(names(shared_es_shipment$data())[4])
+  ) |>
+  config(displayModeBar = FALSE) |>
+  layout(title = list(
+    text = paste0("<b>Timeliness of ES Sample Shipment Monthly AFP Cases Reported</b>"),
+    x = 0,
+    xanchor = "left"),
+    yaxis = list(title = "Median Days"),
+    xaxis = list(title = "Month"),
+    legend = list(orientation = "h",
+                           xanchor = "center", 
+                           x = 0.5,
+                           y = -0.2),
+    margin = list(t = 50)
+         )
+
+```
+### Timeliness of detection for WPV/VDPV ES Samples
+```{r es-wpv-vdpv-det}
+#| echo: false
+#| warning: false
+
+shared_es_wpv_vdpv <- es_wpv_vdpv |>
+  dplyr::rename(
+      Region = "who.region",
+      Country = "country",
+      Month = "month") |>
+  dplyr::mutate(timely_prev = stringr::str_extract(get(names(es_shipment)[6]), "\\d+\\.?\\d*"),
+                timely_cur = stringr::str_extract(get(names(es_shipment)[7]), "\\d+\\.?\\d*")) |>
+  dplyr::mutate(timely_prev = as.numeric(timely_prev),
+                timely_cur = as.numeric(timely_cur)) |>
+  dplyr::select(1:2, 6:7, 12:13) |>
+  SharedData$new()
+
+filter_select("country-es-wpv-vdpv", "Country: ", shared_es_wpv_vdpv,
+              ~Country, 
+              multiple = FALSE,
+              allLevels = FALSE)
+
+plot_ly(shared_es_wpv_vdpv, colors = c("lightsteelblue", "steelblue")) |>
+    add_trace(
+    x = ~Month,
+    y = ~timely_prev,
+    text = ~get(names(shared_es_wpv_vdpv$data())[3]),
+    textposition = 'outside',
+    type = "bar",
+    name = names(shared_es_wpv_vdpv$data())[3],
+    color = as.factor(names(shared_es_wpv_vdpv$data())[3])
+  ) |>
+  add_trace(
+    x = ~Month,
+    y = ~timely_cur,
+    text = ~get(names(shared_es_wpv_vdpv$data())[4]),
+    textposition = 'outside',
+    type = "bar",
+    name = names(shared_es_wpv_vdpv$data())[4],
+    color = as.factor(names(shared_es_wpv_vdpv$data())[4])
+  ) |>
+  config(displayModeBar = FALSE) |>
+  layout(title = list(
+    text = paste0("<b>Timeliness of detection for WPV/VDPV ES Samples Shipment</b>"),
+    x = 0,
+    xanchor = "left"),
+    yaxis = list(title = "Median Days"),
+    xaxis = list(title = "Month"),
+    legend = list(orientation = "h",
+                           xanchor = "center", 
+                           x = 0.5,
+                           y = -0.2),
+    margin = list(t = 50)
+         )
+```
+
+### Number of Operational ES Sites per Country
+```{r es-operational-sites}
+#| echo: false
+#| warning: false
+
+shared_es_wpv_vdpv <- es_sites |>
+  dplyr::rename(Country = "ctry") |>
+  dplyr::mutate(label = paste0(prop_diff, "%")) |>
+  dplyr::select(Country, prop_diff, Region, label) |>
+  arrange(reorder(Country, prop_diff)) |>
+  SharedData$new()
+
+filter_select("country-es-op-sites", "Country: ", shared_es_wpv_vdpv,
+              ~Region, 
+              multiple = FALSE,
+              allLevels = FALSE)
+
+plot_ly(shared_es_wpv_vdpv, colors = c("lightsteelblue", "steelblue")) |>
+    add_trace(
+    x = ~Country,
+    y = ~prop_diff,
+    text = ~get(names(shared_es_wpv_vdpv$data())[4]),
+    textposition = 'outside',
+    type = "bar",
+    name = names(shared_es_wpv_vdpv$data())[4],
+    color = as.factor(names(shared_es_wpv_vdpv$data())[4])
+  ) |>
+  config(displayModeBar = FALSE) |>
+  layout(title = list(
+    text = paste0("<b>Number of Operational Sites Compared to Last Year</b>",
+                  "<b> (", names(es_sites)[3], "-", names(es_sites)[4], ")</b>"),
+    x = 0,
+    xanchor = "left"),
+    yaxis = list(title = "% Change"),
+    xaxis = list(title = "Country", categoryorder = "trace"),
+    legend = list(orientation = "h",
+                           xanchor = "center", 
+                           x = 0.5,
+                           y = -0.2),
+    margin = list(t = 50, b = 50)
+         )
+```
+
+### Number of Samples per Site
+```{r es-samples-per-site}
+#| echo: false
+#| warning: false
+
+shared_es_site_samples <- es_site_samples |>
+  SharedData$new()
+
+filter_select("country-es-med-samples", "Country: ", shared_es_site_samples,
+              ~country, 
+              multiple = FALSE,
+              allLevels = FALSE)
+
+plot_ly(shared_es_site_samples, colors = c("steelblue")) |>
+    add_trace(
+    x = ~ym,
+    y = ~median_collections,
+    text = ~median_collections,
+    textposition = 'outside',
+    type = "bar",
+    name = "Median Collections"
+  ) |>
+  config(displayModeBar = FALSE) |>
+  layout(title = list(
+    text = paste0("<b>Monthly Median Collections Among Operational Sites</b>"),
+    x = 0,
+    xanchor = "left"),
+    yaxis = list(title = "Median Collection", showticklabels = FALSE),
+    xaxis = list(title = "Month-Year"),
+    legend = list(orientation = "h",
+                           xanchor = "center", 
+                           x = 0.5,
+                           y = -0.2),
+    margin = list(t = 50, b = 50)
+         )
+
+```
+
 :::
 
 :::
@@ -659,6 +872,7 @@ datatable(
 ```
 :::
 
+
 ## Environmental Surveillance Indicators
 ::: panel-sidebar
 ### Timeliness of ES sample shipment
@@ -760,50 +974,16 @@ datatable(
 #| include: false
 #| echo: false
 
-failing_sites <- es_site_samples |>
-  dplyr::filter(stringr::str_detect(failing_performance, "Yes \\(")) |>
-  dplyr::group_by(ADM0_NAME) |>
-  dplyr::summarize(n = dplyr::n()) |>
-  dplyr::arrange(dplyr::desc(ADM0_NAME))
-
-failing_active_sites <- es_site_samples |>
-  dplyr::filter(stringr::str_detect(failing_performance, "Yes \\("),
-                active_site == "Yes") |>
-  dplyr::group_by(ADM0_NAME) |>
-  dplyr::summarize(n = dplyr::n()) |>
-  dplyr::arrange(dplyr::desc(ADM0_NAME))
-
-es_failure_summary <- paste0(
-  "There are ", nrow(failing_sites), " countries with sites below target, ",
-  "with a total of ", sum(failing_sites$n, na.rm = TRUE), " sites.",
-  " Failing sites are those who have been open for at least 12 months", 
-  " with no collections in the last two months or",
-  " have less than 10 samples in the past rolling 12-month period. Of the sites below target, ",
-  sum(failing_active_sites$n, na.rm = TRUE),
-  " are considered active sites (sites with at least 10 collections in the past rolling 12-month period), ",
-  "with no EV detection in the past two months."
-)
-
 es_site_samples <- es_site_samples |>
   dplyr::rename(
-    Country = "ADM0_NAME",
-    `Site Name` = "site.name",
-    `Site Age` = "site_age",
-    `Samples In Last 12 Months` = "n_samples_12_mo",
-    `POLIS Site Status` = "site.status",
-    `Earliest Collection` = "earliest_collection",
-    `Last Collection` = "last_collection",
-    `Days Since Last Collection` = "days_since_last_collection",
-    `Collection In Two Months` = "collection_two_mo",
-    `Last Detection` = "last_detection",
-    `Days Since Last Detection` = "days_since_last_det",
-    `Detection In Two Months` = "detection_two_mo",
-    `Is Active Site` = "active_site",
-    `Below Target Performance` = "failing_performance"
+    Year = "year",
+    Country = "country",
+    Month = "month",
+    `Median Collections` = "median_collections",
+    `Year-Month` = "ym"
   )
-
 ```
-`r es_failure_summary`
+
 ```{r}
 #| include: true
 #| echo: false
@@ -821,6 +1001,7 @@ datatable(
 ```
 
 :::
+
 
 ## Lab Surveillance Indicators
 `{r} max_date_notif`
