@@ -94,7 +94,6 @@ es_wpv_vdpv <- es_shipment_timeliness |>
 
 es_sites <- suppressMessages(get_operational_sites(raw_data$es, end_date)) |>
   sirfunctions:::add_risk_category(ctry_col = "ctry") |>
-  dplyr::select(-Region) |>
   dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "ctry")
 
 es_site_samples <- suppressMessages(get_samples_per_es_site(raw_data$es, end_date)) |>
