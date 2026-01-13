@@ -152,6 +152,7 @@ function remove_all_option() {
     document.getElementById("country-afp-prop-classified").getElementsByClassName("selectized")[0].selectize.removeOption("");
     document.getElementById("country-es-sample-shipment").getElementsByClassName("selectized")[0].selectize.removeOption("");
     document.getElementById("country-es-wpv-vdpv").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("country-es-op-sites").getElementsByClassName("selectized")[0].selectize.removeOption("");
      
 }
 function filter_default() {
@@ -162,6 +163,7 @@ function filter_default() {
         document.getElementById("country-afp-prop-classified").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
         document.getElementById("country-es-sample-shipment").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
         document.getElementById("country-es-wpv-vdpv").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
+        document.getElementById("country-es-op-sites").getElementsByClassName("selectized")[0].selectize.setValue("AFRO", false);
 }
 window.onload = function() {
 filter_default();
@@ -554,7 +556,45 @@ plot_ly(shared_es_wpv_vdpv, colors = c("lightsteelblue", "steelblue")) |>
 
 ### Number of Operational ES Sites per Country
 ```{r es-operational-sites}
+#| echo: false
+#| warning: false
 
+shared_es_wpv_vdpv <- es_sites |>
+  dplyr::rename(Country = "ctry") |>
+  dplyr::mutate(label = paste0(prop_diff, "%")) |>
+  dplyr::select(Country, prop_diff, Region, label) |>
+  arrange(reorder(Country, prop_diff)) |>
+  SharedData$new()
+
+filter_select("country-es-op-sites", "Country: ", shared_es_wpv_vdpv,
+              ~Region, 
+              multiple = FALSE,
+              allLevels = FALSE)
+
+plot_ly(shared_es_wpv_vdpv, colors = c("lightsteelblue", "steelblue")) |>
+    add_trace(
+    x = ~Country,
+    y = ~prop_diff,
+    text = ~get(names(shared_es_wpv_vdpv$data())[4]),
+    textposition = 'outside',
+    type = "bar",
+    name = names(shared_es_wpv_vdpv$data())[4],
+    color = as.factor(names(shared_es_wpv_vdpv$data())[4])
+  ) |>
+  config(displayModeBar = FALSE) |>
+  layout(title = list(
+    text = paste0("<b>Number of Operational Sites Compared to Last Year</b>",
+                  "<b> (", names(es_sites)[3], "-", names(es_sites)[4], ")</b>"),
+    x = 0,
+    xanchor = "left"),
+    yaxis = list(title = "% Change"),
+    xaxis = list(title = "Country", categoryorder = "trace"),
+    legend = list(orientation = "h",
+                           xanchor = "center", 
+                           x = 0.5,
+                           y = -0.2),
+    margin = list(t = 50, b = 50)
+         )
 ```
 
 ### Number of Samples per Site
