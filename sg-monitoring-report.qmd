@@ -154,6 +154,7 @@ function remove_all_option() {
     document.getElementById("country-es-wpv-vdpv").getElementsByClassName("selectized")[0].selectize.removeOption("");
     document.getElementById("country-es-op-sites").getElementsByClassName("selectized")[0].selectize.removeOption("");
     document.getElementById("country-es-med-samples").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("lab-culture").getElementsByClassName("selectized")[0].selectize.removeOption("");
      
 }
 function filter_default() {
@@ -166,6 +167,7 @@ function filter_default() {
         document.getElementById("country-es-wpv-vdpv").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
         document.getElementById("country-es-op-sites").getElementsByClassName("selectized")[0].selectize.setValue("AFRO", false);
         document.getElementById("country-es-med-samples").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
+        document.getElementById("lab-culture").getElementsByClassName("selectized")[0].selectize.setValue("Virus isolation results", false);
 }
 window.onload = function() {
 filter_default();
@@ -199,18 +201,18 @@ filter_select("country-afp-case-report", "Country: ", shared_afp_cases_reported,
 plot_ly(shared_afp_cases_reported, colors = c("lightsteelblue", "steelblue")) |>
     add_trace(
     x = ~Month,
-    y = ~`2022-2024 Median`,
-    error_y = ~list(array=`2022-2024 MAD` * 2, color = '#000000'),
+    y = ~get(names(afp_cases_reported)[5]),
+    error_y = ~list(array=get(names(afp_cases_reported)[8]) * 2, color = '#000000'),
     type = "bar",
-    name = "2022-2024 Median",
-    color = as.factor("2022-2024 Median")
+    name = names(afp_cases_reported)[5],
+    color = as.factor(names(afp_cases_reported)[5])
   ) |>
   add_trace(
     x = ~Month,
-    y = ~`2025`,
+    y = ~get(names(afp_cases_reported)[9]),
     type = "bar",
-    name = "2025",
-    color = as.factor("2025")
+    name = names(afp_cases_reported)[9],
+    color = as.factor(names(afp_cases_reported)[9])
   ) |>
   config(displayModeBar = FALSE) |>
   layout(title = list(
@@ -404,6 +406,7 @@ plot_ly(shared_prop_classified, colors = c("lightsteelblue", "steelblue")) |>
 
 # Graph
 shared_afp_wpv_vdpv <- afp_wpv_vdpv |>
+  dplyr::mutate(quarter = factor(quarter, ordered = TRUE)) |>
   SharedData$new()
 
 filter_select("country-afp-wpv-vdpv", "Country: ", shared_afp_wpv_vdpv,
@@ -641,6 +644,100 @@ plot_ly(shared_es_site_samples, colors = c("steelblue")) |>
     margin = list(t = 50, b = 50)
          )
 
+```
+
+:::
+
+## Lab Surveillance Indicators
+
+::: panel-tabset
+
+### Culturing Lab Timeliness
+
+```{r lab-culture-isolation}
+#| echo: false
+#| warning: false
+
+shared_lab_culture <- culture_lab_intervals |>
+  dplyr::mutate(interval_name = dplyr::case_when(
+    interval == "days.lab.culture" ~ "Virus isolation results",
+    interval == "days.culture.itd" ~ "ITD results",
+    interval == "days.seq.ship" ~ "Shipment for Sequencing"
+  )) |>
+  SharedData$new()
+
+filter_select("lab-culture", "Interval: ", shared_lab_culture,
+              ~interval_name, 
+              multiple = FALSE,
+              allLevels = FALSE)
+
+plot_ly(shared_lab_culture, colors = c("lightsteelblue", "steelblue")) |>
+    add_trace(
+    x = ~culture.itd.lab,
+    y = ~get(names(culture_lab_intervals)[3]),
+    type = "bar",
+    name = names(culture_lab_intervals)[3],
+    color = as.factor(names(culture_lab_intervals)[3])
+  ) |>
+  add_trace(
+    x = ~culture.itd.lab,
+    y = ~get(names(culture_lab_intervals)[4]),
+    type = "bar",
+    name = names(culture_lab_intervals)[4],
+    color = as.factor(names(culture_lab_intervals)[4])
+  ) |>
+  config(displayModeBar = FALSE) |>
+  layout(title = list(
+    text = paste0("<b>Median Timeliness for Culturing Lab</b>"),
+    x = 0,
+    xanchor = "left"),
+    yaxis = list(title = "Median Days"),
+    xaxis = list(title = "Culturing Lab"),
+    legend = list(orientation = "h",
+                           xanchor = "center", 
+                           x = 0.5,
+                           y = -0.5),
+    margin = list(t = 50)
+         )
+
+```
+
+### Sequencing lab timeliness
+```{r lab-seq}
+#| echo: false
+#| warning: false
+
+shared_lab_seq <- seq_lab_interval |>
+  SharedData$new()
+
+plot_ly(shared_lab_seq, colors = c("lightsteelblue", "steelblue")) |>
+    add_trace(
+    x = ~seq.lab,
+    y = ~get(names(seq_lab_interval)[3]),
+    type = "bar",
+    name = names(seq_lab_interval)[3],
+    color = as.factor(names(seq_lab_interval)[3])
+  ) |>
+  add_trace(
+    x = ~seq.lab,
+    y = ~get(names(seq_lab_interval)[4]),
+    type = "bar",
+    name = names(seq_lab_interval)[4],
+    color = as.factor(names(seq_lab_interval)[4])
+  ) |>
+  config(displayModeBar = FALSE) |>
+  layout(title = list(
+    text = paste0("<b>Median Timeliness for Sequencing Lab</b>"),
+    x = 0,
+    xanchor = "left"),
+    yaxis = list(title = "Median Days"),
+    xaxis = list(title = "Sequencing Lab"),
+    legend = list(orientation = "h",
+                           xanchor = "center", 
+                           x = 0.5,
+                           y = -0.5),
+    margin = list(t = 50)
+         )
 ```
 
 :::
