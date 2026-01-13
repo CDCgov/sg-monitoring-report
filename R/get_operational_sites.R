@@ -20,13 +20,13 @@ get_operational_sites <- function(es_data, end_date = Sys.Date()) {
   current_year <- lubridate::year(end_date)
 
   active_sites <- sirfunctions:::get_es_site_age(es_data, end_date)
-  prev_year_active_sites <- sirfunctions:::get_es_site_age(es_data, end_date - lubridate::years(1))
+  prev_year_active_sites <- sirfunctions:::get_es_site_age(es_data, end_date %m-% lubridate::years(1))
 
   # Filter for active sites only
   active_sites <- active_sites |>
-    dplyr::filter(n_samples_12_mo >= 10, site_age >= 12)
+    dplyr::filter(n_samples_12_mo >= 3, site_age >= 12)
   prev_year_active_sites <- prev_year_active_sites |>
-    dplyr::filter(n_samples_12_mo >= 10, site_age >= 12)
+    dplyr::filter(n_samples_12_mo >= 3, site_age >= 12)
 
   current_year_active_site_summary <- active_sites |>
     dplyr::distinct() |>
