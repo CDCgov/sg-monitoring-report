@@ -97,9 +97,9 @@ es_sites <- suppressMessages(get_operational_sites(raw_data$es, end_date)) |>
   dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "ctry")
 
 es_site_samples <- suppressMessages(get_samples_per_es_site(raw_data$es, end_date)) |>
-  sirfunctions:::add_risk_category(ctry_col = "ADM0_NAME") |>
+  sirfunctions:::add_risk_category(ctry_col = "country") |>
   dplyr::select(-Region) |>
-  dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "ADM0_NAME")
+  dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "country")
 
 # Lab indicators ----
 culture_lab_intervals <- lab_timely_indicators(lab_data,"culture", end_date = max_lab_date)
