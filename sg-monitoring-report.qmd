@@ -317,6 +317,8 @@ plot_ly(shared_lab_pending) |>
     x = ~Country,
     y = ~prop,
     type = "bar",
+    text = ~prop_label,
+    textposition = "outside",
     name = "Proportion of Samples Older Than 90 Days with Pending Status"
   ) |>
   config(displayModeBar = FALSE) |>
@@ -325,7 +327,7 @@ plot_ly(shared_lab_pending) |>
     x = 0,
     xanchor = "left"),
     yaxis = list(title = "% Pending Samples"),
-    xaxis = list(title = "Country"),
+    xaxis = list(title = "Country", categoryorder = "trace"),
     margin = list(t = 50)
          )
 ```
