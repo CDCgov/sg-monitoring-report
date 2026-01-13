@@ -622,16 +622,17 @@ plot_ly(shared_es_site_samples, colors = c("steelblue")) |>
     add_trace(
     x = ~ym,
     y = ~median_collections,
+    text = ~median_collections,
     textposition = 'outside',
     type = "bar",
     name = "Median Collections"
   ) |>
   config(displayModeBar = FALSE) |>
   layout(title = list(
-    text = paste0("<b>Monthly Median Collections Among Operational Site</b>"),
+    text = paste0("<b>Monthly Median Collections Among Operational Sites</b>"),
     x = 0,
     xanchor = "left"),
-    yaxis = list(title = "Median Collection"),
+    yaxis = list(title = "Median Collection", showticklabels = FALSE),
     xaxis = list(title = "Month-Year"),
     legend = list(orientation = "h",
                            xanchor = "center", 
