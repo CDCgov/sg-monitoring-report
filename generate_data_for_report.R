@@ -103,7 +103,15 @@ es_site_samples <- suppressMessages(get_samples_per_es_site(raw_data$es, end_dat
 
 # Lab indicators ----
 culture_lab_intervals <- lab_timely_indicators(lab_data,"culture", end_date = max_lab_date)
+culture_lab_intervals <- culture_lab_intervals |>
+  dplyr::mutate(`Target Days` = dplyr::case_when(
+    interval == "days.lab.culture" ~ 14,
+    interval == "days.culture.itd" ~ 7,
+    interval == "days.seq.ship" ~ 7)
+  )
 seq_lab_interval <- lab_timely_indicators(lab_data,"seq", end_date = max_lab_date)
+seq_lab_interval <- seq_lab_interval |>
+  dplyr::mutate(`Target Days` = 7)
 lab_workload <- suppressMessages(lab_workload(lab_data, end_date = max_lab_date))
 
 # Save tables ----

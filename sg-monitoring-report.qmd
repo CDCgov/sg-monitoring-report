@@ -1139,6 +1139,11 @@ datatable(
 #| echo: false
 
 culture_lab_intervals <- culture_lab_intervals |>
+    dplyr::mutate(`Target Days` = dplyr::case_when(
+      interval == "days.lab.culture" ~ 14, 
+      interval == "days.culture.itd" ~ 7,
+      interval == "days.seq.ship" ~ 7)
+    ) |>
   dplyr::rename_with(recode,
                      culture.itd.lab = "Culture/ITD Lab",
                      comparison = "Difference",
@@ -1314,7 +1319,7 @@ datatable(
 
 ### Timeliness of shipment for sequencing
 
-```{r}
+```{r lab-culture-seq-ship}
 #| include: false
 #| echo: false
 
@@ -1382,7 +1387,7 @@ overall <- paste0("Overall, ",
 
 `r overall`
 
-```{r}
+```{r lab-culture-seq-ship-table}
 #| include: true
 #| echo: false
 
@@ -1403,7 +1408,7 @@ datatable(
 
 ### Timeliness of sequencing results
 
-```{r}
+```{r lab-seq-res}
 #| include: false
 #| echo: false
 seq_lab_interval <- seq_lab_interval |>
@@ -1477,7 +1482,7 @@ overall <- paste0("Overall, ",
 
 `r overall`
 
-```{r}
+```{r lab-seq-res-table}
 #| include: true
 #| echo: false
 
@@ -1497,7 +1502,7 @@ datatable(
 
 ### Laboratory workload
 
-```{r}
+```{r lab-workload}
 #| include: false
 #| echo: false
 
