@@ -114,12 +114,19 @@ seq_lab_interval <- seq_lab_interval |>
   dplyr::mutate(`Target Days` = 7)
 lab_workload <- suppressMessages(generate_lab_workload(lab_data, end_date = max_lab_date))
 
+# Data for tile plots
+afp_tile_plot_data <- process_afp_performance(afp_cases_reported, prop_60, lab_pending, prop_classified,
+                                              afp_wpv_vdpv, negative_lab_processing, afp_shipment_timeliness,
+                                              afp_lab_processing, end_date = end_date, lab_end_date = max_lab_date)
+
+es_tile_plot_data <- process_es_performance(es_shipment, es_wpv_vdpv, es_sites, es_site_samples, end_date = end_date)
+
 # Save tables ----
 save(max_lab_date, max_date_notif, afp_cases_reported, lab_pending,
      afp_wpv_vdpv, negative_lab_processing, afp_shipment_timeliness,
      afp_lab_processing, prop_60, prop_classified, prop_inad,
      es_shipment_timeliness, es_shipment, es_wpv_vdpv, es_sites, es_site_samples,
-     culture_lab_intervals, seq_lab_interval, lab_workload,
+     culture_lab_intervals, seq_lab_interval, lab_workload, afp_tile_plot_data,
      file = "data_cache/cache.rda")
 
 # Save tables in an Excel File ----
