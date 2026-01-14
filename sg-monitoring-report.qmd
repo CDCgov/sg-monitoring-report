@@ -138,6 +138,9 @@ colorscale <- list(
 ```{r afp-tile-plot}
 #| echo: false
 #| warning: false
+#| fig-width: 8
+#| fig-height: 10
+#| out-width: 100%
 
 shared_afp_tile_data <- afp_tile_plot_data |>
     mutate(
@@ -176,26 +179,29 @@ plot_ly(shared_afp_tile_data) |>
 ```
 
 ### ES Indicators
-```{r afp-tile-plot}
+```{r es-tile-plot}
 #| echo: false
 #| warning: false
+#| fig-width: 8
+#| fig-height: 10
+#| out-width: 100%
 
-shared_afp_tile_data <- afp_tile_plot_data |>
+shared_es_tile_data <- es_tile_plot_data |>
     mutate(
     value = factor(value, levels = c("To Be Determined", "Below target", "On target")),
     value_num = as.integer(value)) |>
   SharedData$new(key = ~whoregion)
 
-filter_select("afp-tile-plot", "Region: ", 
-              shared_afp_tile_data,
+filter_select("es-tile-plot", "Region: ", 
+              shared_es_tile_data,
               ~whoregion,
               multiple = FALSE,
               allLevels = FALSE)
 
-plot_ly(shared_afp_tile_data) |>
+plot_ly(shared_es_tile_data) |>
   add_trace(
     x = ~indicator,
-    y = ~place.admin.0,
+    y = ~country,
     z = ~value_num,
     type = "heatmap",
     zmin = 1, zmax = 3,
@@ -1649,6 +1655,7 @@ datatable(
 
 function remove_all_option() {
     document.getElementById("afp-tile-plot").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("es-tile-plot").getElementsByClassName("selectized")[0].selectize.removeOption("");
     document.getElementById("country-afp-case-report").getElementsByClassName("selectized")[0].selectize.removeOption("");
     document.getElementById("region-afp-lab-pending").getElementsByClassName("selectized")[0].selectize.removeOption("");
     document.getElementById("country-afp-wpv-vdpv").getElementsByClassName("selectized")[0].selectize.removeOption("");
@@ -1663,6 +1670,7 @@ function remove_all_option() {
 }
 function filter_default() {
     document.getElementById("afp-tile-plot").getElementsByClassName("selectized")[0].selectize.setValue("AFRO", false);
+    document.getElementById("es-tile-plot").getElementsByClassName("selectized")[0].selectize.setValue("AFRO", false);
     document.getElementById("country-afp-case-report").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
     document.getElementById("region-afp-lab-pending").getElementsByClassName("selectized")[0].selectize.setValue("AFRO", false);
     document.getElementById("country-afp-wpv-vdpv").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
