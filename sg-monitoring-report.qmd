@@ -71,44 +71,6 @@ Lab data is updated quarterly, hence end dates may not be the same as the end da
 
 ## Tile Plots
 
-*Filter only applies to AFP and ES tile plots*
-
-```{=html}
-<select id="imageSelector" onchange="showImages();">
-  <option value="def">Select a region</option>
-  <option value="AFRO">AFRO</option>
-  <option value="AMRO">AMRO</option>
-  <option value="EMRO">EMRO</option>
-  <option value="EURO">EURO</option>
-  <option value="SEARO">SEARO</option>
-  <option value="WPRO">WPRO</option>
-</select>
-
-<script>
-  function showImages() {
-    var selector = document.getElementById("imageSelector");
-    var imageES = document.getElementById("selectedImageES");
-    var imageAFP = document.getElementById("selectedImageAFP");
-    var selectedValue = selector.value;
-    
-    var base = "images/";
-
-    // Don't try to load if the default placeholder is selected
-    if (selectedValue && selectedValue !== "def") {
-      imageES.src  = base + selectedValue + "_es_plot.jpg";
-      imageAFP.src = base + selectedValue + "_afp_plot.jpg";
-    } else {
-      imageES.src  = "";
-      imageAFP.src = "";
-    }
-
-    imageES.style.display  = imageES.src  ? "block" : "none";
-    imageAFP.style.display = imageAFP.src ? "block" : "none";
-  }
-  
-</script>
-```
-
 ::: panel-tabset
 
 ```{r tile-colors}
@@ -163,8 +125,6 @@ plot_ly(shared_afp_tile_data) |>
     zmin = 1, zmax = 3,
     colorscale = colorscale,
     showscale = FALSE,
-    text = ~value,
-    textposition = "outside",
     name = "AFP Indicators"
   ) |>
   config(displayModeBar = FALSE) |>
@@ -207,8 +167,6 @@ plot_ly(shared_es_tile_data) |>
     zmin = 1, zmax = 3,
     colorscale = colorscale,
     showscale = FALSE,
-    text = ~value,
-    textposition = "outside",
     name = "AFP Indicators"
   ) |>
   config(displayModeBar = FALSE) |>
@@ -224,10 +182,73 @@ plot_ly(shared_es_tile_data) |>
 
 ### Lab Indicators
 
-::: {layout-ncol=2}
-![](images/culture_lab_plot.jpg)
+::: {layout-ncol=2 style="gap: 2rem;"}
+```{r culture-lab-plot}
+#| echo: false
+#| fig-width: 8
+#| fig-height: 10
 
-![](images/seq_lab_plot.jpg)
+shared_culture_plot_data <- culture_lab_plot_data |>
+      mutate(
+        value = factor(value, levels = c("To Be Determined", "Below target", "On target")),
+        value_num = as.integer(value)) |>
+  SharedData$new()
+
+plot_ly(shared_culture_plot_data) |>
+  add_trace(
+    x = ~indicator,
+    y = ~culture.itd.lab,
+    z = ~value_num,
+    type = "heatmap",
+    zmin = 1, zmax = 3,
+    colorscale = colorscale,
+    showscale = FALSE,
+    name = "Culture Lab Indicators"
+  ) |>
+  config(displayModeBar = FALSE) |>
+  layout(title = list(
+    text = paste0("<b>Culture Lab Indicators</b>"),
+    x = 0,
+    xanchor = "left"),
+    yaxis = list(title = "Culture/ITD Lab", categoryorder = "trace"),
+    xaxis = list(title = ""),
+    margin = list(t = 50)
+         )
+
+```
+
+```{r seq-lab-plot}
+#| echo: false
+#| fig-width: 8
+#| fig-height: 10
+shared_seq_plot_data <- seq_lab_plot_data |>
+      mutate(
+        value = factor(value, levels = c("To Be Determined", "Below target", "On target")),
+        value_num = as.integer(value)) |>
+  SharedData$new()
+
+plot_ly(shared_seq_plot_data) |>
+  add_trace(
+    x = ~indicator,
+    y = ~seq.lab,
+    z = ~value_num,
+    type = "heatmap",
+    zmin = 1, zmax = 3,
+    colorscale = colorscale,
+    showscale = FALSE,
+    name = "Sequencing Lab Indicators"
+  ) |>
+  config(displayModeBar = FALSE) |>
+  layout(title = list(
+    text = paste0("<b>Sequencing Lab Indicator</b>"),
+    x = 0,
+    xanchor = "left"),
+    yaxis = list(title = "Sequencing Lab", categoryorder = "trace"),
+    xaxis = list(title = ""),
+    margin = list(t = 50)
+         )
+```
+
 :::
 
 :::
