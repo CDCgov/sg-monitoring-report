@@ -94,17 +94,11 @@ process_afp_performance <- function(afp_cases_reported = NULL,
 
   ## Proportion of lab pending ----
   lab_pending_filtered <- lab_pending |>
-    dplyr::mutate(prop = stringr::str_extract(prop_label, "[0-9]+"),
-                  n_sample = str_extract(prop_label, "(?<=/)\\d+")) |>
-    dplyr::mutate(prop = as.numeric(prop),
-                  n_sample = as.numeric(n_sample)) |>
-    dplyr::group_by(country) |>
-    dplyr::summarize(pending = sum(pending_samples, na.rm = TRUE),
-                     total = sum(n_sample, na.rm = TRUE)) |>
-    dplyr::mutate(prop = pending/total * 100) |>
+    dplyr::mutate(prop = stringr::str_extract(prop_label, "[0-9]+")) |>
+    dplyr::mutate(prop = as.numeric(prop)) |>
     dplyr::mutate(I3 = dplyr::case_when(
-      prop >= 80 ~ "Below target",
-      prop < 80 ~ "On target"
+      prop >= 10 ~ "Below target",
+      prop < 10 ~ "On target"
     )) |>
     dplyr::select(place.admin.0 = country, I3)
 

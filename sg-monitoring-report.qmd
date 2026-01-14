@@ -13,12 +13,14 @@ output-file:
 ```{r load}
 #| echo: false
 #| include: false
+#| warning: false
 
 library(sirfunctions)
 library(DT)
 library(tidyverse)
 library(plotly)
 library(crosstalk)
+library(cowplot)
 
 use_cache <- TRUE # Change if creating report using previous run or new run
 end_date <- "2025-12-31" # Change as needed. Only works for new runs
@@ -71,67 +73,219 @@ Lab data is updated quarterly, hence end dates may not be the same as the end da
 
 ## Tile Plots
 
-*Filter only applies to AFP and ES tile plots*
+```{r tile-colors}
+#| echo: false
+#| include: false
 
-```{=html}
-<select id="imageSelector" onchange="showImages();">
-  <option value="def">Select a region</option>
-  <option value="AFRO">AFRO</option>
-  <option value="AMRO">AMRO</option>
-  <option value="EMRO">EMRO</option>
-  <option value="EURO">EURO</option>
-  <option value="SEARO">SEARO</option>
-  <option value="WPRO">WPRO</option>
-</select>
+#Shared for all tile plots
+cat_colors <- c(
+        "On target" = "#0070c0",
+        "Below target" = "darkorange",
+        "To Be Determined" = "lightgrey"
+)
 
-<script>
-  function showImages() {
-    var selector = document.getElementById("imageSelector");
-    var imageES = document.getElementById("selectedImageES");
-    var imageAFP = document.getElementById("selectedImageAFP");
-    var selectedValue = selector.value;
-    
-    var base = "images/";
+# Create a stepped colorscale for values 1, 2, 3
+colorscale <- list(
+  list(0.0000, as.character(cat_colors["To Be Determined"])),
+  list(0.3333 - 1e-6, as.character(cat_colors["To Be Determined"])),
+  list(0.3333, as.character(cat_colors["Below target"])),
+  list(0.6666 - 1e-6, as.character(cat_colors["Below target"])),
+  list(0.6666, as.character(cat_colors["On target"])),
+  list(1.0000, as.character(cat_colors["On target"]))
+)
+```
 
-    // Don't try to load if the default placeholder is selected
-    if (selectedValue && selectedValue !== "def") {
-      imageES.src  = base + selectedValue + "_es_plot.jpg";
-      imageAFP.src = base + selectedValue + "_afp_plot.jpg";
-    } else {
-      imageES.src  = "";
-      imageAFP.src = "";
-    }
+```{r tile-legends}
+#| echo: false
+#| warning: false
+#| fig.width: 3.5
+#| fig.height: 0.55
 
-    imageES.style.display  = imageES.src  ? "block" : "none";
-    imageAFP.style.display = imageAFP.src ? "block" : "none";
-  }
-  
-</script>
+legend_col <- c(
+        "On target" = "#0070c0",
+        "Below target" = "darkorange",
+        "No data" = "lightgrey")
+
+tile_legend <- dplyr::tibble(
+  placeholder = rep(1, 3),
+  cat = names(legend_col)
+) |>
+  dplyr::mutate(cat = factor(cat, levels = names(legend_col), ordered = TRUE))
+
+tile_plot_legend <- ggplot(tile_legend) + 
+  geom_col(aes(x = cat, y = placeholder, fill = cat)) +
+  scale_fill_manual(values = legend_col, name = "Performance") +
+  theme_void() +
+  theme(legend.position = "bottom",
+        legend.direction = "horizontal",
+        legend.box = "horizontal",
+        legend.key.width = unit(8, "pt"),
+        legend.key.height = unit(8, "pt"),
+        legend.text = element_text(size = 7),
+        legend.title = element_text(size = 8)) +
+  guides(fill = guide_legend(nrow = 1))
+
+tp_legend <- get_legend(tile_plot_legend)
+
+ggdraw(tp_legend)
 ```
 
 ::: panel-tabset
 
 ### AFP Indicators
 
-```{=html}
-<div id="imageContainerAFP" style="margin-top: 20px;">
-  <img id="selectedImageAFP" src="" alt="AFP Tile Plot" style="display:none; width: 14in; height: 8in;"/>
-</div>
+```{r afp-tile-plot}
+#| echo: false
+#| warning: false
+#| fig-width: 8
+#| fig-height: 10
+#| out-width: 100%
+
+shared_afp_tile_data <- afp_tile_plot_data |>
+    mutate(
+    value = factor(value, levels = c("To Be Determined", "Below target", "On target")),
+    value_num = as.integer(value)) |>
+  SharedData$new(key = ~whoregion)
+
+filter_select("afp-tile-plot", "Region: ", 
+              shared_afp_tile_data,
+              ~whoregion,
+              multiple = FALSE,
+              allLevels = FALSE)
+
+plot_ly(shared_afp_tile_data) |>
+  add_trace(
+    x = ~indicator,
+    y = ~place.admin.0,
+    z = ~value_num,
+    type = "heatmap",
+    zmin = 1, zmax = 3,
+    colorscale = colorscale,
+    showscale = FALSE,
+    name = "AFP Indicators"
+  ) |>
+  config(displayModeBar = FALSE) |>
+  layout(title = list(
+    text = paste0("<b>AFP Indicators</b>"),
+    x = 0,
+    xanchor = "left"),
+    yaxis = list(title = "", categoryorder = "trace"),
+    xaxis = list(title = ""),
+    margin = list(t = 50)
+         )
 ```
 
 ### ES Indicators
-```{=html}
-<div id="imageContainerES" style="margin-top: 20px;">
-  <img id="selectedImageES" src="" alt="ES Tile Plot" style="display:none; width: 14in; height: 8in;"/>
-</div>
+```{r es-tile-plot}
+#| echo: false
+#| warning: false
+#| fig-width: 8
+#| fig-height: 10
+#| out-width: 100%
+
+shared_es_tile_data <- es_tile_plot_data |>
+    mutate(
+    value = factor(value, levels = c("To Be Determined", "Below target", "On target")),
+    value_num = as.integer(value)) |>
+  SharedData$new(key = ~whoregion)
+
+filter_select("es-tile-plot", "Region: ", 
+              shared_es_tile_data,
+              ~whoregion,
+              multiple = FALSE,
+              allLevels = FALSE)
+
+plot_ly(shared_es_tile_data) |>
+  add_trace(
+    x = ~indicator,
+    y = ~country,
+    z = ~value_num,
+    type = "heatmap",
+    zmin = 1, zmax = 3,
+    colorscale = colorscale,
+    showscale = FALSE,
+    name = "AFP Indicators"
+  ) |>
+  config(displayModeBar = FALSE) |>
+  layout(title = list(
+    text = paste0("<b>ES Indicators</b>"),
+    x = 0,
+    xanchor = "left"),
+    yaxis = list(title = "", categoryorder = "trace"),
+    xaxis = list(title = ""),
+    margin = list(t = 50)
+         )
 ```
 
 ### Lab Indicators
 
-::: {layout-ncol=2}
-![](images/culture_lab_plot.jpg)
+::: {layout-ncol=2 style="gap: 2rem;"}
+```{r culture-lab-plot}
+#| echo: false
+#| fig-width: 8
+#| fig-height: 10
 
-![](images/seq_lab_plot.jpg)
+shared_culture_plot_data <- culture_lab_plot_data |>
+      mutate(
+        value = factor(value, levels = c("To Be Determined", "Below target", "On target")),
+        value_num = as.integer(value)) |>
+  SharedData$new()
+
+plot_ly(shared_culture_plot_data) |>
+  add_trace(
+    x = ~indicator,
+    y = ~culture.itd.lab,
+    z = ~value_num,
+    type = "heatmap",
+    zmin = 1, zmax = 3,
+    colorscale = colorscale,
+    showscale = FALSE,
+    name = "Culture Lab Indicators"
+  ) |>
+  config(displayModeBar = FALSE) |>
+  layout(title = list(
+    text = paste0("<b>Culture Lab Indicators</b>"),
+    x = 0,
+    xanchor = "left"),
+    yaxis = list(title = "", categoryorder = "trace"),
+    xaxis = list(title = ""),
+    margin = list(t = 50)
+         )
+
+```
+
+```{r seq-lab-plot}
+#| echo: false
+#| fig-width: 8
+#| fig-height: 10
+shared_seq_plot_data <- seq_lab_plot_data |>
+      mutate(
+        value = factor(value, levels = c("To Be Determined", "Below target", "On target")),
+        value_num = as.integer(value)) |>
+  SharedData$new()
+
+plot_ly(shared_seq_plot_data) |>
+  add_trace(
+    x = ~indicator,
+    y = ~seq.lab,
+    z = ~value_num,
+    type = "heatmap",
+    zmin = 1, zmax = 3,
+    colorscale = colorscale,
+    showscale = FALSE,
+    name = "Sequencing Lab Indicators"
+  ) |>
+  config(displayModeBar = FALSE) |>
+  layout(title = list(
+    text = paste0("<b>Sequencing Lab Indicator</b>"),
+    x = 0,
+    xanchor = "left"),
+    yaxis = list(title = "", categoryorder = "trace"),
+    xaxis = list(title = ""),
+    margin = list(t = 50)
+         )
+```
+
 :::
 
 :::
@@ -141,40 +295,6 @@ Lab data is updated quarterly, hence end dates may not be the same as the end da
 ::: panel-tabset
 
 ## AFP Surveillance Indicators
-```{js enable-js-graphs}
-#| echo: false
-
-function remove_all_option() {
-    document.getElementById("country-afp-case-report").getElementsByClassName("selectized")[0].selectize.removeOption("");
-    document.getElementById("region-afp-lab-pending").getElementsByClassName("selectized")[0].selectize.removeOption("");
-    document.getElementById("country-afp-wpv-vdpv").getElementsByClassName("selectized")[0].selectize.removeOption("");
-    document.getElementById("country-afp-prop-60").getElementsByClassName("selectized")[0].selectize.removeOption("");
-    document.getElementById("country-afp-prop-classified").getElementsByClassName("selectized")[0].selectize.removeOption("");
-    document.getElementById("country-es-sample-shipment").getElementsByClassName("selectized")[0].selectize.removeOption("");
-    document.getElementById("country-es-wpv-vdpv").getElementsByClassName("selectized")[0].selectize.removeOption("");
-    document.getElementById("country-es-op-sites").getElementsByClassName("selectized")[0].selectize.removeOption("");
-    document.getElementById("country-es-med-samples").getElementsByClassName("selectized")[0].selectize.removeOption("");
-    document.getElementById("lab-culture").getElementsByClassName("selectized")[0].selectize.removeOption("");
-     
-}
-function filter_default() {
-    document.getElementById("country-afp-case-report").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
-        document.getElementById("region-afp-lab-pending").getElementsByClassName("selectized")[0].selectize.setValue("AFRO", false);
-        document.getElementById("country-afp-wpv-vdpv").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
-        document.getElementById("country-afp-prop-60").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
-        document.getElementById("country-afp-prop-classified").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
-        document.getElementById("country-es-sample-shipment").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
-        document.getElementById("country-es-wpv-vdpv").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
-        document.getElementById("country-es-op-sites").getElementsByClassName("selectized")[0].selectize.setValue("AFRO", false);
-        document.getElementById("country-es-med-samples").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
-        document.getElementById("lab-culture").getElementsByClassName("selectized")[0].selectize.setValue("Virus isolation results", false);
-}
-window.onload = function() {
-filter_default();
-remove_all_option();
-}
-
-```
 
 ::: panel-tabset
 
@@ -1587,3 +1707,42 @@ datatable(
 :::
 
 :::
+
+```{js enable-js-graphs}
+#| echo: false
+
+function remove_all_option() {
+    document.getElementById("afp-tile-plot").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("es-tile-plot").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("country-afp-case-report").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("region-afp-lab-pending").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("country-afp-wpv-vdpv").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("country-afp-prop-60").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("country-afp-prop-classified").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("country-es-sample-shipment").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("country-es-wpv-vdpv").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("country-es-op-sites").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("country-es-med-samples").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("lab-culture").getElementsByClassName("selectized")[0].selectize.removeOption("");
+     
+}
+function filter_default() {
+    document.getElementById("afp-tile-plot").getElementsByClassName("selectized")[0].selectize.setValue("AFRO", false);
+    document.getElementById("es-tile-plot").getElementsByClassName("selectized")[0].selectize.setValue("AFRO", false);
+    document.getElementById("country-afp-case-report").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
+    document.getElementById("region-afp-lab-pending").getElementsByClassName("selectized")[0].selectize.setValue("AFRO", false);
+    document.getElementById("country-afp-wpv-vdpv").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
+    document.getElementById("country-afp-prop-60").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
+    document.getElementById("country-afp-prop-classified").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
+    document.getElementById("country-es-sample-shipment").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
+    document.getElementById("country-es-wpv-vdpv").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
+    document.getElementById("country-es-op-sites").getElementsByClassName("selectized")[0].selectize.setValue("AFRO", false);
+    document.getElementById("country-es-med-samples").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
+    document.getElementById("lab-culture").getElementsByClassName("selectized")[0].selectize.setValue("Virus isolation results", false);
+}
+window.onload = function() {
+filter_default();
+remove_all_option();
+}
+
+```
