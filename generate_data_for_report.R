@@ -127,6 +127,7 @@ save(max_lab_date, max_date_notif, afp_cases_reported, lab_pending,
      afp_lab_processing, prop_60, prop_classified, prop_inad,
      es_shipment_timeliness, es_shipment, es_wpv_vdpv, es_sites, es_site_samples,
      culture_lab_intervals, seq_lab_interval, lab_workload, afp_tile_plot_data,
+     es_tile_plot_data,
      file = "data_cache/cache.rda")
 
 # Save tables in an Excel File ----
