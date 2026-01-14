@@ -467,7 +467,7 @@ shared_es_shipment <- es_shipment |>
                 timely_cur = stringr::str_extract(get(names(es_shipment)[7]), "\\d+\\.?\\d*")) |>
   dplyr::mutate(timely_prev = as.numeric(timely_prev),
                 timely_cur = as.numeric(timely_cur)) |>
-  dplyr::select(1:2, 6:7, 12:13) |>
+  dplyr::select(1:2, 6:7, 13:14) |>
   SharedData$new()
 
 filter_select("country-es-sample-shipment", "Country: ", shared_es_shipment,
@@ -523,7 +523,7 @@ shared_es_wpv_vdpv <- es_wpv_vdpv |>
                 timely_cur = stringr::str_extract(get(names(es_shipment)[7]), "\\d+\\.?\\d*")) |>
   dplyr::mutate(timely_prev = as.numeric(timely_prev),
                 timely_cur = as.numeric(timely_cur)) |>
-  dplyr::select(1:2, 6:7, 12:13) |>
+  dplyr::select(1:2, 6:7, 13:14) |>
   SharedData$new()
 
 filter_select("country-es-wpv-vdpv", "Country: ", shared_es_wpv_vdpv,
@@ -1070,8 +1070,7 @@ es_sites <- es_sites |>
     Country = "ctry",
     Difference = "comparison",
     `Difference, %` = "prop_diff",
-    Trend = "trend",
-    `Timeliness Target` = "timeliness_target"
+    Trend = "trend"
   ) |>
   dplyr::relocate(Region, .after = Country) |>
   dplyr::arrange(Region, Country)
