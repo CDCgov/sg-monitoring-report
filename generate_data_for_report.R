@@ -114,12 +114,24 @@ seq_lab_interval <- seq_lab_interval |>
   dplyr::mutate(`Target Days` = 7)
 lab_workload <- suppressMessages(generate_lab_workload(lab_data, end_date = max_lab_date))
 
-# Data for tile plots
+# Data for tile plots ----
 afp_tile_plot_data <- process_afp_performance(afp_cases_reported, prop_60, lab_pending, prop_classified,
                                               afp_wpv_vdpv, negative_lab_processing, afp_shipment_timeliness,
                                               afp_lab_processing, end_date = end_date, lab_end_date = max_lab_date)
 
 es_tile_plot_data <- process_es_performance(es_shipment, es_wpv_vdpv, es_sites, es_site_samples, end_date = end_date)
+
+culture_indicators <- c("Timeliness of\nvirus isolation",
+                        "Timeliness of\nITD results",
+                        "Timeliness of\nshipment for sequencing",
+                        "Lab workload")
+
+culture_lab_plot_data <- process_culture_lab_performance(culture_lab_intervals, lab_workload, max_lab_date)
+culture_lab_plot_data <- culture_lab_plot_data |>
+  dplyr::filter(!is.na(culture.itd.lab)) |>
+  dplyr::mutate(indicator = factor(indicator, levels = culture_indicators, ordered = TRUE))
+
+seq_lab_plot_data <- process_seq_lab_performance(seq_lab_interval)
 
 # Save tables ----
 save(max_lab_date, max_date_notif, afp_cases_reported, lab_pending,
@@ -127,7 +139,7 @@ save(max_lab_date, max_date_notif, afp_cases_reported, lab_pending,
      afp_lab_processing, prop_60, prop_classified, prop_inad,
      es_shipment_timeliness, es_shipment, es_wpv_vdpv, es_sites, es_site_samples,
      culture_lab_intervals, seq_lab_interval, lab_workload, afp_tile_plot_data,
-     es_tile_plot_data,
+     es_tile_plot_data, culture_lab_plot_data, seq_lab_plot_data,
      file = "data_cache/cache.rda")
 
 # Save tables in an Excel File ----
@@ -212,33 +224,6 @@ openxlsx::write.xlsx(excel_output,
                      file = file.path("Excel_Output", "monitoring_report_tables.xlsx"),
                      asTable = TRUE,
                      colWidths = "auto")
-
-# Generate Individual Tile Plots ----
-if (!dir.exists("images")) {
-  dir.create("images")
-}
-
-who_regions <- c("AFRO", "AMRO", "EMRO", "EURO", "SEARO", "WPRO")
-
-# AFP
-lapply(who_regions, \(x) {generate_afp_tile_plot(afp_cases_reported, prop_60, lab_pending, prop_classified,
-                                                 afp_wpv_vdpv, negative_lab_processing, afp_shipment_timeliness,
-                                                 afp_lab_processing, end_date = end_date, lab_end_date = max_lab_date, who_region = x)
-  ggsave(paste0("images/", x, "_afp_plot.jpg"), width = 14, height = 8)
-  })
-
-# ES
-lapply(who_regions, \(x) {
-  generate_es_tile_plot(es_shipment, es_wpv_vdpv, es_sites, es_site_samples, end_date = end_date, who_region = x)
-  ggsave(paste0("images/", x, "_es_plot.jpg"), width = 14, height = 8)
-  })
-
-# Lab
-generate_culture_lab_tile_plot(culture_lab_intervals, lab_workload, lab_end_date = max_lab_date)
-ggsave(paste0("images/", "culture_lab_plot.jpg"), width = 14, height = 8)
-
-generate_seq_lab_tile_plot(seq_lab_interval)
-ggsave(paste0("images/", "seq_lab_plot.jpg"), width = 14, height = 8)
 
 rm(list = ls())
 gc()
