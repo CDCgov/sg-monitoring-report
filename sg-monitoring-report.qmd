@@ -19,6 +19,7 @@ library(DT)
 library(tidyverse)
 library(plotly)
 library(crosstalk)
+library(cowplot)
 
 use_cache <- TRUE # Change if creating report using previous run or new run
 end_date <- "2025-12-31" # Change as needed. Only works for new runs
@@ -71,8 +72,6 @@ Lab data is updated quarterly, hence end dates may not be the same as the end da
 
 ## Tile Plots
 
-::: panel-tabset
-
 ```{r tile-colors}
 #| echo: false
 #| include: false
@@ -94,6 +93,28 @@ colorscale <- list(
   list(1.0000, as.character(cat_colors["On target"]))
 )
 ```
+
+```{r tile-legends}
+#| echo: false
+#| height: 1
+#| width: 3
+tile_legend <- dplyr::tibble(
+  placeholder = rep(1, 3),
+  cat = names(cat_colors)
+)
+
+tile_plot_legend <- ggplot(tile_legend) + 
+  geom_col(aes(x = cat, y = placeholder, fill = cat)) +
+  scale_fill_manual(values = cat_colors, name = "Performance") +
+  theme_void() +
+  theme(legend.position = "bottom") +
+  guides(fill = guide_legend(nrow = 1))
+legend <- get_legend(tile_plot_legend)
+
+ggdraw(legend)
+```
+
+::: panel-tabset
 
 ### AFP Indicators
 
