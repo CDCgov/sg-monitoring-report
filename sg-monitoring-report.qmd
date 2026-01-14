@@ -467,7 +467,7 @@ shared_es_shipment <- es_shipment |>
                 timely_cur = stringr::str_extract(get(names(es_shipment)[7]), "\\d+\\.?\\d*")) |>
   dplyr::mutate(timely_prev = as.numeric(timely_prev),
                 timely_cur = as.numeric(timely_cur)) |>
-  dplyr::select(1:2, 6:7, 12:13) |>
+  dplyr::select(1:2, 6:7, 13:14) |>
   SharedData$new()
 
 filter_select("country-es-sample-shipment", "Country: ", shared_es_shipment,
@@ -523,7 +523,7 @@ shared_es_wpv_vdpv <- es_wpv_vdpv |>
                 timely_cur = stringr::str_extract(get(names(es_shipment)[7]), "\\d+\\.?\\d*")) |>
   dplyr::mutate(timely_prev = as.numeric(timely_prev),
                 timely_cur = as.numeric(timely_cur)) |>
-  dplyr::select(1:2, 6:7, 12:13) |>
+  dplyr::select(1:2, 6:7, 13:14) |>
   SharedData$new()
 
 filter_select("country-es-wpv-vdpv", "Country: ", shared_es_wpv_vdpv,
@@ -1004,7 +1004,8 @@ es_shipment <- es_shipment |>
     Difference = "diff",
     Trend = "trend",
     `Current Year Timeliness` = "current_year_timeliness",
-    `Trend Summary` = "trend_summary"
+    `Trend Summary` = "trend_summary",
+    `Timeliness Target` = "timeliness_target"
   ) |>
   dplyr::relocate(Region, .after = Country) |>
   dplyr::relocate(Month, .after = `Lab Type`) |>
@@ -1038,7 +1039,8 @@ es_wpv_vdpv <- es_wpv_vdpv |>
     Difference = "diff",
     Trend = "trend",
     `Current Year Timeliness` = "current_year_timeliness",
-    `Trend Summary` = "trend_summary"
+    `Trend Summary` = "trend_summary",
+    `Timeliness Target` = "timeliness_target"
   ) |>
   dplyr::relocate(Region, .after = Country) |>
   dplyr::relocate(Month, .after = `Lab Type`) |>
@@ -1139,6 +1141,11 @@ datatable(
 #| echo: false
 
 culture_lab_intervals <- culture_lab_intervals |>
+    dplyr::mutate(`Target Days` = dplyr::case_when(
+      interval == "days.lab.culture" ~ 14, 
+      interval == "days.culture.itd" ~ 7,
+      interval == "days.seq.ship" ~ 7)
+    ) |>
   dplyr::rename_with(recode,
                      culture.itd.lab = "Culture/ITD Lab",
                      comparison = "Difference",
@@ -1314,7 +1321,7 @@ datatable(
 
 ### Timeliness of shipment for sequencing
 
-```{r}
+```{r lab-culture-seq-ship}
 #| include: false
 #| echo: false
 
@@ -1382,7 +1389,7 @@ overall <- paste0("Overall, ",
 
 `r overall`
 
-```{r}
+```{r lab-culture-seq-ship-table}
 #| include: true
 #| echo: false
 
@@ -1403,7 +1410,7 @@ datatable(
 
 ### Timeliness of sequencing results
 
-```{r}
+```{r lab-seq-res}
 #| include: false
 #| echo: false
 seq_lab_interval <- seq_lab_interval |>
@@ -1477,7 +1484,7 @@ overall <- paste0("Overall, ",
 
 `r overall`
 
-```{r}
+```{r lab-seq-res-table}
 #| include: true
 #| echo: false
 
@@ -1497,7 +1504,7 @@ datatable(
 
 ### Laboratory workload
 
-```{r}
+```{r lab-workload}
 #| include: false
 #| echo: false
 

@@ -102,7 +102,12 @@ get_es_timeliness <- function(es_data, lab_loc = sirfunctions::get_lab_locs(), e
       trend == "Decrease" & current_year_timeliness == "Not timely" ~ "Improved from last year but not timely this year",
       trend == "Same" & current_year_timeliness == "Not timely" ~ "Not timely like last year",
       trend == "Same" & current_year_timeliness == "Timely" ~ "Timely like last year",
-      .default = "Unable to detect trend"
+      .default = "Unable to detect trend"),
+    timeliness_target = dplyr::case_when(
+      es.lab.type == "In-country" & category == "median_lab_shipment" ~ 3,
+      es.lab.type == "International" & category == "median_lab_shipment" ~ 7,
+      es.lab.type == "In-country" & category == "median_wpv_vdpv_detection" ~ 35,
+      es.lab.type == "International" & category == "median_wpv_vdpv_detection" ~ 46,
     ))
 
   # Combine with counts
@@ -113,4 +118,5 @@ get_es_timeliness <- function(es_data, lab_loc = sirfunctions::get_lab_locs(), e
                                                                               "category"))
 
   return(timeliness_summary_complete)
+
 }
