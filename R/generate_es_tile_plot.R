@@ -61,16 +61,17 @@ process_es_performance <- function(es_shipment = NULL,
     dplyr::select(country = ctry, I11)
 
   ## Number of samples per site ----
-  # Site-level indicator, rather than a country level...but here's an attempt
+  # Compare from previous month...however idk how well I can capture it.
   es_site_samples_filtered <- es_site_samples |>
-    dplyr::group_by(country) |>
-    dplyr::summarize(good_active_sites = sum(active_site == "Yes" & collection_two_mo == "Yes", na.rm = TRUE),
-                     active_sites = sum(active_site == "Yes")) |>
-    dplyr::mutate(active_sites_performance = round(good_active_sites / active_sites * 100)) |>
+    dplyr::filter(ym >= lubridate::floor_date(end_date %m-% months(1))) |>
+    dplyr::select(country, ym, median_collections) |>
+    tidyr::pivot_wider(names_from = ym, values_from = median_collections)
+  es_site_samples_filtered["diff"] <- (es_site_samples_filtered[, 3] - es_site_samples_filtered[, 2]) * 100
+  es_site_samples_filtered <- es_site_samples_filtered |>
     dplyr::mutate(I12 = dplyr::case_when(
-      is.na(active_sites_performance) ~ "To Be Determined",
-      active_sites_performance < 80 ~ "Below target",
-      active_sites_performance >= 80 ~ "On target"
+      is.na(diff) ~ "To Be Determined",
+      diff <= -50 ~ "Below target",
+      diff >= 0 ~ "On target"
     )) |>
     dplyr::select(country, I12)
 
