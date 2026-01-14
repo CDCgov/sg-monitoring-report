@@ -63,7 +63,7 @@ process_es_performance <- function(es_shipment = NULL,
   ## Number of samples per site ----
   # Site-level indicator, rather than a country level...but here's an attempt
   es_site_samples_filtered <- es_site_samples |>
-    dplyr::group_by(country = ADM0_NAME) |>
+    dplyr::group_by(country) |>
     dplyr::summarize(good_active_sites = sum(active_site == "Yes" & collection_two_mo == "Yes", na.rm = TRUE),
                      active_sites = sum(active_site == "Yes")) |>
     dplyr::mutate(active_sites_performance = round(good_active_sites / active_sites * 100)) |>
