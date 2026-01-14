@@ -112,7 +112,7 @@ culture_lab_intervals <- culture_lab_intervals |>
 seq_lab_interval <- lab_timely_indicators(lab_data,"seq", end_date = max_lab_date)
 seq_lab_interval <- seq_lab_interval |>
   dplyr::mutate(`Target Days` = 7)
-lab_workload <- suppressMessages(lab_workload(lab_data, end_date = max_lab_date))
+lab_workload <- suppressMessages(generate_lab_workload(lab_data, end_date = max_lab_date))
 
 # Save tables ----
 save(max_lab_date, max_date_notif, afp_cases_reported, lab_pending,

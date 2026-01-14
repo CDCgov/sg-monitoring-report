@@ -12,7 +12,7 @@
 #' @export
 #'
 #' @examples
-lab_workload <- function(lab_data, end_date = Sys.Date()) {
+generate_lab_workload <- function(lab_data, end_date = Sys.Date()) {
   start_date <- lubridate::floor_date(end_date, unit = "years")
   prev_year_end_date <- end_date - lubridate::years(1)
   prev_year_start_date <- lubridate::floor_date(prev_year_end_date, unit = "years")
