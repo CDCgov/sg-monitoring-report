@@ -111,19 +111,109 @@ Lab data is updated quarterly, hence end dates may not be the same as the end da
 
 ::: panel-tabset
 
+```{r tile-colors}
+#| echo: false
+#| include: false
+
+#Shared for all tile plots
+cat_colors <- c(
+        "On target" = "#0070c0",
+        "Below target" = "darkorange",
+        "To Be Determined" = "lightgrey"
+)
+
+# Create a stepped colorscale for values 1, 2, 3
+colorscale <- list(
+  list(0.0000, as.character(cat_colors["To Be Determined"])),
+  list(0.3333 - 1e-6, as.character(cat_colors["To Be Determined"])),
+  list(0.3333, as.character(cat_colors["Below target"])),
+  list(0.6666 - 1e-6, as.character(cat_colors["Below target"])),
+  list(0.6666, as.character(cat_colors["On target"])),
+  list(1.0000, as.character(cat_colors["On target"]))
+)
+```
+
 ### AFP Indicators
 
-```{=html}
-<div id="imageContainerAFP" style="margin-top: 20px;">
-  <img id="selectedImageAFP" src="" alt="AFP Tile Plot" style="display:none; width: 14in; height: 8in;"/>
-</div>
+```{r afp-tile-plot}
+#| echo: false
+#| warning: false
+
+shared_afp_tile_data <- afp_tile_plot_data |>
+    mutate(
+    value = factor(value, levels = c("To Be Determined", "Below target", "On target")),
+    value_num = as.integer(value)) |>
+  SharedData$new(key = ~whoregion)
+
+filter_select("afp-tile-plot", "Region: ", 
+              shared_afp_tile_data,
+              ~whoregion,
+              multiple = FALSE,
+              allLevels = FALSE)
+
+plot_ly(shared_afp_tile_data) |>
+  add_trace(
+    x = ~indicator,
+    y = ~place.admin.0,
+    z = ~value_num,
+    type = "heatmap",
+    zmin = 1, zmax = 3,
+    colorscale = colorscale,
+    showscale = FALSE,
+    text = ~value,
+    textposition = "outside",
+    name = "AFP Indicators"
+  ) |>
+  config(displayModeBar = FALSE) |>
+  layout(title = list(
+    text = paste0("<b>AFP Indicators</b>"),
+    x = 0,
+    xanchor = "left"),
+    yaxis = list(title = "", categoryorder = "trace"),
+    xaxis = list(title = ""),
+    margin = list(t = 50)
+         )
 ```
 
 ### ES Indicators
-```{=html}
-<div id="imageContainerES" style="margin-top: 20px;">
-  <img id="selectedImageES" src="" alt="ES Tile Plot" style="display:none; width: 14in; height: 8in;"/>
-</div>
+```{r afp-tile-plot}
+#| echo: false
+#| warning: false
+
+shared_afp_tile_data <- afp_tile_plot_data |>
+    mutate(
+    value = factor(value, levels = c("To Be Determined", "Below target", "On target")),
+    value_num = as.integer(value)) |>
+  SharedData$new(key = ~whoregion)
+
+filter_select("afp-tile-plot", "Region: ", 
+              shared_afp_tile_data,
+              ~whoregion,
+              multiple = FALSE,
+              allLevels = FALSE)
+
+plot_ly(shared_afp_tile_data) |>
+  add_trace(
+    x = ~indicator,
+    y = ~place.admin.0,
+    z = ~value_num,
+    type = "heatmap",
+    zmin = 1, zmax = 3,
+    colorscale = colorscale,
+    showscale = FALSE,
+    text = ~value,
+    textposition = "outside",
+    name = "AFP Indicators"
+  ) |>
+  config(displayModeBar = FALSE) |>
+  layout(title = list(
+    text = paste0("<b>ES Indicators</b>"),
+    x = 0,
+    xanchor = "left"),
+    yaxis = list(title = "", categoryorder = "trace"),
+    xaxis = list(title = ""),
+    margin = list(t = 50)
+         )
 ```
 
 ### Lab Indicators
@@ -141,40 +231,6 @@ Lab data is updated quarterly, hence end dates may not be the same as the end da
 ::: panel-tabset
 
 ## AFP Surveillance Indicators
-```{js enable-js-graphs}
-#| echo: false
-
-function remove_all_option() {
-    document.getElementById("country-afp-case-report").getElementsByClassName("selectized")[0].selectize.removeOption("");
-    document.getElementById("region-afp-lab-pending").getElementsByClassName("selectized")[0].selectize.removeOption("");
-    document.getElementById("country-afp-wpv-vdpv").getElementsByClassName("selectized")[0].selectize.removeOption("");
-    document.getElementById("country-afp-prop-60").getElementsByClassName("selectized")[0].selectize.removeOption("");
-    document.getElementById("country-afp-prop-classified").getElementsByClassName("selectized")[0].selectize.removeOption("");
-    document.getElementById("country-es-sample-shipment").getElementsByClassName("selectized")[0].selectize.removeOption("");
-    document.getElementById("country-es-wpv-vdpv").getElementsByClassName("selectized")[0].selectize.removeOption("");
-    document.getElementById("country-es-op-sites").getElementsByClassName("selectized")[0].selectize.removeOption("");
-    document.getElementById("country-es-med-samples").getElementsByClassName("selectized")[0].selectize.removeOption("");
-    document.getElementById("lab-culture").getElementsByClassName("selectized")[0].selectize.removeOption("");
-     
-}
-function filter_default() {
-    document.getElementById("country-afp-case-report").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
-        document.getElementById("region-afp-lab-pending").getElementsByClassName("selectized")[0].selectize.setValue("AFRO", false);
-        document.getElementById("country-afp-wpv-vdpv").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
-        document.getElementById("country-afp-prop-60").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
-        document.getElementById("country-afp-prop-classified").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
-        document.getElementById("country-es-sample-shipment").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
-        document.getElementById("country-es-wpv-vdpv").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
-        document.getElementById("country-es-op-sites").getElementsByClassName("selectized")[0].selectize.setValue("AFRO", false);
-        document.getElementById("country-es-med-samples").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
-        document.getElementById("lab-culture").getElementsByClassName("selectized")[0].selectize.setValue("Virus isolation results", false);
-}
-window.onload = function() {
-filter_default();
-remove_all_option();
-}
-
-```
 
 ::: panel-tabset
 
@@ -1587,3 +1643,40 @@ datatable(
 :::
 
 :::
+
+```{js enable-js-graphs}
+#| echo: false
+
+function remove_all_option() {
+    document.getElementById("afp-tile-plot").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("country-afp-case-report").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("region-afp-lab-pending").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("country-afp-wpv-vdpv").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("country-afp-prop-60").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("country-afp-prop-classified").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("country-es-sample-shipment").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("country-es-wpv-vdpv").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("country-es-op-sites").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("country-es-med-samples").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("lab-culture").getElementsByClassName("selectized")[0].selectize.removeOption("");
+     
+}
+function filter_default() {
+    document.getElementById("afp-tile-plot").getElementsByClassName("selectized")[0].selectize.setValue("AFRO", false);
+    document.getElementById("country-afp-case-report").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
+    document.getElementById("region-afp-lab-pending").getElementsByClassName("selectized")[0].selectize.setValue("AFRO", false);
+    document.getElementById("country-afp-wpv-vdpv").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
+    document.getElementById("country-afp-prop-60").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
+    document.getElementById("country-afp-prop-classified").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
+    document.getElementById("country-es-sample-shipment").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
+    document.getElementById("country-es-wpv-vdpv").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
+    document.getElementById("country-es-op-sites").getElementsByClassName("selectized")[0].selectize.setValue("AFRO", false);
+    document.getElementById("country-es-med-samples").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
+    document.getElementById("lab-culture").getElementsByClassName("selectized")[0].selectize.setValue("Virus isolation results", false);
+}
+window.onload = function() {
+filter_default();
+remove_all_option();
+}
+
+```
