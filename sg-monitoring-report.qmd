@@ -1004,7 +1004,8 @@ es_shipment <- es_shipment |>
     Difference = "diff",
     Trend = "trend",
     `Current Year Timeliness` = "current_year_timeliness",
-    `Trend Summary` = "trend_summary"
+    `Trend Summary` = "trend_summary",
+    `Timeliness Target` = "timeliness_target"
   ) |>
   dplyr::relocate(Region, .after = Country) |>
   dplyr::relocate(Month, .after = `Lab Type`) |>
@@ -1038,7 +1039,8 @@ es_wpv_vdpv <- es_wpv_vdpv |>
     Difference = "diff",
     Trend = "trend",
     `Current Year Timeliness` = "current_year_timeliness",
-    `Trend Summary` = "trend_summary"
+    `Trend Summary` = "trend_summary",
+    `Timeliness Target` = "timeliness_target"
   ) |>
   dplyr::relocate(Region, .after = Country) |>
   dplyr::relocate(Month, .after = `Lab Type`) |>
@@ -1068,7 +1070,8 @@ es_sites <- es_sites |>
     Country = "ctry",
     Difference = "comparison",
     `Difference, %` = "prop_diff",
-    Trend = "trend"
+    Trend = "trend",
+    `Timeliness Target` = "timeliness_target"
   ) |>
   dplyr::relocate(Region, .after = Country) |>
   dplyr::arrange(Region, Country)
