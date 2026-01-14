@@ -125,6 +125,7 @@ save(max_lab_date, max_date_notif, afp_cases_reported, lab_pending,
 # Save tables in an Excel File ----
 excel_output <- list()
 
+## AFP ----
 excel_output$`AFP Cases Reported` <- afp_cases_reported |>
   dplyr::rename(Region = whoregion, Country = place.admin.0)
 
@@ -145,19 +146,22 @@ excel_output$`Timely AFP WPV VDPV Det` <- afp_wpv_vdpv |>
   dplyr::rename(Country = country, Quarter = quarter, Comparison = comparison,
                 Trend = trend)
 
+## ES ----
 excel_output$`Timeliness of ES Shipment` <- es_shipment |>
   dplyr::rename(
     Month = month, Country = country, Region = who.region, `Lab Type` = es.lab.type,
     Difference = diff, Trend = trend,
     `Current Year Timeliness` = current_year_timeliness,
-    `Trend Summary` = trend_summary
+    `Trend Summary` = trend_summary,
+    `Timeliness Target` = timeliness_target
   )
 
 excel_output$`Timely ES WPV VDPV Det` <- es_wpv_vdpv |>
   dplyr::rename(
     Month = month, Country = country, Region = who.region, `Lab Type` = es.lab.type,
     Difference = diff, Trend = trend, `Current Year Timeliness` = current_year_timeliness,
-    `Trend Summary` = trend_summary
+    `Trend Summary` = trend_summary,
+    `Timeliness Target` = timeliness_target
   )
 
 excel_output$`Operational Sites per Country` <- es_sites |>
@@ -174,6 +178,7 @@ excel_output$`Samples by Operational Sites` <- es_site_samples |>
   ) |>
   dplyr::relocate(Month, `Year Month`, .after = Year)
 
+## Lab ----
 excel_output$`Culture Lab Timeliness` <- culture_lab_intervals |>
   dplyr::mutate(interval_name = dplyr::case_when(
     interval == "days.lab.culture" ~ "Virus isolation results",
@@ -190,6 +195,7 @@ excel_output$`Sequencing Lab Timeliness` <- seq_lab_interval |>
   dplyr::rename(`Sequencing Lab` = seq.lab, Comparison = comparison, `% Diff` = prop_diff,
                 Trend = trend)
 
+## Export Excel sheet ----
 if (!dir.exists("Excel_Output")) {
   dir.create("Excel_Output")
 }
