@@ -63,7 +63,7 @@ process_es_performance <- function(es_shipment = NULL,
   ## Number of samples per site ----
   # Compare from previous month...however idk how well I can capture it.
   es_site_samples_filtered <- es_site_samples |>
-    dplyr::filter(ym >= lubridate::floor_date(end_date %m-% months(1))) |>
+    dplyr::filter(ym >= lubridate::floor_date(end_date %m-% months(1), unit = "months")) |>
     dplyr::select(country, ym, median_collections) |>
     tidyr::pivot_wider(names_from = ym, values_from = median_collections)
   es_site_samples_filtered["diff"] <- (es_site_samples_filtered[, 3] - es_site_samples_filtered[, 2]) * 100
