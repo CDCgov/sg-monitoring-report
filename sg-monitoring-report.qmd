@@ -204,7 +204,7 @@ plot_ly(shared_es_tile_data) |>
     zmin = 1, zmax = 3,
     colorscale = colorscale,
     showscale = FALSE,
-    name = "AFP Indicators"
+    name = "ES Indicators"
   ) |>
   config(displayModeBar = FALSE) |>
   layout(title = list(
@@ -216,6 +216,15 @@ plot_ly(shared_es_tile_data) |>
     margin = list(t = 50)
          )
 ```
+
+#### Indicator definitions
+**Median number of collections among ES active sites:** Median collections for operational sites from current month compared to the previous month. On target if median collections from the end date month stays the same or increase compared to the previous month.
+
+**Proportion operational ES sites:** Proportion of operational sites for the end date month compared to the same month last year. On target if decrease is less than 20%. 
+
+**Timeliness of ES shipment:** Median days between collection to arrival in lab for an ES sample. Targets depend on whether countries ship samples internationally or in-country. Timely if received within 3 days for in-country lab and 7 days for international lab. On target if median timeliness is less than or equal to these targets.
+
+**Timeliness of ES WPV/VDPV detection:** Median days between collection to notification to HQ for an ES WPV/VDPV sample. Targets depend on whether countries ship samples internationally or in-country. Timely if reported within 35 days for in-country lab and 46 days for international lab. On target if median timeliness is less than or equal to these targets.
 
 ### Lab Indicators
 
