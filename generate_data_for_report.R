@@ -8,6 +8,21 @@ raw_data <- get_all_polio_data(attach.spatial.data = FALSE)
 sirfunctions_io("read", file_loc = get_constant("CLEANED_LAB_DATA"))
 lab_data <- clean_lab_data(lab_data, "2019-01-01", end_date, afp_data = raw_data$afp)
 
+# Manual clean-up for raw_data
+raw_data_df_names <- c("afp", "afp.epi", "para.case", "es", "pos", "other", "sia")
+
+for (i in raw_data_df_names) {
+  if (i == "es") {
+    raw_data[[i]] <- raw_data[[i]] |>
+      dplyr::mutate(ADM0_NAME = if_else(ADM0_NAME == "TURKEY",
+                                            "TÜRKIYE", ADM0_NAME))
+  } else {
+    raw_data[[i]] <- raw_data[[i]] |>
+      dplyr::mutate(place.admin.0 = if_else(place.admin.0 == "TURKEY",
+                                            "TÜRKIYE", place.admin.0))
+  }
+}
+
 # Manual clean-up of lab data ----
 lab_data <- lab_data |>
   mutate(seq.lab = case_when(
