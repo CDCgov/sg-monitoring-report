@@ -25,9 +25,9 @@ process_culture_lab_performance <- function(culture_lab_intervals = NULL,
   lab_isolation_filtered <- culture_lab_intervals |>
     dplyr::filter(interval == "days.lab.culture") |>
     dplyr::mutate(I13  = dplyr::case_when(
-      prop_diff > 30 ~ "Below target",
-      prop_diff <=30 ~ "On target",
-      is.na(prop_diff) ~ "To Be Determined"
+      get(names(culture_lab_intervals)[4]) > 14 ~ "Below target",
+      get(names(culture_lab_intervals)[4]) <= 14 ~ "On target",
+      is.na(get(names(culture_lab_intervals)[4])) ~ "To Be Determined"
     )) |>
     dplyr::select(culture.itd.lab, I13)
 
@@ -35,9 +35,9 @@ process_culture_lab_performance <- function(culture_lab_intervals = NULL,
   lab_itd_filtered <- culture_lab_intervals |>
     dplyr::filter(interval == "days.culture.itd") |>
     dplyr::mutate(I14  = dplyr::case_when(
-      prop_diff > 30 ~ "Below target",
-      prop_diff <=30 ~ "On target",
-      is.na(prop_diff) ~ "To Be Determined"
+      get(names(culture_lab_intervals)[4]) > 7 ~ "Below target",
+      get(names(culture_lab_intervals)[4]) <= 7 ~ "On target",
+      is.na(get(names(culture_lab_intervals)[4])) ~ "To Be Determined"
     )) |>
     dplyr::select(culture.itd.lab, I14)
 
@@ -45,9 +45,9 @@ process_culture_lab_performance <- function(culture_lab_intervals = NULL,
   lab_ship_filtered <- culture_lab_intervals |>
     dplyr::filter(interval == "days.seq.ship") |>
     dplyr::mutate(I15  = dplyr::case_when(
-      prop_diff > 30 ~ "Below target",
-      prop_diff <=30 ~ "On target",
-      is.na(prop_diff) ~ "To Be Determined"
+      get(names(culture_lab_intervals)[4]) > 7 ~ "Below target",
+      get(names(culture_lab_intervals)[4]) <= 7 ~ "On target",
+      is.na(get(names(culture_lab_intervals)[4])) ~ "To Be Determined"
     )) |>
     dplyr::select(culture.itd.lab, I15)
 
