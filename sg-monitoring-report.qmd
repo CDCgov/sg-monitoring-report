@@ -175,6 +175,24 @@ plot_ly(shared_afp_tile_data) |>
          )
 ```
 
+#### Indicator definitions
+
+**Number of AFP cases reported:** Number of AFP cases reported the month before the end date compared to the median AFP cases reported from the previous three years. On target if the number of AFP cases reported is within two median absolute deviations of the three-year median.
+
+**Proportion 60-day follow-up done:** Proportion of 60-day follow-up done from the previous quarter compared to the same period last year. On target if there is a less than 80% decrease in 60-days follow-up done. 
+
+**Proportion inadequate cases classified:** Proportion of inadequate cases older than 90 days have a classification from the previous quarter compared to the same period last year. On target if there is a less than 80% decrease in inadequate cases classified.
+
+**Proportion lab pending:** Proportion of AFP samples pending in lab older than 90 days. On target if less than 10% samples older than 90 days are lab pending.
+
+**Timely AFP WPV/VDPV detection:** Median timeliness of WPV/VDPV AFP samples from collection to notification to HQ. Targets are 35 if country has  sequencing capacity or 46 if shipped for sequencing. On target if previous quarter meets these targets.
+
+**Timely detection of negative AFP samples:** Median timeliness of negative AFP samples from collection to final culture results. Targets are 28 if country has  full lab capacity or 32 if not. On target if previous quarter median timeliness meets these targets.
+
+**Timely lab processing:** Median days from sample received in lab to culture results. On target if previous month median is less than or equal to 14 days.
+
+**Timely stool shipment:** Median days from collection to shipment to lab. Timely if median is less than or equal to 3 days for in-country culture/ITD and 7 days for international culture/ITD. On target if the previous month from the end date meets these timeliness targets.
+
 ### ES Indicators
 ```{r es-tile-plot}
 #| echo: false
