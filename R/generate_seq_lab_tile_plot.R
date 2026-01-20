@@ -10,9 +10,9 @@ process_seq_lab_performance <- function(seq_lab_interval) {
   ## Timeliness of sequencing results ----
   lab_seq_filtered <- seq_lab_interval |>
     dplyr::mutate(I17  = dplyr::case_when(
-      prop_diff > 30 ~ "Below target",
-      prop_diff <=30 ~ "On target",
-      is.na(prop_diff) ~ "To Be Determined"
+      get(names(seq_lab_interval)[4]) > 7 ~ "Below target",
+      get(names(seq_lab_interval)[4]) <= 7 ~ "On target",
+      is.na(get(names(seq_lab_interval)[4])) ~ "To Be Determined"
     )) |>
     dplyr::select(seq.lab, I17) |>
     tidyr::pivot_longer(cols = dplyr::starts_with("I", ignore.case = FALSE), values_to = "value", names_to = "indicator") |>
