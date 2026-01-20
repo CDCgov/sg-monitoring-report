@@ -149,7 +149,7 @@ culture_lab_plot_data <- culture_lab_plot_data |>
 seq_lab_plot_data <- process_seq_lab_performance(seq_lab_interval)
 
 # Save tables ----
-save(max_lab_date, max_date_notif, afp_cases_reported, lab_pending,
+save(end_date, max_lab_date, max_date_notif, afp_cases_reported, lab_pending,
      afp_wpv_vdpv, negative_lab_processing, afp_shipment_timeliness,
      afp_lab_processing, prop_60, prop_classified, prop_inad,
      es_shipment_timeliness, es_shipment, es_wpv_vdpv, es_sites, es_site_samples,
