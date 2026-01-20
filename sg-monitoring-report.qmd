@@ -162,7 +162,8 @@ plot_ly(shared_afp_tile_data) |>
     zmin = 1, zmax = 3,
     colorscale = colorscale,
     showscale = FALSE,
-    name = "AFP Indicators"
+    name = "AFP Indicators",
+    hoverinfo = "none"
   ) |>
   config(displayModeBar = FALSE) |>
   layout(title = list(
@@ -222,7 +223,8 @@ plot_ly(shared_es_tile_data) |>
     zmin = 1, zmax = 3,
     colorscale = colorscale,
     showscale = FALSE,
-    name = "ES Indicators"
+    name = "ES Indicators",
+    hoverinfo = "none"
   ) |>
   config(displayModeBar = FALSE) |>
   layout(title = list(
@@ -267,7 +269,8 @@ plot_ly(shared_culture_plot_data) |>
     zmin = 1, zmax = 3,
     colorscale = colorscale,
     showscale = FALSE,
-    name = "Culture Lab Indicators"
+    name = "Culture Lab Indicators",
+    hoverinfo = "none"
   ) |>
   config(displayModeBar = FALSE) |>
   layout(title = list(
@@ -300,7 +303,8 @@ plot_ly(shared_seq_plot_data) |>
     zmin = 1, zmax = 3,
     colorscale = colorscale,
     showscale = FALSE,
-    name = "Sequencing Lab Indicators"
+    name = "Sequencing Lab Indicators",
+    hoverinfo = "none"
   ) |>
   config(displayModeBar = FALSE) |>
   layout(title = list(
@@ -312,8 +316,22 @@ plot_ly(shared_seq_plot_data) |>
     margin = list(t = 50)
          )
 ```
-
 :::
+
+#### Indicator definitions
+
+**Timeliness of virus isolation:** Median days between received in lab to virus 
+isolation results (days.lab.culture). Target is 14 days. On target if median day for the current year
+is less than or equal to 14 days.
+
+**Timeliness of ITD results:** Median days between virus isolation results to ITD results (days.culture.itd). 
+Target is 7 days. On target if median for the current year is less than or equal to 7 days.
+
+**Timeliness of shipment for sequencing:** Median days between ITD results to arrival at the sequencing lab (days.seq.ship). Target is 7 days. On target if median for the current year is less than or equal to 7 days.
+
+**Lab workload:** Number of samples received in the culturing lab. On target if less than a 30% decrease in the previous month compared to the same month a year before.
+
+**Timeliness of sequencing results:** Median days between receipt from sequencing lab to sequencing results. Target is 7 days. On target if median for the current year is less than or equal to 7 days.
 
 :::
 
