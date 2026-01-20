@@ -735,32 +735,32 @@ plot_ly(shared_es_wpv_vdpv, colors = c("lightsteelblue", "steelblue")) |>
 #| echo: false
 #| warning: false
 
-shared_es_wpv_vdpv <- es_sites |>
+shared_es_sites <- es_sites |>
   dplyr::rename(Country = "ctry") |>
-  dplyr::mutate(label = paste0(prop_diff, "%")) |>
-  dplyr::select(Country, prop_diff, Region, label) |>
+  dplyr::mutate(label = paste0(prop_diff, "%"),
+                label_hover = paste0(get(names(es_sites)[3]), " \u2192 ", get(names(es_sites)[4]))) |>
+  dplyr::select(Country, prop_diff, Region, label, label_hover) |>
   arrange(reorder(Country, prop_diff)) |>
   SharedData$new()
 
-filter_select("country-es-op-sites", "Country: ", shared_es_wpv_vdpv,
+filter_select("country-es-op-sites", "Country: ", shared_es_sites,
               ~Region, 
               multiple = FALSE,
               allLevels = FALSE)
 
-plot_ly(shared_es_wpv_vdpv, colors = c("lightsteelblue", "steelblue")) |>
+plot_ly(shared_es_sites, colors = c("lightsteelblue", "steelblue")) |>
     add_trace(
     x = ~Country,
     y = ~prop_diff,
-    text = ~get(names(shared_es_wpv_vdpv$data())[4]),
+    text =  ~get(names(shared_es_sites$data())[4]),
     textposition = 'outside',
     type = "bar",
-    name = names(shared_es_wpv_vdpv$data())[4],
-    color = as.factor(names(shared_es_wpv_vdpv$data())[4])
+    name = names(shared_es_sites$data())[4],
+    color = as.factor(names(shared_es_sites$data())[4]),
+    hovertext = ~label_hover
   ) |>
   config(displayModeBar = FALSE) |>
   layout(title = list(
-    text = paste0("<b>Number of Operational Sites Compared to Last Year</b>",
-                  "<b> (", names(es_sites)[3], "-", names(es_sites)[4], ")</b>"),
     x = 0,
     xanchor = "left"),
     yaxis = list(title = "% Change"),
