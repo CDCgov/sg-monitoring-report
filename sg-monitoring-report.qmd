@@ -176,23 +176,41 @@ plot_ly(shared_afp_tile_data) |>
          )
 ```
 
+```{r}
+#| echo: false
+#| include: false
+
+year_cur <- paste("Year", year(end_date))
+month_cur <- paste(month(lubridate::as_date(end_date), label = TRUE), year(end_date))
+month_prev <- paste(month(lubridate::as_date(end_date) %m-% months(1), label = TRUE), year(end_date))
+qtr_prev <- quarter(as.Date(end_date)) - 1
+if (qtr_prev == 0) {
+  qtr_prev <- paste("Quarter 4", year(lubridate::as_date(end_date)) - 1)
+} else {
+  qtr_prev <- paste("Quarter", qtr_prev, year(lubridate::as_date(end_date)))
+}
+
+cur_compared_to_prev_mo <- paste0(month_prev, " - ", month_cur)
+
+```
+
 #### Indicator definitions
 
-**Number of AFP cases reported:** Number of AFP cases reported the month before the end date compared to the median AFP cases reported from the previous three years. On target if the number of AFP cases reported is within two median absolute deviations of the three-year median.
+**Number of AFP cases reported:** Number of AFP cases reported the month before the end date compared to the median AFP cases reported from the previous three years. On target if the number of AFP cases reported is within two median absolute deviations of the three-year median. *Timeframe:* `r paste(month(lubridate::as_date(end_date) %m-% months(1), label = TRUE), year(end_date))`
 
-**Proportion 60-day follow-up done:** Proportion of 60-day follow-up done from the previous quarter compared to the same period last year. On target if there is a less than 80% decrease in 60-days follow-up done. 
+**Proportion 60-day follow-up done:** Proportion of 60-day follow-up done from the previous quarter compared to the same period last year. On target if there is a less than 80% decrease in 60-days follow-up done. *Timeframe:* `r qtr_prev`
 
-**Proportion inadequate cases classified:** Proportion of inadequate cases older than 90 days have a classification from the previous quarter compared to the same period last year. On target if there is a less than 80% decrease in inadequate cases classified.
+**Proportion inadequate cases classified:** Proportion of inadequate cases older than 90 days have a classification from the previous quarter compared to the same period last year. On target if there is a less than 80% decrease in inadequate cases classified. *Timeframe:* `r qtr_prev`
 
-**Proportion lab pending:** Proportion of AFP samples pending in lab older than 90 days. On target if less than 10% samples older than 90 days are lab pending.
+**Proportion lab pending:** Proportion of AFP samples pending in lab older than 90 days. On target if less than 10% samples older than 90 days are lab pending. *Timeframe:* None.
 
-**Timely AFP WPV/VDPV detection:** Median timeliness of WPV/VDPV AFP samples from collection to notification to HQ. Targets are 35 if country has  sequencing capacity or 46 if shipped for sequencing. On target if previous quarter meets these targets.
+**Timely AFP WPV/VDPV detection:** Median timeliness of WPV/VDPV AFP samples from collection to notification to HQ. Targets are 35 if country has  sequencing capacity or 46 if shipped for sequencing. On target if previous quarter meets these targets. *Timeframe:* `r qtr_prev`
 
-**Timely detection of negative AFP samples:** Median timeliness of negative AFP samples from collection to final culture results. Targets are 28 if country has  full lab capacity or 32 if not. On target if previous quarter median timeliness meets these targets.
+**Timely detection of negative AFP samples:** Median timeliness of negative AFP samples from collection to final culture results. Targets are 28 if country has  full lab capacity or 32 if not. On target if previous quarter median timeliness meets these targets. *Timeframe:* `r qtr_prev`
 
-**Timely lab processing:** Median days from sample received in lab to culture results. On target if previous month median is less than or equal to 14 days.
+**Timely lab processing:** Median days from sample received in lab to culture results. On target if previous month median is less than or equal to 14 days. *Timeframe:* `r month_prev`
 
-**Timely stool shipment:** Median days from collection to shipment to lab. Timely if median is less than or equal to 3 days for in-country culture/ITD and 7 days for international culture/ITD. On target if the previous month from the end date meets these timeliness targets.
+**Timely stool shipment:** Median days from collection to shipment to lab. Timely if median is less than or equal to 3 days for in-country culture/ITD and 7 days for international culture/ITD. On target if the previous month from the end date meets these timeliness targets. *Timeframe:* `r month_prev`
 
 ### ES Indicators
 ```{r es-tile-plot}
@@ -238,13 +256,13 @@ plot_ly(shared_es_tile_data) |>
 ```
 
 #### Indicator definitions
-**Median number of collections among ES active sites:** Median collections for operational sites from current month compared to the previous month. On target if median collections from the end date month stays the same or increase compared to the previous month.
+**Median number of collections among ES active sites:** Median collections for operational sites from current month compared to the previous month. On target if median collections from the end date month stays the same or increase compared to the previous month. *Timeframe:* `r cur_compared_to_prev_mo`
 
-**Proportion operational ES sites:** Proportion of operational sites for the end date month compared to the same month last year. On target if decrease is less than 20%. 
+**Proportion operational ES sites:** Proportion of operational sites for the end date month compared to the same month last year. On target if decrease is less than 20%.  *Timeframe:* `r month_cur`
 
-**Timeliness of ES shipment:** Median days between collection to arrival in lab for an ES sample. Targets depend on whether countries ship samples internationally or in-country. Timely if received within 3 days for in-country lab and 7 days for international lab. On target if median timeliness is less than or equal to these targets.
+**Timeliness of ES shipment:** Median days between collection to arrival in lab for an ES sample. Targets depend on whether countries ship samples internationally or in-country. Timely if received within 3 days for in-country lab and 7 days for international lab. On target if median timeliness is less than or equal to these targets. *Timeframe:* `r month_prev`
 
-**Timeliness of ES WPV/VDPV detection:** Median days between collection to notification to HQ for an ES WPV/VDPV sample. Targets depend on whether countries ship samples internationally or in-country. Timely if reported within 35 days for in-country lab and 46 days for international lab. On target if median timeliness is less than or equal to these targets.
+**Timeliness of ES WPV/VDPV detection:** Median days between collection to notification to HQ for an ES WPV/VDPV sample. Targets depend on whether countries ship samples internationally or in-country. Timely if reported within 35 days for in-country lab and 46 days for international lab. On target if median timeliness is less than or equal to these targets.*Timeframe:* `r month_prev`
 
 ### Lab Indicators
 
@@ -322,16 +340,16 @@ plot_ly(shared_seq_plot_data) |>
 
 **Timeliness of virus isolation:** Median days between received in lab to virus 
 isolation results (days.lab.culture). Target is 14 days. On target if median day for the current year
-is less than or equal to 14 days.
+is less than or equal to 14 days. *Timeframe:* `r year_cur`
 
 **Timeliness of ITD results:** Median days between virus isolation results to ITD results (days.culture.itd). 
-Target is 7 days. On target if median for the current year is less than or equal to 7 days.
+Target is 7 days. On target if median for the current year is less than or equal to 7 days. *Timeframe:* `r year_cur`
 
-**Timeliness of shipment for sequencing:** Median days between ITD results to arrival at the sequencing lab (days.seq.ship). Target is 7 days. On target if median for the current year is less than or equal to 7 days.
+**Timeliness of shipment for sequencing:** Median days between ITD results to arrival at the sequencing lab (days.seq.ship). Target is 7 days. On target if median for the current year is less than or equal to 7 days. *Timeframe:* `r year_cur`
 
-**Lab workload:** Number of samples received in the culturing lab. On target if less than a 30% decrease in the previous month compared to the same month a year before.
+**Lab workload:** Number of samples received in the culturing lab. On target if less than a 30% decrease in the previous month compared to the same month a year before. *Timeframe:* `r year_cur`
 
-**Timeliness of sequencing results:** Median days between receipt from sequencing lab to sequencing results. Target is 7 days. On target if median for the current year is less than or equal to 7 days.
+**Timeliness of sequencing results:** Median days between receipt from sequencing lab to sequencing results. Target is 7 days. On target if median for the current year is less than or equal to 7 days. *Timeframe:* `r year_cur`
 
 :::
 
