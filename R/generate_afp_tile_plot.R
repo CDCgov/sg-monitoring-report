@@ -151,10 +151,10 @@ process_afp_performance <- function(afp_cases_reported = NULL,
     dplyr::group_by(country, culture.itd.cat) |>
     dplyr::summarize(monthly_median = median(median, na.rm = TRUE)) |>
     dplyr::mutate(I5 = dplyr::case_when(
-      monthly_median <= 35 & culture.itd.cat == "In-country culture/ITD" ~ "On target",
-      monthly_median > 35 & culture.itd.cat == "In-country culture/ITD" ~ "Below target",
-      monthly_median <= 46 & culture.itd.cat == "International culture/ITD" ~ "On target",
-      monthly_median > 46 & culture.itd.cat == "International culture/ITD" ~ "Below target",
+      monthly_median <= 28 & culture.itd.cat == "In-country culture/ITD" ~ "On target",
+      monthly_median > 28 & culture.itd.cat == "In-country culture/ITD" ~ "Below target",
+      monthly_median <= 32 & culture.itd.cat == "International culture/ITD" ~ "On target",
+      monthly_median > 32 & culture.itd.cat == "International culture/ITD" ~ "Below target",
       .default = "To Be Determined"
     )) |>
     dplyr::select(place.admin.0 = country, I5)

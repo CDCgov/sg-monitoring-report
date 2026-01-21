@@ -84,7 +84,7 @@ process_es_performance <- function(es_shipment = NULL,
                     indicator == "I9" ~ "Timeliness of\nES shipment",
                     indicator == "I10" ~ "Timeliness of\nES WPV/VDPV detection",
                     indicator == "I11" ~ "Proportion operational\nES sites",
-                    indicator == "I12" ~ "Proportion of performant\nES active sites",
+                    indicator == "I12" ~ "Median number of collections among\nES active sites",
                     .default = indicator
                   ))
 
