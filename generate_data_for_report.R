@@ -75,11 +75,6 @@ afp_shipment_timeliness <- get_stool_shipment_timeliness(lab_data, max_lab_date)
   dplyr::select(-Region) |>
   dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "country")
 
-afp_lab_processing <- get_afp_lab_processing_timeliness(lab_data, max_lab_date) |>
-  sirfunctions:::add_risk_category(ctry_col = "country") |>
-  dplyr::select(-Region) |>
-  dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "country")
-
 prop_60 <- get_prop_60_day_follow_up(raw_data$afp, end_date, temporal_scale = "quarter") |>
   sirfunctions:::add_risk_category(ctry_col = "ctry") |>
   dplyr::select(-Region) |>
@@ -117,6 +112,8 @@ es_site_samples <- suppressMessages(get_samples_per_es_site(raw_data$es, end_dat
   dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "country")
 
 # Lab indicators ----
+afp_lab_processing <- get_afp_lab_processing_timeliness(lab_data, max_lab_date) |>
+  dplyr::mutate(`Target Days` = 14)
 culture_lab_intervals <- lab_timely_indicators(lab_data,"culture", end_date = max_lab_date)
 culture_lab_intervals <- culture_lab_intervals |>
   dplyr::mutate(`Target Days` = dplyr::case_when(
