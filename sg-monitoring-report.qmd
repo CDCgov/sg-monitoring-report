@@ -3,7 +3,7 @@ title: "Surveillance Group Monitoring Report (DRAFT)"
 author: Mervin Keith Cuadera
 date: today
 date-format: "MMMM D, YYYY"  # e.g., September 24, 2025
-format: 
+format:
   html:
     page-layout: custom
     embed-resources: true
@@ -208,8 +208,6 @@ cur_compared_to_prev_mo <- paste0(month_prev, " - ", month_cur)
 
 **Timely detection of negative AFP samples:** Median timeliness of negative AFP samples from collection to final culture results. Targets are 28 if country has  full lab capacity or 32 if not. On target if previous quarter median timeliness meets these targets. *Timeframe:* `r qtr_prev`
 
-**Timely lab processing:** Median days from sample received in lab to culture results. On target if previous month median is less than or equal to 14 days. *Timeframe:* `r month_prev`
-
 **Timely stool shipment:** Median days from collection to shipment to lab. Timely if median is less than or equal to 3 days for in-country culture/ITD and 7 days for international culture/ITD. On target if the previous month from the end date meets these timeliness targets. *Timeframe:* `r month_prev`
 
 ### ES Indicators
@@ -345,9 +343,14 @@ is less than or equal to 14 days. *Timeframe:* `r year_cur`
 **Timeliness of ITD results:** Median days between virus isolation results to ITD results (days.culture.itd). 
 Target is 7 days. On target if median for the current year is less than or equal to 7 days. *Timeframe:* `r year_cur`
 
+**Timely lab processing:** Median days from sample received in lab to culture results. On target if previous month median is less than or equal to 14 days. *Timeframe:* `r month_prev`
+
 **Timeliness of shipment for sequencing:** Median days between ITD results to arrival at the sequencing lab (days.seq.ship). Target is 7 days. On target if median for the current year is less than or equal to 7 days. *Timeframe:* `r year_cur`
 
 **Lab workload:** Number of samples received in the culturing lab. On target if less than a 30% decrease in the previous month compared to the same month a year before. *Timeframe:* `r year_cur`
+
+
+**Timely lab processing:** Median days from sample received in lab to culture results. On target if previous month median is less than or equal to 14 days. *Timeframe:* `r month_prev`
 
 **Timeliness of sequencing results:** Median days between receipt from sequencing lab to sequencing results. Target is 7 days. On target if median for the current year is less than or equal to 7 days. *Timeframe:* `r year_cur`
 
@@ -735,58 +738,6 @@ plot_ly(shared_afp_stool_shipment, colors = c("lightsteelblue", "steelblue")) |>
          )
 
 ```
-#### Timeliness of AFP lab processing
-```{r afp-lab-processing}
-#| echo: false
-#| warning: false
-
-shared_afp_lab_processing <- afp_lab_processing |>
-  dplyr::rename(
-      Region = "whoregion",
-      Country = "country",
-      Month = "month") |>
-  dplyr::select(1, 3, 4, 6:7) |>
-  SharedData$new()
-
-filter_select("country-afp-lab-processing", "Country: ", shared_afp_lab_processing,
-              ~Country, 
-              multiple = FALSE,
-              allLevels = FALSE)
-
-plot_ly(shared_afp_lab_processing, colors = c("lightsteelblue", "steelblue")) |>
-    add_trace(
-    x = ~Month,
-    y = ~get(names(shared_afp_lab_processing$data())[4]),
-    text = ~get(names(shared_afp_lab_processing$data())[4]),
-    textposition = 'outside',
-    type = "bar",
-    name = names(shared_afp_lab_processing$data())[4],
-    color = as.factor(names(shared_afp_lab_processing$data())[4])
-  ) |>
-  add_trace(
-    x = ~Month,
-    y = ~get(names(shared_afp_lab_processing$data())[5]),
-    text = ~get(names(shared_afp_lab_processing$data())[5]),
-    textposition = 'outside',
-    type = "bar",
-    name = names(shared_afp_lab_processing$data())[5],
-    color = as.factor(names(shared_afp_lab_processing$data())[5])
-  ) |>
-  config(displayModeBar = FALSE) |>
-  layout(title = list(
-    text = paste0("<b>Timeliness of AFP Lab Processing </b>"),
-    x = 0,
-    xanchor = "left"),
-    yaxis = list(title = "Median Days"),
-    xaxis = list(title = "Month"),
-    legend = list(orientation = "h",
-                           xanchor = "center", 
-                           x = 0.5,
-                           y = -0.2),
-    margin = list(t = 50)
-         )
-
-```
 #### Proportion of inadequates with contacts
 ```{r afp-inad-contacts}
 #| echo: false
@@ -1099,6 +1050,59 @@ plot_ly(shared_lab_culture, colors = c("lightsteelblue", "steelblue")) |>
 
 ```
 
+#### Timeliness of AFP lab processing
+```{r afp-lab-processing}
+#| echo: false
+#| warning: false
+
+shared_afp_lab_processing <- afp_lab_processing |>
+  dplyr::arrange(culture.itd.lab, month) |>
+  dplyr::rename(
+      `Culture/ITD Lab` = "culture.itd.lab",
+      Month = "month") |>
+  dplyr::select(1:4) |>
+  SharedData$new()
+
+filter_select("afp-lab-processing", "Culture/ITD Lab: ", shared_afp_lab_processing,
+              ~`Culture/ITD Lab`, 
+              multiple = FALSE,
+              allLevels = FALSE)
+
+plot_ly(shared_afp_lab_processing, colors = c("lightsteelblue", "steelblue")) |>
+    add_trace(
+    x = ~Month,
+    y = ~get(names(shared_afp_lab_processing$data())[3]),
+    text = ~get(names(shared_afp_lab_processing$data())[3]),
+    textposition = 'outside',
+    type = "bar",
+    name = names(shared_afp_lab_processing$data())[3],
+    color = as.factor(names(shared_afp_lab_processing$data())[3])
+  ) |>
+  add_trace(
+    x = ~Month,
+    y = ~get(names(shared_afp_lab_processing$data())[4]),
+    text = ~get(names(shared_afp_lab_processing$data())[4]),
+    textposition = 'outside',
+    type = "bar",
+    name = names(shared_afp_lab_processing$data())[4],
+    color = as.factor(names(shared_afp_lab_processing$data())[4])
+  ) |>
+  config(displayModeBar = FALSE) |>
+  layout(title = list(
+    text = paste0("<b>Timeliness of AFP Lab Processing </b>"),
+    x = 0,
+    xanchor = "left"),
+    yaxis = list(title = "Median Days"),
+    xaxis = list(title = "Month"),
+    legend = list(orientation = "h",
+                           xanchor = "center", 
+                           x = 0.5,
+                           y = -0.2),
+    margin = list(t = 50)
+         )
+
+```
+
 #### Sequencing lab timeliness
 ```{r lab-seq}
 #| echo: false
@@ -1145,8 +1149,8 @@ plot_ly(shared_lab_seq, colors = c("lightsteelblue", "steelblue")) |>
 :::panel-tabset
 
 ### AFP Surveillance Indicators
-::: panel-sidebar
-### Number of AFP cases reported
+::: panel-tabset
+#### Number of AFP cases reported
 
 ```{r afp-case-reported-table}
 #| echo: false
@@ -1170,7 +1174,7 @@ datatable(
 )
 ```
 
-### Proportion of 60 days follow-up done
+#### Proportion of 60 days follow-up done
 ```{r afp-prop-60-table}
 #| echo: false
 
@@ -1194,7 +1198,7 @@ datatable(
 )
 ```
 
-### Proportion of lab pending
+#### Proportion of lab pending
 
 Shows the proportion of lab samples not yet received in the culturing lab, with pending classification.
 ```{r afp-prop-lab-pending-table}
@@ -1221,7 +1225,7 @@ datatable(
 
 ```
 
-### Proportion of cases classified
+#### Proportion of cases classified
 Proportion of cases with inadequate samples classified by the ERC.
 ```{r afp-prop-case-classified-table}
 #| echo: false
@@ -1246,7 +1250,7 @@ datatable(
 )
 ```
 
-### Timeliness of detection for WPV/VDPV samples
+#### Timeliness of detection for WPV/VDPV samples
 ```{r afp-timely-wpv-vpdv-table}
 #| echo: false
 
@@ -1272,7 +1276,7 @@ datatable(
 
 ```
 
-### Timeliness of detection for negative samples
+#### Timeliness of detection for negative samples
 From date of collection to final cell culture results.
 ```{r afp-timely-neg-samples-table}
 #| echo: false
@@ -1300,7 +1304,7 @@ datatable(
 
 ```
 
-### Timeliness of stool specimen shipment
+#### Timeliness of stool specimen shipment
 ```{r afp-stool-ship-table}
 #| echo: false
 
@@ -1328,36 +1332,7 @@ datatable(
 
 ```
 
-### Timeliness of lab processing of AFP samples
-`r max_date_notif`
-
-```{r afp-timely-lab-process-table}
-#| echo: false
-
-datatable(
-  afp_lab_processing |>
-    dplyr::rename_with(recode,
-      country = "Country",
-      month = "Month",
-      quarter = "Quarter",
-      whoregion = "Region",
-      comparison = "Difference",
-      trend = "Trend"
-    ) |>
-    dplyr::relocate(Country, .before = Region) |>
-    dplyr::mutate(Month = factor(Month, month.abb, ordered = TRUE)) |>
-    dplyr::arrange(Region, Country, Month),
-  filter = "top",
-  extensions = 'Buttons',
-  options = list(
-    dom = 'Bfrtip',
-    buttons = c('copy', 'csv', 'excel'),
-    pageLength = 10
-  )
-)
-```
-
-### Proportion of inadequates with contact sampling
+#### Proportion of inadequates with contact sampling
 ```{r afp-prop-inad-table}
 #| echo: false
 
@@ -1386,8 +1361,8 @@ datatable(
 
 
 ### Environmental Surveillance Indicators
-::: panel-sidebar
-### Timeliness of ES sample shipment
+::: panel-tabset
+#### Timeliness of ES sample shipment
 
 ```{r}
 #| label: es-lab-shipment
@@ -1421,7 +1396,7 @@ datatable(
 
 ```
 
-### Timeliness of detection for WPV/VDPV-ES
+#### Timeliness of detection for WPV/VDPV-ES
 
 ```{r}
 #| label: es-wpv-vdpv
@@ -1455,7 +1430,7 @@ datatable(
 )
 ```
 
-### Number of operational ES sites per country
+#### Number of operational ES sites per country
 
 ```{r}
 #| label: es-sites
@@ -1490,7 +1465,7 @@ datatable(
 
 ```
 
-### Number of samples per sites
+#### Number of samples per sites
 
 ```{r}
 #| label: es-site-samples
@@ -1530,7 +1505,7 @@ datatable(
 ### Lab Surveillance Indicators
 `{r} max_date_notif`
 
-::: panel-sidebar
+::: panel-tabset
 #### Timeliness of virus isolation results
 
 ```{r}
@@ -1981,6 +1956,30 @@ datatable(
   )
 )
 ```
+
+### Timeliness of lab processing of AFP samples
+`r max_date_notif`
+
+```{r afp-timely-lab-process-table}
+#| echo: false
+
+datatable(
+  afp_lab_processing |>
+    dplyr::rename(
+    `Culture/ITD Lab` = "culture.itd.lab",
+    Month = "month",
+    Difference = "comparison",
+    Trend = "trend") |>
+    dplyr::arrange(`Culture/ITD Lab`, Month),
+  filter = "top",
+  extensions = 'Buttons',
+  options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'csv', 'excel'),
+    pageLength = 10
+  )
+)
+```
 :::
 
 :::
@@ -1999,8 +1998,6 @@ datatable(
 **Timely AFP WPV/VDPV detection:** Median timeliness of WPV/VDPV AFP samples from collection to notification to HQ. Targets are 35 if country has  sequencing capacity or 46 if shipped for sequencing. On target if previous quarter meets these targets. *Timeframe:* `r qtr_prev`
 
 **Timely detection of negative AFP samples:** Median timeliness of negative AFP samples from collection to final culture results. Targets are 28 if country has  full lab capacity or 32 if not. On target if previous quarter median timeliness meets these targets. *Timeframe:* `r qtr_prev`
-
-**Timely lab processing:** Median days from sample received in lab to culture results. On target if previous month median is less than or equal to 14 days. *Timeframe:* `r month_prev`
 
 **Timely stool shipment:** Median days from collection to shipment to lab. Timely if median is less than or equal to 3 days for in-country culture/ITD and 7 days for international culture/ITD. On target if the previous month from the end date meets these timeliness targets. *Timeframe:* `r month_prev`
 
@@ -2025,6 +2022,8 @@ Target is 7 days. On target if median for the current year is less than or equal
 
 **Lab workload:** Number of samples received in the culturing lab. On target if less than a 30% decrease in the previous month compared to the same month a year before. *Timeframe:* `r year_cur`
 
+**Timely lab processing:** Median days from sample received in lab to culture results. On target if previous month median is less than or equal to 14 days. *Timeframe:* `r month_prev`
+
 **Timeliness of sequencing results:** Median days between receipt from sequencing lab to sequencing results. Target is 7 days. On target if median for the current year is less than or equal to 7 days. *Timeframe:* `r year_cur`
 
 :::
@@ -2044,7 +2043,7 @@ function remove_all_option() {
     document.getElementById("country-es-op-sites").getElementsByClassName("selectized")[0].selectize.removeOption("");
     document.getElementById("country-es-med-samples").getElementsByClassName("selectized")[0].selectize.removeOption("");
     document.getElementById("lab-culture").getElementsByClassName("selectized")[0].selectize.removeOption("");
-    document.getElementById("country-afp-lab-processing").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("afp-lab-processing").getElementsByClassName("selectized")[0].selectize.removeOption("");
     document.getElementById("country-afp-stool-shipment").getElementsByClassName("selectized")[0].selectize.removeOption("");
     document.getElementById("country-afp-neg-timely").getElementsByClassName("selectized")[0].selectize.removeOption("");
     document.getElementById("country-afp-prop-inad").getElementsByClassName("selectized")[0].selectize.removeOption("");
@@ -2063,7 +2062,7 @@ function filter_default() {
     document.getElementById("country-es-op-sites").getElementsByClassName("selectized")[0].selectize.setValue("AFRO", false);
     document.getElementById("country-es-med-samples").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
     document.getElementById("lab-culture").getElementsByClassName("selectized")[0].selectize.setValue("Virus isolation results", false);
-    document.getElementById("country-afp-lab-processing").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
+    document.getElementById("afp-lab-processing").getElementsByClassName("selectized")[0].selectize.setValue("Algeria", false);
     document.getElementById("country-afp-stool-shipment").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
     document.getElementById("country-afp-neg-timely").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
     document.getElementById("country-afp-prop-inad").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);

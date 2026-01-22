@@ -72,7 +72,8 @@ get_afp_lab_processing_timeliness <- function(lab_data, end_date = Sys.Date()) {
       comparison > 0 ~ "Increase",
       comparison < 0 ~ "Decrease",
       .default = "No data from both years"
-    ))
+    )) |>
+    dplyr::mutate(month = factor(month, month.abb, ordered = TRUE))
 
   return(summary)
 }

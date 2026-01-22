@@ -92,7 +92,7 @@ process_culture_lab_performance <- function(culture_lab_intervals = NULL,
                     indicator == "I14" ~ "Timeliness of\nITD results",
                     indicator == "I15" ~ "Timeliness of\nshipment for sequencing",
                     indicator == "I16" ~ "Lab workload",
-                    indicator == "I17" ~ "Timeliness of lab processing",
+                    indicator == "I17" ~ "Timeliness of\nlab processing",
                     .default = indicator
                   ))
 

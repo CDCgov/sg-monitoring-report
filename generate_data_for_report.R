@@ -137,7 +137,7 @@ culture_indicators <- c("Timeliness of\nvirus isolation",
                         "Timeliness of\nITD results",
                         "Timeliness of\nshipment for sequencing",
                         "Lab workload",
-                        "Timeliness of\nLab Processing")
+                        "Timeliness of\nlab processing")
 
 culture_lab_plot_data <- process_culture_lab_performance(culture_lab_intervals, lab_workload, afp_lab_processing, max_lab_date)
 culture_lab_plot_data <- culture_lab_plot_data |>
