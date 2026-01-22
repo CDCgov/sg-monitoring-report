@@ -630,6 +630,220 @@ plot_ly(shared_afp_wpv_vdpv, colors = c("lightsteelblue", "steelblue")) |>
     margin = list(t = 50)
          )
 ```
+
+#### Timeliness of negative AFP samples
+```{r afp-neg-timely}
+#| echo: false
+#| warning: false
+
+shared_afp_neg_timely <- negative_lab_processing |>
+  dplyr::rename(
+      Region = "whoregion",
+      Country = "country",
+      Month = "month") |>
+  dplyr::select(1, 3, 4, 6:7) |>
+  SharedData$new()
+
+filter_select("country-afp-neg-timely", "Country: ", shared_afp_neg_timely,
+              ~Country, 
+              multiple = FALSE,
+              allLevels = FALSE)
+
+plot_ly(shared_afp_neg_timely, colors = c("lightsteelblue", "steelblue")) |>
+    add_trace(
+    x = ~Month,
+    y = ~get(names(shared_afp_neg_timely$data())[4]),
+    text = ~get(names(shared_afp_neg_timely$data())[4]),
+    textposition = 'outside',
+    type = "bar",
+    name = names(shared_afp_neg_timely$data())[4],
+    color = as.factor(names(shared_afp_neg_timely$data())[4])
+  ) |>
+  add_trace(
+    x = ~Month,
+    y = ~get(names(shared_afp_neg_timely$data())[5]),
+    text = ~get(names(shared_afp_neg_timely$data())[5]),
+    textposition = 'outside',
+    type = "bar",
+    name = names(shared_afp_neg_timely$data())[5],
+    color = as.factor(names(shared_afp_neg_timely$data())[5])
+  ) |>
+  config(displayModeBar = FALSE) |>
+  layout(title = list(
+    text = paste0("<b>Timeliness of Negative AFP Samples </b>"),
+    x = 0,
+    xanchor = "left"),
+    yaxis = list(title = "Median Days"),
+    xaxis = list(title = "Month"),
+    legend = list(orientation = "h",
+                           xanchor = "center", 
+                           x = 0.5,
+                           y = -0.2),
+    margin = list(t = 50)
+         )
+
+```
+#### Timeliness of stool specimen shipment
+```{r afp-stool-shipment}
+#| echo: false
+#| warning: false
+
+shared_afp_stool_shipment <- afp_shipment_timeliness |>
+  dplyr::rename(
+      Region = "whoregion",
+      Country = "country",
+      Quarter = "quarter") |>
+  dplyr::select(1, 3, 4, 6:7) |>
+  SharedData$new()
+
+filter_select("country-afp-stool-shipment", "Country: ", shared_afp_stool_shipment,
+              ~Country, 
+              multiple = FALSE,
+              allLevels = FALSE)
+
+plot_ly(shared_afp_stool_shipment, colors = c("lightsteelblue", "steelblue")) |>
+    add_trace(
+    x = ~Quarter,
+    y = ~get(names(shared_afp_stool_shipment$data())[4]),
+    text = ~get(names(shared_afp_stool_shipment$data())[4]),
+    textposition = 'outside',
+    type = "bar",
+    name = names(shared_afp_stool_shipment$data())[4],
+    color = as.factor(names(shared_afp_stool_shipment$data())[4])
+  ) |>
+  add_trace(
+    x = ~Quarter,
+    y = ~get(names(shared_afp_stool_shipment$data())[5]),
+    text = ~get(names(shared_afp_stool_shipment$data())[5]),
+    textposition = 'outside',
+    type = "bar",
+    name = names(shared_afp_stool_shipment$data())[5],
+    color = as.factor(names(shared_afp_stool_shipment$data())[5])
+  ) |>
+  config(displayModeBar = FALSE) |>
+  layout(title = list(
+    text = paste0("<b>Timeliness of Stool Specimen Shipment </b>"),
+    x = 0,
+    xanchor = "left"),
+    yaxis = list(title = "Median Days"),
+    xaxis = list(title = "Quarter"),
+    legend = list(orientation = "h",
+                           xanchor = "center", 
+                           x = 0.5,
+                           y = -0.2),
+    margin = list(t = 50)
+         )
+
+```
+#### Timeliness of AFP lab processing
+```{r afp-lab-processing}
+#| echo: false
+#| warning: false
+
+shared_afp_lab_processing <- afp_lab_processing |>
+  dplyr::rename(
+      Region = "whoregion",
+      Country = "country",
+      Month = "month") |>
+  dplyr::select(1, 3, 4, 6:7) |>
+  SharedData$new()
+
+filter_select("country-afp-lab-processing", "Country: ", shared_afp_lab_processing,
+              ~Country, 
+              multiple = FALSE,
+              allLevels = FALSE)
+
+plot_ly(shared_afp_lab_processing, colors = c("lightsteelblue", "steelblue")) |>
+    add_trace(
+    x = ~Month,
+    y = ~get(names(shared_afp_lab_processing$data())[4]),
+    text = ~get(names(shared_afp_lab_processing$data())[4]),
+    textposition = 'outside',
+    type = "bar",
+    name = names(shared_afp_lab_processing$data())[4],
+    color = as.factor(names(shared_afp_lab_processing$data())[4])
+  ) |>
+  add_trace(
+    x = ~Month,
+    y = ~get(names(shared_afp_lab_processing$data())[5]),
+    text = ~get(names(shared_afp_lab_processing$data())[5]),
+    textposition = 'outside',
+    type = "bar",
+    name = names(shared_afp_lab_processing$data())[5],
+    color = as.factor(names(shared_afp_lab_processing$data())[5])
+  ) |>
+  config(displayModeBar = FALSE) |>
+  layout(title = list(
+    text = paste0("<b>Timeliness of AFP Lab Processing </b>"),
+    x = 0,
+    xanchor = "left"),
+    yaxis = list(title = "Median Days"),
+    xaxis = list(title = "Month"),
+    legend = list(orientation = "h",
+                           xanchor = "center", 
+                           x = 0.5,
+                           y = -0.2),
+    margin = list(t = 50)
+         )
+
+```
+#### Proportion of inadequates with contacts
+```{r afp-inad-contacts}
+#| echo: false
+#| warning: false
+
+shared_afp_prop_inad <- prop_inad |>
+  dplyr::rename(
+      Region = "whoregion",
+      Country = "ctry",
+      Quarter = "quarter") |>
+    dplyr::mutate(prop_prev = as.numeric(stringr::str_extract(get(names(prop_inad)[5]), "[0-9]+|NaN")),
+                prop_cur = as.numeric(stringr::str_extract(get(names(prop_inad)[6]), "[0-9]+|NaN"))
+                ) |>
+  dplyr::select(1, 2, 4, 5, 6, 9, 10) |>
+  SharedData$new()
+
+filter_select("country-afp-prop-inad", "Country: ", shared_afp_prop_inad,
+              ~Country, 
+              multiple = FALSE,
+              allLevels = FALSE)
+
+plot_ly(shared_afp_prop_inad, colors = c("lightsteelblue", "steelblue")) |>
+    add_trace(
+    x = ~Quarter,
+    y = ~prop_prev,
+    text = ~get(names(shared_afp_prop_inad$data())[4]),
+    textposition = 'outside',
+    type = "bar",
+    name = names(shared_afp_prop_inad$data())[4],
+    color = as.factor(names(shared_afp_prop_inad$data())[4])
+  ) |>
+  add_trace(
+    x = ~Quarter,
+    y = ~prop_cur,
+    text = ~get(names(shared_afp_prop_inad$data())[5]),
+    textposition = 'outside',
+    type = "bar",
+    name = names(shared_afp_prop_inad$data())[5],
+    color = as.factor(names(shared_afp_prop_inad$data())[5])
+  ) |>
+  config(displayModeBar = FALSE) |>
+  layout(title = list(
+    text = paste0("<b>Proportion of Inadequates with Contact Sampling Done </b>"),
+    x = 0,
+    xanchor = "left"),
+    yaxis = list(title = "% with Contact Sampling"),
+    xaxis = list(title = "Quarter"),
+    legend = list(orientation = "h",
+                           xanchor = "center", 
+                           x = 0.5,
+                           y = -0.2),
+    margin = list(t = 50)
+         )
+
+```
+
+
 :::
 
 ### ES Surveillance Indicators
@@ -1830,6 +2044,10 @@ function remove_all_option() {
     document.getElementById("country-es-op-sites").getElementsByClassName("selectized")[0].selectize.removeOption("");
     document.getElementById("country-es-med-samples").getElementsByClassName("selectized")[0].selectize.removeOption("");
     document.getElementById("lab-culture").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("country-afp-lab-processing").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("country-afp-stool-shipment").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("country-afp-neg-timely").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("country-afp-prop-inad").getElementsByClassName("selectized")[0].selectize.removeOption("");
      
 }
 function filter_default() {
@@ -1845,6 +2063,10 @@ function filter_default() {
     document.getElementById("country-es-op-sites").getElementsByClassName("selectized")[0].selectize.setValue("AFRO", false);
     document.getElementById("country-es-med-samples").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
     document.getElementById("lab-culture").getElementsByClassName("selectized")[0].selectize.setValue("Virus isolation results", false);
+    document.getElementById("country-afp-lab-processing").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
+    document.getElementById("country-afp-stool-shipment").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
+    document.getElementById("country-afp-neg-timely").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
+    document.getElementById("country-afp-prop-inad").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN", false);
 }
 window.onload = function() {
 filter_default();
