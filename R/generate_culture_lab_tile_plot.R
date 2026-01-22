@@ -1,5 +1,6 @@
 generate_culture_lab_tile_plot <- function(culture_lab_intervals = NULL,
                                            lab_workload = NULL,
+                                           afp_lab_processing = NULL,
                                            lab_end_date = Sys.Date()) {
   culture_indicators <- c("Timeliness of\nvirus isolation",
                           "Timeliness of\nITD results",
@@ -19,6 +20,7 @@ generate_culture_lab_tile_plot <- function(culture_lab_intervals = NULL,
 
 process_culture_lab_performance <- function(culture_lab_intervals = NULL,
                                             lab_workload = NULL,
+                                            afp_lab_process = NULL,
                                             lab_end_date = NULL) {
 
   ## Timeliness of virus isolation results ----
@@ -63,9 +65,26 @@ process_culture_lab_performance <- function(culture_lab_intervals = NULL,
     )) |>
     dplyr::select(culture.itd.lab, I16)
 
+  ## Lab processing ----
+  afp_lab_processing_filtered <- afp_lab_processing |>
+    dplyr::filter(month == lubridate::month(lubridate::floor_date(lab_end_date,
+                                                                  unit = "month") %m-% months(1),
+                                            label = TRUE)) |>
+    dplyr::select(culture.itd.lab, month, dplyr::starts_with("2")) |>
+    tidyr::pivot_longer(dplyr::starts_with("2"), names_to = "year", values_to = "median") |>
+    dplyr::filter(stringr::str_detect(year, as.character(lubridate::year(lab_end_date)))) |>
+    dplyr::mutate(I17 = dplyr::case_when(
+      median <= 14 ~ "On target",
+      median > 14 ~ "Below target",
+      .default = "To Be Determined"
+    )) |>
+    dplyr::select(culture.itd.lab, I17)
+
+
   final_table <- dplyr::left_join(lab_isolation_filtered, lab_itd_filtered) |>
     dplyr::left_join(lab_ship_filtered) |>
     dplyr::left_join(lab_workload_filtered) |>
+    dplyr::left_join(afp_lab_processing_filtered) |>
     tidyr::pivot_longer(cols = dplyr::starts_with("I", ignore.case = FALSE), values_to = "value", names_to = "indicator") |>
     dplyr::mutate(value = dplyr::if_else(is.na(value), "To Be Determined", value),
                   indicator = dplyr::case_when(
@@ -73,6 +92,7 @@ process_culture_lab_performance <- function(culture_lab_intervals = NULL,
                     indicator == "I14" ~ "Timeliness of\nITD results",
                     indicator == "I15" ~ "Timeliness of\nshipment for sequencing",
                     indicator == "I16" ~ "Lab workload",
+                    indicator == "I17" ~ "Timeliness of lab processing",
                     .default = indicator
                   ))
 

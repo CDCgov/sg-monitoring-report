@@ -136,9 +136,10 @@ es_tile_plot_data <- process_es_performance(es_shipment, es_wpv_vdpv, es_sites, 
 culture_indicators <- c("Timeliness of\nvirus isolation",
                         "Timeliness of\nITD results",
                         "Timeliness of\nshipment for sequencing",
-                        "Lab workload")
+                        "Lab workload",
+                        "Timeliness of\nLab Processing")
 
-culture_lab_plot_data <- process_culture_lab_performance(culture_lab_intervals, lab_workload, max_lab_date)
+culture_lab_plot_data <- process_culture_lab_performance(culture_lab_intervals, lab_workload, afp_lab_processing, max_lab_date)
 culture_lab_plot_data <- culture_lab_plot_data |>
   dplyr::filter(!is.na(culture.itd.lab)) |>
   dplyr::mutate(indicator = factor(indicator, levels = culture_indicators, ordered = TRUE))
