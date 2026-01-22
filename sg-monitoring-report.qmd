@@ -1045,11 +1045,11 @@ plot_ly(shared_es_site_samples, colors = c("steelblue")) |>
 
 :::
 
-#### Lab Surveillance Indicators
+### Lab Surveillance Indicators
 
 ::: panel-tabset
 
-### Culturing Lab Timeliness
+#### Culturing Lab Timeliness
 
 ```{r lab-culture-isolation}
 #| echo: false
@@ -1099,7 +1099,7 @@ plot_ly(shared_lab_culture, colors = c("lightsteelblue", "steelblue")) |>
 
 ```
 
-### Sequencing lab timeliness
+#### Sequencing lab timeliness
 ```{r lab-seq}
 #| echo: false
 #| warning: false
