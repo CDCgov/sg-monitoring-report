@@ -5,11 +5,13 @@ generate_afp_tile_plot <- function(afp_cases_reported = NULL,
                                    afp_wpv_vdpv = NULL,
                                    negative_lab_processing = NULL,
                                    afp_shipment_timeliness = NULL,
-                                   afp_lab_processing = NULL,
                                    end_date = Sys.Date(),
                                    lab_end_date = Sys.Date(),
                                    lab_locs = get_lab_locs(),
                                    who_region = NULL) {
+
+  end_date <- lubridate::as_date(end_date)
+  lab_end_date <- lubridate::as_date(lab_end_date)
 
   final_table <- process_afp_performance(afp_cases_reported,
                                          prop_60,
@@ -18,7 +20,6 @@ generate_afp_tile_plot <- function(afp_cases_reported = NULL,
                                          afp_wpv_vdpv,
                                          negative_lab_processing,
                                          afp_shipment_timeliness,
-                                         afp_lab_processing,
                                          end_date,
                                          lab_end_date,
                                          lab_locs)
@@ -39,10 +40,13 @@ process_afp_performance <- function(afp_cases_reported = NULL,
                                     afp_wpv_vdpv = NULL,
                                     negative_lab_processing = NULL,
                                     afp_shipment_timeliness = NULL,
-                                    afp_lab_processing = NULL,
                                     end_date = Sys.Date(),
                                     lab_end_date = Sys.Date(),
                                     lab_locs = NULL) {
+
+  end_date <- lubridate::as_date(end_date)
+  lab_end_date <- lubridate::as_date(lab_end_date)
+
   # Calculate previous quarter/semesters
   prev_quarter_to_report <- (lubridate::quarter(end_date) - 1)
   if (prev_quarter_to_report == 0) {
@@ -174,27 +178,11 @@ process_afp_performance <- function(afp_cases_reported = NULL,
     )) |>
     dplyr::select(place.admin.0 = country, I6)
 
-  ## Timeliness of lab processing - AFP ----
-  afp_lab_processing_filtered <- afp_lab_processing |>
-    dplyr::filter(month == lubridate::month(lubridate::floor_date(lab_end_date,
-                                                                  unit = "month") %m-% months(1),
-                                            label = TRUE)) |>
-    dplyr::select(country, month, dplyr::starts_with("2")) |>
-    tidyr::pivot_longer(dplyr::starts_with("2"), names_to = "year", values_to = "median") |>
-    dplyr::filter(stringr::str_detect(year, as.character(lubridate::year(lab_end_date)))) |>
-    dplyr::mutate(I7 = dplyr::case_when(
-      median <= 14 ~ "On target",
-      median > 14 ~ "Below target",
-      .default = "To Be Determined"
-    )) |>
-    dplyr::select(place.admin.0 = country, I7)
-
-
   ## Proportion cases classified ----
   prop_classified_filtered <- prop_classified |>
     dplyr::filter(quarter == (lubridate::quarter(end_date) - 1)) |>
     dplyr::select(place.admin.0 = ctry, comparison = diff) |>
-    dplyr::mutate(I8 = dplyr::case_when(
+    dplyr::mutate(I7 = dplyr::case_when(
       is.na(comparison) ~ "To Be Determined",
       comparison <= -80 ~ "Below target",
       comparison > -80 ~ "On target"
@@ -208,7 +196,6 @@ process_afp_performance <- function(afp_cases_reported = NULL,
     dplyr::left_join(afp_wpv_vdpv_filtered) |>
     dplyr::left_join(negative_lab_processing_filtered) |>
     dplyr::left_join(afp_shipment_timeliness_filtered) |>
-    dplyr::left_join(afp_lab_processing_filtered) |>
     dplyr::left_join(prop_classified_filtered) |>
     tidyr::pivot_longer(cols = dplyr::starts_with("I", ignore.case = FALSE), values_to = "value", names_to = "indicator") |>
     dplyr::mutate(value = dplyr::if_else(is.na(value), "To Be Determined", value),
@@ -219,8 +206,7 @@ process_afp_performance <- function(afp_cases_reported = NULL,
                     indicator == "I4" ~ "Timely AFP WPV/VDPV \ndetection",
                     indicator == "I5" ~ "Timely detection of \nnegative AFP samples",
                     indicator == "I6" ~ "Timely stool\nshipment",
-                    indicator == "I7" ~ "Timely lab\nprocessing",
-                    indicator == "I8" ~ "Proportion inadequate\ncases classified",
+                    indicator == "I7" ~ "Proportion inadequate\ncases classified",
                     .default = indicator
                   ))
 

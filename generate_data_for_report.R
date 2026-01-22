@@ -75,11 +75,6 @@ afp_shipment_timeliness <- get_stool_shipment_timeliness(lab_data, max_lab_date)
   dplyr::select(-Region) |>
   dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "country")
 
-afp_lab_processing <- get_afp_lab_processing_timeliness(lab_data, max_lab_date) |>
-  sirfunctions:::add_risk_category(ctry_col = "country") |>
-  dplyr::select(-Region) |>
-  dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "country")
-
 prop_60 <- get_prop_60_day_follow_up(raw_data$afp, end_date, temporal_scale = "quarter") |>
   sirfunctions:::add_risk_category(ctry_col = "ctry") |>
   dplyr::select(-Region) |>
@@ -117,6 +112,8 @@ es_site_samples <- suppressMessages(get_samples_per_es_site(raw_data$es, end_dat
   dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "country")
 
 # Lab indicators ----
+afp_lab_processing <- get_afp_lab_processing_timeliness(lab_data, max_lab_date) |>
+  dplyr::mutate(`Target Days` = 14)
 culture_lab_intervals <- lab_timely_indicators(lab_data,"culture", end_date = max_lab_date)
 culture_lab_intervals <- culture_lab_intervals |>
   dplyr::mutate(`Target Days` = dplyr::case_when(
@@ -132,16 +129,17 @@ lab_workload <- suppressMessages(generate_lab_workload(lab_data, end_date = max_
 # Data for tile plots ----
 afp_tile_plot_data <- process_afp_performance(afp_cases_reported, prop_60, lab_pending, prop_classified,
                                               afp_wpv_vdpv, negative_lab_processing, afp_shipment_timeliness,
-                                              afp_lab_processing, end_date = end_date, lab_end_date = max_lab_date)
+                                              end_date = end_date, lab_end_date = max_lab_date)
 
 es_tile_plot_data <- process_es_performance(es_shipment, es_wpv_vdpv, es_sites, es_site_samples, end_date = end_date)
 
 culture_indicators <- c("Timeliness of\nvirus isolation",
                         "Timeliness of\nITD results",
                         "Timeliness of\nshipment for sequencing",
-                        "Lab workload")
+                        "Lab workload",
+                        "Timeliness of\nlab processing")
 
-culture_lab_plot_data <- process_culture_lab_performance(culture_lab_intervals, lab_workload, max_lab_date)
+culture_lab_plot_data <- process_culture_lab_performance(culture_lab_intervals, lab_workload, afp_lab_processing, max_lab_date)
 culture_lab_plot_data <- culture_lab_plot_data |>
   dplyr::filter(!is.na(culture.itd.lab)) |>
   dplyr::mutate(indicator = factor(indicator, levels = culture_indicators, ordered = TRUE))
