@@ -1502,11 +1502,12 @@ datatable(
 :::
 
 
+
 ### Lab Surveillance Indicators
+
 `{r} max_date_notif`
 
 ::: panel-tabset
-#### Timeliness of virus isolation results
 
 ```{r}
 #| include: false
@@ -1579,7 +1580,7 @@ overall <- paste0("Overall, ",
 
 ```
 
-#### Summary
+#### Timeliness of virus isolation results
 
 `r final_summary_top`
 
@@ -1603,8 +1604,6 @@ datatable(interval_summary,
   )
 )
 ```
-
-#### Timeliness of ITD results
 
 ```{r}
 #| include: false
@@ -1663,7 +1662,7 @@ overall <- paste0("Overall, ",
                   )
 ```
 
-#### Summary
+#### Timeliness of ITD results
 
 `r final_summary_top`
 
@@ -1690,8 +1689,6 @@ datatable(
   )
 )
 ```
-
-#### Timeliness of shipment for sequencing
 
 ```{r lab-culture-seq-ship}
 #| include: false
@@ -1751,7 +1748,7 @@ overall <- paste0("Overall, ",
 
 ```
 
-#### Summary
+#### Timeliness of shipment for sequencing
 
 `r final_summary_top`
 
@@ -1779,8 +1776,6 @@ datatable(
   )
 )
 ```
-
-#### Timeliness of sequencing results
 
 ```{r lab-seq-res}
 #| include: false
@@ -1846,7 +1841,7 @@ overall <- paste0("Overall, ",
 
 ```
 
-#### Summary
+#### Timeliness of sequencing results
 
 `r final_summary_top`
 
@@ -1873,8 +1868,6 @@ datatable(
   )
 )
 ```
-
-#### Laboratory workload
 
 ```{r lab-workload}
 #| include: false
@@ -1929,7 +1922,7 @@ overall <- paste0("Overall, ",
 
 ```
 
-#### Summary
+#### Laboratory workload
 
 **For the previous month from the latest date available in the lab dataset** 
 *`r max_date_notif`*
@@ -1957,7 +1950,7 @@ datatable(
 )
 ```
 
-### Timeliness of lab processing of AFP samples
+#### Timeliness of lab processing of AFP samples
 `r max_date_notif`
 
 ```{r afp-timely-lab-process-table}
