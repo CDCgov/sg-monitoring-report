@@ -129,7 +129,7 @@ lab_workload <- suppressMessages(generate_lab_workload(lab_data, end_date = max_
 # Data for tile plots ----
 afp_tile_plot_data <- process_afp_performance(afp_cases_reported, prop_60, lab_pending, prop_classified,
                                               afp_wpv_vdpv, negative_lab_processing, afp_shipment_timeliness,
-                                              afp_lab_processing, end_date = end_date, lab_end_date = max_lab_date)
+                                              end_date = end_date, lab_end_date = max_lab_date)
 
 es_tile_plot_data <- process_es_performance(es_shipment, es_wpv_vdpv, es_sites, es_site_samples, end_date = end_date)
 
