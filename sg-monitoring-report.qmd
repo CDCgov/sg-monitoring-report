@@ -163,11 +163,16 @@ plot_ly(shared_afp_tile_data) |>
     colorscale = colorscale,
     showscale = FALSE,
     name = "AFP Indicators",
-    hoverinfo = "none"
+    xgap = 1.5,
+    ygap = 1.5,
+    text = ~value,
+    hoverinfo = "text"
   ) |>
   config(displayModeBar = FALSE) |>
   layout(title = list(
     text = paste0("<b>AFP Indicators</b>"),
+    showgrid = TRUE,
+    gridwidth = 2,
     x = 0,
     xanchor = "left"),
     yaxis = list(title = "", categoryorder = "trace"),
@@ -240,7 +245,10 @@ plot_ly(shared_es_tile_data) |>
     colorscale = colorscale,
     showscale = FALSE,
     name = "ES Indicators",
-    hoverinfo = "none"
+    xgap = 1.5,
+    ygap = 1.5,
+    text = ~value,
+    hoverinfo = "text"
   ) |>
   config(displayModeBar = FALSE) |>
   layout(title = list(
@@ -286,7 +294,10 @@ plot_ly(shared_culture_plot_data) |>
     colorscale = colorscale,
     showscale = FALSE,
     name = "Culture Lab Indicators",
-    hoverinfo = "none"
+    xgap = 1.5,
+    ygap = 1.5,
+    text = ~value,
+    hoverinfo = "text"
   ) |>
   config(displayModeBar = FALSE) |>
   layout(title = list(
@@ -320,7 +331,10 @@ plot_ly(shared_seq_plot_data) |>
     colorscale = colorscale,
     showscale = FALSE,
     name = "Sequencing Lab Indicators",
-    hoverinfo = "none"
+    xgap = 1.5,
+    ygap = 1.5,
+    text = ~value,
+    hoverinfo = "text"
   ) |>
   config(displayModeBar = FALSE) |>
   layout(title = list(
