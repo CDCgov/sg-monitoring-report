@@ -1540,7 +1540,7 @@ datatable(
 
 ### Lab Surveillance Indicators
 
-`{r} max_date_notif`. Timeliness is expressed in median days for each interval.
+`{r} max_date_notif` Timeliness is expressed in median days for each interval.
 
 ::: panel-tabset
 
