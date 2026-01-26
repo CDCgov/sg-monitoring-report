@@ -163,11 +163,16 @@ plot_ly(shared_afp_tile_data) |>
     colorscale = colorscale,
     showscale = FALSE,
     name = "AFP Indicators",
-    hoverinfo = "none"
+    xgap = 1.5,
+    ygap = 1.5,
+    text = ~value,
+    hoverinfo = "text"
   ) |>
-  config(displayModeBar = FALSE) |>
+  config(displayModeBar = TRUE) |>
   layout(title = list(
     text = paste0("<b>AFP Indicators</b>"),
+    showgrid = TRUE,
+    gridwidth = 2,
     x = 0,
     xanchor = "left"),
     yaxis = list(title = "", categoryorder = "trace"),
@@ -240,9 +245,12 @@ plot_ly(shared_es_tile_data) |>
     colorscale = colorscale,
     showscale = FALSE,
     name = "ES Indicators",
-    hoverinfo = "none"
+    xgap = 1.5,
+    ygap = 1.5,
+    text = ~value,
+    hoverinfo = "text"
   ) |>
-  config(displayModeBar = FALSE) |>
+  config(displayModeBar = TRUE) |>
   layout(title = list(
     text = paste0("<b>ES Indicators</b>"),
     x = 0,
@@ -256,7 +264,8 @@ plot_ly(shared_es_tile_data) |>
 #### Indicator definitions
 **Median number of collections among ES active sites:** Median collections for operational sites from current month compared to the previous month. On target if median collections from the end date month stays the same or increase compared to the previous month. *Timeframe:* `r cur_compared_to_prev_mo`
 
-**Proportion operational ES sites:** Proportion of operational sites for the end date month compared to the same month last year. On target if decrease is less than 20%.  *Timeframe:* `r month_cur`
+**Proportion operational ES sites:** Proportion of operational sites for the end date month compared to the same month last year. On target if decrease is less than 20%. Operational sites are defined as sites with at least 3 collections over the past 
+12-month rolling period.  *Timeframe:* `r month_cur`
 
 **Timeliness of ES shipment:** Median days between collection to arrival in lab for an ES sample. Targets depend on whether countries ship samples internationally or in-country. Timely if received within 3 days for in-country lab and 7 days for international lab. On target if median timeliness is less than or equal to these targets. *Timeframe:* `r month_prev`
 
@@ -286,9 +295,12 @@ plot_ly(shared_culture_plot_data) |>
     colorscale = colorscale,
     showscale = FALSE,
     name = "Culture Lab Indicators",
-    hoverinfo = "none"
+    xgap = 1.5,
+    ygap = 1.5,
+    text = ~value,
+    hoverinfo = "text"
   ) |>
-  config(displayModeBar = FALSE) |>
+  config(displayModeBar = TRUE) |>
   layout(title = list(
     text = paste0("<b>Culture Lab Indicators</b>"),
     x = 0,
@@ -320,9 +332,12 @@ plot_ly(shared_seq_plot_data) |>
     colorscale = colorscale,
     showscale = FALSE,
     name = "Sequencing Lab Indicators",
-    hoverinfo = "none"
+    xgap = 1.5,
+    ygap = 1.5,
+    text = ~value,
+    hoverinfo = "text"
   ) |>
-  config(displayModeBar = FALSE) |>
+  config(displayModeBar = TRUE) |>
   layout(title = list(
     text = paste0("<b>Sequencing Lab Indicator</b>"),
     x = 0,
@@ -400,7 +415,7 @@ plot_ly(shared_afp_cases_reported, colors = c("lightsteelblue", "steelblue")) |>
     name = names(afp_cases_reported)[9],
     color = as.factor(names(afp_cases_reported)[9])
   ) |>
-  config(displayModeBar = FALSE) |>
+  config(displayModeBar = TRUE) |>
   layout(title = list(
     text = paste0("<b>Monthly AFP Cases Reported</b>",
                   "<br>","<sup>Error bars represent 2 median absolute deviation (MAD)</sup>"),
@@ -464,12 +479,12 @@ plot_ly(shared_prop_60, colors = c("lightsteelblue", "steelblue")) |>
     name = names(prop_60)[length(names(prop_60))],
     color = as.factor(names(prop_60)[length(names(prop_60))])
   ) |>
-  config(displayModeBar = FALSE) |>
+  config(displayModeBar = TRUE) |>
   layout(title = list(
     text = paste0("<b>Proportion of 60 Days Follow-Up Done</b>"),
     x = 0,
     xanchor = "left"),
-    yaxis = list(title = "Proportion with Follow Up"),
+    yaxis = list(title = "Proportion with Follow Up", range = c(0, 100)),
     xaxis = list(title = "Quarter"),
     legend = list(orientation = "h",
                            xanchor = "center", 
@@ -511,12 +526,12 @@ plot_ly(shared_lab_pending) |>
     textposition = "outside",
     name = "Proportion of Samples Older Than 90 Days with Pending Status"
   ) |>
-  config(displayModeBar = FALSE) |>
+  config(displayModeBar = TRUE) |>
   layout(title = list(
     text = paste0("<b>AFP Lab Samples Older Than 90 Days With Pending Status</b>"),
     x = 0,
     xanchor = "left"),
-    yaxis = list(title = "% Pending Samples"),
+    yaxis = list(title = "% Pending Samples", range = c(0, 100)),
     xaxis = list(title = "Country", categoryorder = "trace"),
     margin = list(t = 50)
          )
@@ -568,12 +583,12 @@ plot_ly(shared_prop_classified, colors = c("lightsteelblue", "steelblue")) |>
     name = names(prop_classified)[5],
     color = as.factor(names(prop_60)[5])
   ) |>
-  config(displayModeBar = FALSE) |>
+  config(displayModeBar = TRUE) |>
   layout(title = list(
     text = paste0("<b>Proportion of Cases Classified</b>"),
     x = 0,
     xanchor = "left"),
-    yaxis = list(title = "Proportion Classified"),
+    yaxis = list(title = "Proportion Classified", range = c(0, 100)),
     xaxis = list(title = "Quarter"),
     legend = list(orientation = "h",
                            xanchor = "center", 
@@ -619,7 +634,7 @@ plot_ly(shared_afp_wpv_vdpv, colors = c("lightsteelblue", "steelblue")) |>
     name = names(afp_wpv_vdpv)[6],
     color = as.factor(names(afp_wpv_vdpv)[6])
   ) |>
-  config(displayModeBar = FALSE) |>
+  config(displayModeBar = TRUE) |>
   layout(title = list(
     text = paste0("<b>Timeliness of Detection for AFP WPV/VDPV Samples</b>"),
     x = 0,
@@ -671,7 +686,7 @@ plot_ly(shared_afp_neg_timely, colors = c("lightsteelblue", "steelblue")) |>
     name = names(shared_afp_neg_timely$data())[5],
     color = as.factor(names(shared_afp_neg_timely$data())[5])
   ) |>
-  config(displayModeBar = FALSE) |>
+  config(displayModeBar = TRUE) |>
   layout(title = list(
     text = paste0("<b>Timeliness of Negative AFP Samples </b>"),
     x = 0,
@@ -723,7 +738,7 @@ plot_ly(shared_afp_stool_shipment, colors = c("lightsteelblue", "steelblue")) |>
     name = names(shared_afp_stool_shipment$data())[5],
     color = as.factor(names(shared_afp_stool_shipment$data())[5])
   ) |>
-  config(displayModeBar = FALSE) |>
+  config(displayModeBar = TRUE) |>
   layout(title = list(
     text = paste0("<b>Timeliness of Stool Specimen Shipment </b>"),
     x = 0,
@@ -778,12 +793,12 @@ plot_ly(shared_afp_prop_inad, colors = c("lightsteelblue", "steelblue")) |>
     name = names(shared_afp_prop_inad$data())[5],
     color = as.factor(names(shared_afp_prop_inad$data())[5])
   ) |>
-  config(displayModeBar = FALSE) |>
+  config(displayModeBar = TRUE) |>
   layout(title = list(
     text = paste0("<b>Proportion of Inadequates with Contact Sampling Done </b>"),
     x = 0,
     xanchor = "left"),
-    yaxis = list(title = "% with Contact Sampling"),
+    yaxis = list(title = "% with Contact Sampling", range = c(0, 100)),
     xaxis = list(title = "Quarter"),
     legend = list(orientation = "h",
                            xanchor = "center", 
@@ -842,7 +857,7 @@ plot_ly(shared_es_shipment, colors = c("lightsteelblue", "steelblue")) |>
     name = names(shared_es_shipment$data())[4],
     color = as.factor(names(shared_es_shipment$data())[4])
   ) |>
-  config(displayModeBar = FALSE) |>
+  config(displayModeBar = TRUE) |>
   layout(title = list(
     text = paste0("<b>Timeliness of ES Sample Shipment Monthly AFP Cases Reported</b>"),
     x = 0,
@@ -898,7 +913,7 @@ plot_ly(shared_es_wpv_vdpv, colors = c("lightsteelblue", "steelblue")) |>
     name = names(shared_es_wpv_vdpv$data())[4],
     color = as.factor(names(shared_es_wpv_vdpv$data())[4])
   ) |>
-  config(displayModeBar = FALSE) |>
+  config(displayModeBar = TRUE) |>
   layout(title = list(
     text = paste0("<b>Timeliness of detection for WPV/VDPV ES Samples Shipment</b>"),
     x = 0,
@@ -914,6 +929,10 @@ plot_ly(shared_es_wpv_vdpv, colors = c("lightsteelblue", "steelblue")) |>
 ```
 
 #### Number of Operational ES Sites per Country
+
+Operational sites are defined as sites with at least 3 collections over the past 
+12-month rolling period.
+
 ```{r es-operational-sites}
 #| echo: false
 #| warning: false
@@ -942,7 +961,7 @@ plot_ly(shared_es_sites, colors = c("lightsteelblue", "steelblue")) |>
     color = as.factor(names(shared_es_sites$data())[4]),
     hovertext = ~label_hover
   ) |>
-  config(displayModeBar = FALSE) |>
+  config(displayModeBar = TRUE) |>
   layout(title = list(
     x = 0,
     xanchor = "left"),
@@ -978,7 +997,7 @@ plot_ly(shared_es_site_samples, colors = c("steelblue")) |>
     type = "bar",
     name = "Median Collections"
   ) |>
-  config(displayModeBar = FALSE) |>
+  config(displayModeBar = TRUE) |>
   layout(title = list(
     text = paste0("<b>Monthly Median Collections Among Operational Sites</b>"),
     x = 0,
@@ -1034,7 +1053,7 @@ plot_ly(shared_lab_culture, colors = c("lightsteelblue", "steelblue")) |>
     name = names(culture_lab_intervals)[4],
     color = as.factor(names(culture_lab_intervals)[4])
   ) |>
-  config(displayModeBar = FALSE) |>
+  config(displayModeBar = TRUE) |>
   layout(title = list(
     text = paste0("<b>Median Timeliness for Culturing Lab</b>"),
     x = 0,
@@ -1087,7 +1106,7 @@ plot_ly(shared_afp_lab_processing, colors = c("lightsteelblue", "steelblue")) |>
     name = names(shared_afp_lab_processing$data())[4],
     color = as.factor(names(shared_afp_lab_processing$data())[4])
   ) |>
-  config(displayModeBar = FALSE) |>
+  config(displayModeBar = TRUE) |>
   layout(title = list(
     text = paste0("<b>Timeliness of AFP Lab Processing </b>"),
     x = 0,
@@ -1126,7 +1145,7 @@ plot_ly(shared_lab_seq, colors = c("lightsteelblue", "steelblue")) |>
     name = names(seq_lab_interval)[4],
     color = as.factor(names(seq_lab_interval)[4])
   ) |>
-  config(displayModeBar = FALSE) |>
+  config(displayModeBar = TRUE) |>
   layout(title = list(
     text = paste0("<b>Median Timeliness for Sequencing Lab</b>"),
     x = 0,
@@ -1251,6 +1270,9 @@ datatable(
 ```
 
 #### Timeliness of detection for WPV/VDPV samples
+
+Timeliness is expressed in median days for each interval.
+
 ```{r afp-timely-wpv-vpdv-table}
 #| echo: false
 
@@ -1277,7 +1299,9 @@ datatable(
 ```
 
 #### Timeliness of detection for negative samples
-From date of collection to final cell culture results.
+
+From date of collection to final cell culture results. Timeliness is expressed in median days for each interval.
+
 ```{r afp-timely-neg-samples-table}
 #| echo: false
 
@@ -1305,6 +1329,9 @@ datatable(
 ```
 
 #### Timeliness of stool specimen shipment
+
+Timeliness is expressed in median days for each interval.
+
 ```{r afp-stool-ship-table}
 #| echo: false
 
@@ -1361,8 +1388,11 @@ datatable(
 
 
 ### Environmental Surveillance Indicators
+
 ::: panel-tabset
 #### Timeliness of ES sample shipment
+
+Timeliness is expressed in median days for each interval. n represents sample size.
 
 ```{r}
 #| label: es-lab-shipment
@@ -1398,6 +1428,8 @@ datatable(
 
 #### Timeliness of detection for WPV/VDPV-ES
 
+Timeliness is expressed in median days for each interval. n represents sample size.
+
 ```{r}
 #| label: es-wpv-vdpv
 #| echo: false
@@ -1431,6 +1463,9 @@ datatable(
 ```
 
 #### Number of operational ES sites per country
+
+Operational sites are defined as sites with at least 3 collections over the past 
+12-month rolling period.
 
 ```{r}
 #| label: es-sites
@@ -1505,7 +1540,7 @@ datatable(
 
 ### Lab Surveillance Indicators
 
-`{r} max_date_notif`
+`{r} max_date_notif` Timeliness is expressed in median days for each interval.
 
 ::: panel-tabset
 
@@ -1997,7 +2032,8 @@ datatable(
 ### ES
 **Median number of collections among ES active sites:** Median collections for operational sites from current month compared to the previous month. On target if median collections from the end date month stays the same or increase compared to the previous month. *Timeframe:* `r cur_compared_to_prev_mo`
 
-**Proportion operational ES sites:** Proportion of operational sites for the end date month compared to the same month last year. On target if decrease is less than 20%.  *Timeframe:* `r month_cur`
+**Proportion operational ES sites:** Proportion of operational sites for the end date month compared to the same month last year. Operational sites are defined as sites with at least 3 collections over the past 
+12-month rolling period. On target if decrease is less than 20%.  *Timeframe:* `r month_cur`
 
 **Timeliness of ES shipment:** Median days between collection to arrival in lab for an ES sample. Targets depend on whether countries ship samples internationally or in-country. Timely if received within 3 days for in-country lab and 7 days for international lab. On target if median timeliness is less than or equal to these targets. *Timeframe:* `r month_prev`
 
