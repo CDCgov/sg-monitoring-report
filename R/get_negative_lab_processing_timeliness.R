@@ -26,7 +26,7 @@ get_negative_lab_processing_timeliness <- function(lab_data, end_date = Sys.Date
                   month < month_end_date,
                   !is.na(days.collect.lab.culture),
                   dplyr::between(days.collect.lab.culture, 0, 365),
-                  FinalCellCultureResult %in% c("Negative", "NPEV", NA)
+                  FinalCellCultureResult %in% c("Negative", "NPEV", NA, "")
                   ) |>
     dplyr::group_by(whoregion, country, culture.itd.cat, year, month) |>
     dplyr::summarize(median = median(days.collect.lab.culture, na.rm = TRUE), .groups = "drop") |>
