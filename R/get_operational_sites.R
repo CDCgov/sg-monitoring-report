@@ -20,13 +20,13 @@ get_operational_sites <- function(es_data, end_date = Sys.Date()) {
   current_year <- lubridate::year(end_date)
 
   active_sites <- sirfunctions:::get_es_site_age(es_data, end_date)
-  prev_year_active_sites <- sirfunctions:::get_es_site_age(es_data, end_date - lubridate::years(1))
+  prev_year_active_sites <- sirfunctions:::get_es_site_age(es_data, end_date %m-% lubridate::years(1))
 
   # Filter for active sites only
   active_sites <- active_sites |>
-    dplyr::filter(n_samples_12_mo >= 10, site_age >= 12)
+    dplyr::filter(n_samples_12_mo >= 3, site_age >= 12)
   prev_year_active_sites <- prev_year_active_sites |>
-    dplyr::filter(n_samples_12_mo >= 10, site_age >= 12)
+    dplyr::filter(n_samples_12_mo >= 3, site_age >= 12)
 
   current_year_active_site_summary <- active_sites |>
     dplyr::distinct() |>
@@ -61,6 +61,10 @@ get_operational_sites <- function(es_data, end_date = Sys.Date()) {
     dplyr::mutate(year = paste0(current_month," ", year)) |>
     tidyr::pivot_wider(names_from = year, values_from = operational_sites)
   active_site_summary_wide["comparison"] <- active_site_summary_wide[, 3] - active_site_summary_wide[, 2]
+  active_site_summary_wide["prop_diff"] <- round((active_site_summary_wide["comparison"]) /
+                                                   active_site_summary_wide[, 2]* 100, 0)
+  active_site_summary_wide <- active_site_summary_wide |>
+    dplyr::mutate(prop_diff = dplyr::if_else(prop_diff == Inf, !!dplyr::sym(names(active_site_summary_wide)[3]) * 100, prop_diff))
   active_site_summary_wide <- active_site_summary_wide |>
     dplyr::mutate(trend = dplyr::case_when(
       comparison == 0 ~ "Same",

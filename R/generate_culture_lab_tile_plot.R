@@ -1,0 +1,101 @@
+generate_culture_lab_tile_plot <- function(culture_lab_intervals = NULL,
+                                           lab_workload = NULL,
+                                           afp_lab_processing = NULL,
+                                           lab_end_date = Sys.Date()) {
+  culture_indicators <- c("Timeliness of\nvirus isolation",
+                          "Timeliness of\nITD results",
+                          "Timeliness of\nshipment for sequencing",
+                          "Lab workload")
+
+  final_table <- process_culture_lab_performance(culture_lab_intervals, lab_workload, lab_end_date)
+  final_table <- final_table |>
+    dplyr::filter(!is.na(culture.itd.lab)) |>
+    dplyr::mutate(indicator = factor(indicator, levels = culture_indicators, ordered = TRUE))
+
+  plot <- generate_performance_tile_plot(final_table, "culture.itd.lab", "Culture/ITD Lab")
+
+  return(plot)
+
+}
+
+process_culture_lab_performance <- function(culture_lab_intervals = NULL,
+                                            lab_workload = NULL,
+                                            afp_lab_process = NULL,
+                                            lab_end_date = NULL) {
+
+  ## Timeliness of virus isolation results ----
+  lab_isolation_filtered <- culture_lab_intervals |>
+    dplyr::filter(interval == "days.lab.culture") |>
+    dplyr::mutate(I13  = dplyr::case_when(
+      get(names(culture_lab_intervals)[4]) > 14 ~ "Below target",
+      get(names(culture_lab_intervals)[4]) <= 14 ~ "On target",
+      is.na(get(names(culture_lab_intervals)[4])) ~ "To Be Determined"
+    )) |>
+    dplyr::select(culture.itd.lab, I13)
+
+  ## Timeliness of ITD results ----
+  lab_itd_filtered <- culture_lab_intervals |>
+    dplyr::filter(interval == "days.culture.itd") |>
+    dplyr::mutate(I14  = dplyr::case_when(
+      get(names(culture_lab_intervals)[4]) > 7 ~ "Below target",
+      get(names(culture_lab_intervals)[4]) <= 7 ~ "On target",
+      is.na(get(names(culture_lab_intervals)[4])) ~ "To Be Determined"
+    )) |>
+    dplyr::select(culture.itd.lab, I14)
+
+  ## Timeliness of shipment for sequencing ----
+  lab_ship_filtered <- culture_lab_intervals |>
+    dplyr::filter(interval == "days.seq.ship") |>
+    dplyr::mutate(I15  = dplyr::case_when(
+      get(names(culture_lab_intervals)[4]) > 7 ~ "Below target",
+      get(names(culture_lab_intervals)[4]) <= 7 ~ "On target",
+      is.na(get(names(culture_lab_intervals)[4])) ~ "To Be Determined"
+    )) |>
+    dplyr::select(culture.itd.lab, I15)
+
+  ## Lab workload ----
+  lab_workload_filtered <- lab_workload |>
+    dplyr::filter(month == lubridate::month(lubridate::floor_date(lab_end_date,
+                                                                  unit = "month") %m-% months(1),
+                                            label = TRUE)) |>
+    dplyr::mutate(I16  = dplyr::case_when(
+      comparison_pct > 30 ~ "Below target",
+      comparison_pct <= 30 ~ "On target",
+      is.na(comparison_pct) ~ "To Be Determined"
+    )) |>
+    dplyr::select(culture.itd.lab, I16)
+
+  ## Lab processing ----
+  afp_lab_processing_filtered <- afp_lab_processing |>
+    dplyr::filter(month == lubridate::month(lubridate::floor_date(lab_end_date,
+                                                                  unit = "month") %m-% months(1),
+                                            label = TRUE)) |>
+    dplyr::select(culture.itd.lab, month, dplyr::starts_with("2")) |>
+    tidyr::pivot_longer(dplyr::starts_with("2"), names_to = "year", values_to = "median") |>
+    dplyr::filter(stringr::str_detect(year, as.character(lubridate::year(lab_end_date)))) |>
+    dplyr::mutate(I17 = dplyr::case_when(
+      median <= 14 ~ "On target",
+      median > 14 ~ "Below target",
+      .default = "To Be Determined"
+    )) |>
+    dplyr::select(culture.itd.lab, I17)
+
+
+  final_table <- dplyr::left_join(lab_isolation_filtered, lab_itd_filtered) |>
+    dplyr::left_join(lab_ship_filtered) |>
+    dplyr::left_join(lab_workload_filtered) |>
+    dplyr::left_join(afp_lab_processing_filtered) |>
+    tidyr::pivot_longer(cols = dplyr::starts_with("I", ignore.case = FALSE), values_to = "value", names_to = "indicator") |>
+    dplyr::mutate(value = dplyr::if_else(is.na(value), "To Be Determined", value),
+                  indicator = dplyr::case_when(
+                    indicator == "I13" ~ "Timeliness of\nvirus isolation",
+                    indicator == "I14" ~ "Timeliness of\nITD results",
+                    indicator == "I15" ~ "Timeliness of\nshipment for sequencing",
+                    indicator == "I16" ~ "Lab workload",
+                    indicator == "I17" ~ "Timeliness of\nlab processing",
+                    .default = indicator
+                  ))
+
+  return(final_table)
+
+}

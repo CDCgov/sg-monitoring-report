@@ -5,3 +5,6 @@
 
 /.quarto/
 sg-monitoring-report.html
+/data_cache
+/images
+/Excel_Output
