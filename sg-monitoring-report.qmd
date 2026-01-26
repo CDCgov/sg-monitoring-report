@@ -1270,6 +1270,9 @@ datatable(
 ```
 
 #### Timeliness of detection for WPV/VDPV samples
+
+Timeliness is expressed in median days for each interval.
+
 ```{r afp-timely-wpv-vpdv-table}
 #| echo: false
 
@@ -1296,7 +1299,9 @@ datatable(
 ```
 
 #### Timeliness of detection for negative samples
-From date of collection to final cell culture results.
+
+From date of collection to final cell culture results. Timeliness is expressed in median days for each interval.
+
 ```{r afp-timely-neg-samples-table}
 #| echo: false
 
@@ -1324,6 +1329,9 @@ datatable(
 ```
 
 #### Timeliness of stool specimen shipment
+
+Timeliness is expressed in median days for each interval.
+
 ```{r afp-stool-ship-table}
 #| echo: false
 
@@ -1380,8 +1388,11 @@ datatable(
 
 
 ### Environmental Surveillance Indicators
+
 ::: panel-tabset
 #### Timeliness of ES sample shipment
+
+Timeliness is expressed in median days for each interval. n represents sample size.
 
 ```{r}
 #| label: es-lab-shipment
@@ -1416,6 +1427,8 @@ datatable(
 ```
 
 #### Timeliness of detection for WPV/VDPV-ES
+
+Timeliness is expressed in median days for each interval. n represents sample size.
 
 ```{r}
 #| label: es-wpv-vdpv
@@ -1527,7 +1540,7 @@ datatable(
 
 ### Lab Surveillance Indicators
 
-`{r} max_date_notif`
+`{r} max_date_notif`. Timeliness is expressed in median days for each interval.
 
 ::: panel-tabset
 
