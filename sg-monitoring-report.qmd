@@ -168,7 +168,7 @@ plot_ly(shared_afp_tile_data) |>
     text = ~value,
     hoverinfo = "text"
   ) |>
-  config(displayModeBar = FALSE) |>
+  config(displayModeBar = TRUE) |>
   layout(title = list(
     text = paste0("<b>AFP Indicators</b>"),
     showgrid = TRUE,
@@ -250,7 +250,7 @@ plot_ly(shared_es_tile_data) |>
     text = ~value,
     hoverinfo = "text"
   ) |>
-  config(displayModeBar = FALSE) |>
+  config(displayModeBar = TRUE) |>
   layout(title = list(
     text = paste0("<b>ES Indicators</b>"),
     x = 0,
@@ -299,7 +299,7 @@ plot_ly(shared_culture_plot_data) |>
     text = ~value,
     hoverinfo = "text"
   ) |>
-  config(displayModeBar = FALSE) |>
+  config(displayModeBar = TRUE) |>
   layout(title = list(
     text = paste0("<b>Culture Lab Indicators</b>"),
     x = 0,
@@ -336,7 +336,7 @@ plot_ly(shared_seq_plot_data) |>
     text = ~value,
     hoverinfo = "text"
   ) |>
-  config(displayModeBar = FALSE) |>
+  config(displayModeBar = TRUE) |>
   layout(title = list(
     text = paste0("<b>Sequencing Lab Indicator</b>"),
     x = 0,
@@ -414,7 +414,7 @@ plot_ly(shared_afp_cases_reported, colors = c("lightsteelblue", "steelblue")) |>
     name = names(afp_cases_reported)[9],
     color = as.factor(names(afp_cases_reported)[9])
   ) |>
-  config(displayModeBar = FALSE) |>
+  config(displayModeBar = TRUE) |>
   layout(title = list(
     text = paste0("<b>Monthly AFP Cases Reported</b>",
                   "<br>","<sup>Error bars represent 2 median absolute deviation (MAD)</sup>"),
@@ -478,7 +478,7 @@ plot_ly(shared_prop_60, colors = c("lightsteelblue", "steelblue")) |>
     name = names(prop_60)[length(names(prop_60))],
     color = as.factor(names(prop_60)[length(names(prop_60))])
   ) |>
-  config(displayModeBar = FALSE) |>
+  config(displayModeBar = TRUE) |>
   layout(title = list(
     text = paste0("<b>Proportion of 60 Days Follow-Up Done</b>"),
     x = 0,
@@ -525,7 +525,7 @@ plot_ly(shared_lab_pending) |>
     textposition = "outside",
     name = "Proportion of Samples Older Than 90 Days with Pending Status"
   ) |>
-  config(displayModeBar = FALSE) |>
+  config(displayModeBar = TRUE) |>
   layout(title = list(
     text = paste0("<b>AFP Lab Samples Older Than 90 Days With Pending Status</b>"),
     x = 0,
@@ -582,7 +582,7 @@ plot_ly(shared_prop_classified, colors = c("lightsteelblue", "steelblue")) |>
     name = names(prop_classified)[5],
     color = as.factor(names(prop_60)[5])
   ) |>
-  config(displayModeBar = FALSE) |>
+  config(displayModeBar = TRUE) |>
   layout(title = list(
     text = paste0("<b>Proportion of Cases Classified</b>"),
     x = 0,
@@ -633,7 +633,7 @@ plot_ly(shared_afp_wpv_vdpv, colors = c("lightsteelblue", "steelblue")) |>
     name = names(afp_wpv_vdpv)[6],
     color = as.factor(names(afp_wpv_vdpv)[6])
   ) |>
-  config(displayModeBar = FALSE) |>
+  config(displayModeBar = TRUE) |>
   layout(title = list(
     text = paste0("<b>Timeliness of Detection for AFP WPV/VDPV Samples</b>"),
     x = 0,
@@ -685,7 +685,7 @@ plot_ly(shared_afp_neg_timely, colors = c("lightsteelblue", "steelblue")) |>
     name = names(shared_afp_neg_timely$data())[5],
     color = as.factor(names(shared_afp_neg_timely$data())[5])
   ) |>
-  config(displayModeBar = FALSE) |>
+  config(displayModeBar = TRUE) |>
   layout(title = list(
     text = paste0("<b>Timeliness of Negative AFP Samples </b>"),
     x = 0,
@@ -737,7 +737,7 @@ plot_ly(shared_afp_stool_shipment, colors = c("lightsteelblue", "steelblue")) |>
     name = names(shared_afp_stool_shipment$data())[5],
     color = as.factor(names(shared_afp_stool_shipment$data())[5])
   ) |>
-  config(displayModeBar = FALSE) |>
+  config(displayModeBar = TRUE) |>
   layout(title = list(
     text = paste0("<b>Timeliness of Stool Specimen Shipment </b>"),
     x = 0,
@@ -792,7 +792,7 @@ plot_ly(shared_afp_prop_inad, colors = c("lightsteelblue", "steelblue")) |>
     name = names(shared_afp_prop_inad$data())[5],
     color = as.factor(names(shared_afp_prop_inad$data())[5])
   ) |>
-  config(displayModeBar = FALSE) |>
+  config(displayModeBar = TRUE) |>
   layout(title = list(
     text = paste0("<b>Proportion of Inadequates with Contact Sampling Done </b>"),
     x = 0,
@@ -856,7 +856,7 @@ plot_ly(shared_es_shipment, colors = c("lightsteelblue", "steelblue")) |>
     name = names(shared_es_shipment$data())[4],
     color = as.factor(names(shared_es_shipment$data())[4])
   ) |>
-  config(displayModeBar = FALSE) |>
+  config(displayModeBar = TRUE) |>
   layout(title = list(
     text = paste0("<b>Timeliness of ES Sample Shipment Monthly AFP Cases Reported</b>"),
     x = 0,
@@ -912,7 +912,7 @@ plot_ly(shared_es_wpv_vdpv, colors = c("lightsteelblue", "steelblue")) |>
     name = names(shared_es_wpv_vdpv$data())[4],
     color = as.factor(names(shared_es_wpv_vdpv$data())[4])
   ) |>
-  config(displayModeBar = FALSE) |>
+  config(displayModeBar = TRUE) |>
   layout(title = list(
     text = paste0("<b>Timeliness of detection for WPV/VDPV ES Samples Shipment</b>"),
     x = 0,
@@ -956,7 +956,7 @@ plot_ly(shared_es_sites, colors = c("lightsteelblue", "steelblue")) |>
     color = as.factor(names(shared_es_sites$data())[4]),
     hovertext = ~label_hover
   ) |>
-  config(displayModeBar = FALSE) |>
+  config(displayModeBar = TRUE) |>
   layout(title = list(
     x = 0,
     xanchor = "left"),
@@ -992,7 +992,7 @@ plot_ly(shared_es_site_samples, colors = c("steelblue")) |>
     type = "bar",
     name = "Median Collections"
   ) |>
-  config(displayModeBar = FALSE) |>
+  config(displayModeBar = TRUE) |>
   layout(title = list(
     text = paste0("<b>Monthly Median Collections Among Operational Sites</b>"),
     x = 0,
@@ -1048,7 +1048,7 @@ plot_ly(shared_lab_culture, colors = c("lightsteelblue", "steelblue")) |>
     name = names(culture_lab_intervals)[4],
     color = as.factor(names(culture_lab_intervals)[4])
   ) |>
-  config(displayModeBar = FALSE) |>
+  config(displayModeBar = TRUE) |>
   layout(title = list(
     text = paste0("<b>Median Timeliness for Culturing Lab</b>"),
     x = 0,
@@ -1101,7 +1101,7 @@ plot_ly(shared_afp_lab_processing, colors = c("lightsteelblue", "steelblue")) |>
     name = names(shared_afp_lab_processing$data())[4],
     color = as.factor(names(shared_afp_lab_processing$data())[4])
   ) |>
-  config(displayModeBar = FALSE) |>
+  config(displayModeBar = TRUE) |>
   layout(title = list(
     text = paste0("<b>Timeliness of AFP Lab Processing </b>"),
     x = 0,
@@ -1140,7 +1140,7 @@ plot_ly(shared_lab_seq, colors = c("lightsteelblue", "steelblue")) |>
     name = names(seq_lab_interval)[4],
     color = as.factor(names(seq_lab_interval)[4])
   ) |>
-  config(displayModeBar = FALSE) |>
+  config(displayModeBar = TRUE) |>
   layout(title = list(
     text = paste0("<b>Median Timeliness for Sequencing Lab</b>"),
     x = 0,
