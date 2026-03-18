@@ -43,7 +43,7 @@ lab_data <- lab_data |>
   mutate(seq.capacity = if_else(country %in% c("NIGERIA", "UGANDA") & DateStoolCollected >= as_date("2025-02-01"), "yes", seq.capacity))
 
 # Load human specimen table ----
-human_specimen <- sirfunctions_io("read", file_loc = "POLIS/data/human_specimen.rds")
+human_specimen <- sirfunctions_io("read", file_loc = "POLIS/data/human_specimen.parquet")
 
 # Calculate max lab dates ----
 max_lab_date <- max(lab_data$CaseDate, na.rm = TRUE)
