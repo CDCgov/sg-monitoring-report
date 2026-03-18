@@ -1,5 +1,5 @@
 ---
-title: "Surveillance Group Monitoring Report (DRAFT)"
+title: "Surveillance Group Monitoring Report Version 1.0"
 author: Mervin Keith Cuadera
 date: today
 date-format: "MMMM D, YYYY"  # e.g., September 24, 2025
@@ -23,7 +23,7 @@ library(crosstalk)
 library(cowplot)
 
 use_cache <- TRUE # Change if creating report using previous run or new run
-end_date <- "2025-12-31" # Change as needed. Only works for new runs
+end_date <- "2025-01-31" # Change as needed. Only works for new runs
 
 if (use_cache) {
   if (!dir.exists("data_cache")) {
@@ -2057,7 +2057,7 @@ Target is 7 days. On target if median for the current year is less than or equal
 
 :::
 ```{js enable-js-graphs}
-#| echo: false
+//| echo: false
 
 function remove_all_option() {
     document.getElementById("afp-tile-plot").getElementsByClassName("selectized")[0].selectize.removeOption("");
