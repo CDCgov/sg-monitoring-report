@@ -22,8 +22,11 @@ library(plotly)
 library(crosstalk)
 library(cowplot)
 
-use_cache <- TRUE # Change if creating report using previous run or new run
-end_date <- "2025-12-31" # Change as needed. Only works for new runs
+# Change if creating report using previous run or new run
+use_cache <- FALSEs
+
+# Change as needed. Only works for new runs
+end_date <- ceiling_date(Sys.Date() %m-% months(1), unit = "month") %m-% days(1)
 
 if (use_cache) {
   if (!dir.exists("data_cache")) {
