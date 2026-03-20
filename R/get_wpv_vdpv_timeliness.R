@@ -76,6 +76,11 @@ get_wpv_vdpv_timeliness <- function(pos, end_date = Sys.Date(), type = "AFP", te
       .default = "No data from both years"
     ))
 
+  if (temporal_scale == "quarter") {
+    summary <- summary |>
+      dplyr::mutate(quarter = as.integer(quarter))
+  }
+
   return(summary)
 
 }

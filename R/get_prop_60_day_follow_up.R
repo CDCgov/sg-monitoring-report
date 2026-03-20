@@ -97,6 +97,11 @@ get_prop_60_day_follow_up <- function(afp_data, end_date = Sys.Date(), temporal_
   summary <- dplyr::left_join(summary_wo_label |>
                                 dplyr::select(-any_of(c(3,4))), summary_with_label)
 
+  if (temporal_scale == "quarter") {
+    summary <- summary |>
+      dplyr::mutate(quarter = as.integer(quarter))
+  }
+
   return(summary)
 
 }
