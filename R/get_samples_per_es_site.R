@@ -54,7 +54,7 @@ get_samples_per_es_site <- function(es_data, end_date = Sys.Date()) {
     dplyr::ungroup() |>
     dplyr::mutate(ym = paste0(year, "-", month, "-1")) |>
     dplyr::mutate(ym = readr::parse_date(ym, format = "%Y-%b-%d")) |>
-    dplyr::filter(ym >= (end_date %m-% months(12)))
+    dplyr::filter(dplyr::between(ym, end_date %m-% months(12), end_date))
 
   return(monthly_summary)
 
