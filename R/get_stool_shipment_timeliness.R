@@ -26,6 +26,22 @@ get_stool_shipment_timeliness <- function(lab_data, end_date = Sys.Date(), tempo
   end_date <- lubridate::as_date(end_date)
   month_end_date <- lubridate::month(end_date, TRUE)
 
+  # In Jan, the previous month happens to be December of last year
+  # However, there are no months less than Jan
+  if (month_end_date == "Jan") {
+    month_end_date <- lubridate::month("2000-12-31", TRUE)
+    years_to_include <- c(
+      lubridate::year(end_date) - 2,
+      lubridate::year(end_date) - 1
+    )
+  } else {
+    month_end_date <- month_end_date - 1
+    years_to_include <- c(
+      lubridate::year(end_date) - 1,
+      lubridate::year(end_date)
+    )
+  }
+
   if (temporal_scale == "quarter") {
     lab_data <- lab_data |>
         dplyr::mutate(quarter = lubridate::quarter(CaseDate))
@@ -34,8 +50,8 @@ get_stool_shipment_timeliness <- function(lab_data, end_date = Sys.Date(), tempo
   summary <- lab_data |>
     dplyr::mutate(month = lubridate::month(CaseDate, label = TRUE),
                   days.collect.rec.lab = as.numeric(DateStoolReceivedinLab - DateStoolCollected)) |>
-    dplyr::filter(year >= lubridate::year(end_date) - 1,
-                  month < month_end_date,
+    dplyr::filter(year %in% years_to_include,
+                  month <= month_end_date,
                   !is.na(days.collect.rec.lab),
                   dplyr::between(days.collect.rec.lab, 0, 365)) |>
     dplyr::group_by(whoregion, country, culture.itd.cat, year, !!dplyr::sym(temporal_scale)) |>
