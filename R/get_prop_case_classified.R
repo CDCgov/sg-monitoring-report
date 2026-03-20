@@ -64,7 +64,7 @@ get_prop_case_classified <- function(afp_data, end_date = Sys.Date()) {
   final_summary_props["diff"] <- final_summary_props[[4]] - final_summary_props[[3]]
   final_summary_props <- final_summary_props |>
     dplyr::mutate(
-      quarter = as.integer(quarter),
+      quarter = factor(as.integer(quarter)),
       trend = dplyr::case_when(
       diff == 0 ~ "Same",
       diff > 0 ~ "Increase",
