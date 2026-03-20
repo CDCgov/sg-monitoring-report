@@ -33,7 +33,7 @@ get_wpv_vdpv_timeliness <- function(pos, end_date = Sys.Date(), type = "AFP", te
                   year = lubridate::year(dateonset),
                   days.on.notif.hq = as.numeric(lubridate::as_date(datenotificationtohq) - dateonset)) |>
     dplyr::filter(year >= lubridate::year(end_date) - 1,
-                  month < month_end_date,
+                  dateonset <= end_date,
                   !is.na(days.on.notif.hq),
                   dplyr::between(days.on.notif.hq, 0, 365),
                   stringr::str_detect(measurement, "WILD|VDPV")) |>
