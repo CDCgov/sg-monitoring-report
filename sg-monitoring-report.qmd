@@ -551,9 +551,10 @@ shared_prop_classified <- prop_classified |>
       Trend = "trend",
       `Current Year Performance` = "performance"
     ) |>
-  dplyr::mutate(prop_prev = stringr::str_extract(get(names(prop_classified)[4]), "[0-9]+|NaN"),
-                prop_cur = stringr::str_extract(get(names(prop_classified)[5]), "[0-9]+|NaN")
-                ) |>
+  dplyr::mutate(
+  prop_cur = stringr::str_extract(prop_classified[[4]], "[0-9]+|NaN"),
+  prop_prev = stringr::str_extract(prop_classified[[5]], "[0-9]+|NaN")
+  ) |>
   dplyr::mutate(prop_cur = as.numeric(prop_cur),
                 prop_prev = as.numeric(prop_prev)) |>
   dplyr::select(1,3:5, 9:10) |>
@@ -569,19 +570,19 @@ plot_ly(shared_prop_classified, colors = c("lightsteelblue", "steelblue")) |>
     x = ~Quarter,
     y = ~prop_prev,
     type = "bar",
-    text = ~get(names(prop_classified)[4]),
+    text = ~get(names(prop_classified)[3]),
     textposition = 'outside',
-    name = names(prop_classified)[4],
-    color = as.factor(names(prop_classified)[4])
+    name = names(prop_classified)[3],
+    color = as.factor(names(prop_classified)[3])
   ) |>
   add_trace(
     x = ~Quarter,
     y = ~prop_cur,
     type = "bar",
-    text = ~get(names(prop_classified)[5]),
+    text = ~get(names(prop_classified)[4]),
     textposition = 'outside',
-    name = names(prop_classified)[5],
-    color = as.factor(names(prop_60)[5])
+    name = names(prop_classified)[4],
+    color = as.factor(names(prop_60)[4])
   ) |>
   config(displayModeBar = TRUE) |>
   layout(title = list(
@@ -981,6 +982,7 @@ plot_ly(shared_es_sites, colors = c("lightsteelblue", "steelblue")) |>
 #| warning: false
 
 shared_es_site_samples <- es_site_samples |>
+  dplyr::filter(ym <= end_date) |>
   SharedData$new()
 
 filter_select("country-es-med-samples", "Country: ", shared_es_site_samples,
@@ -1920,7 +1922,7 @@ lab_workload <- lab_workload |>
   dplyr::arrange(`Culture/ITD Lab`, Month)
 
 last_month <- lab_workload |>
-  filter(Month == lubridate::month(lubridate::month(max_lab_date) - 1, TRUE))
+  filter(Month == lubridate::month(lubridate::month(max_lab_date), TRUE))
 
 top_10 <- last_month |>
   filter(Trend == "Increase") |>
