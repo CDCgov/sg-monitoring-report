@@ -27,7 +27,7 @@ get_wpv_vdpv_timeliness <- function(pos, end_date = Sys.Date(), type = "AFP", te
   }
 
   summary <- pos |>
-    dplyr::filter(source == type, whoregion %in% c("AFRO", "EMRO")) |>
+    dplyr::filter(source == type) |>
     dplyr::mutate(month = lubridate::month(dateonset, label = TRUE),
                   quarter = lubridate::quarter(dateonset),
                   year = lubridate::year(dateonset),
