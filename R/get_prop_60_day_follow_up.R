@@ -99,7 +99,7 @@ get_prop_60_day_follow_up <- function(afp_data, end_date = Sys.Date(), temporal_
 
   if (temporal_scale == "quarter") {
     summary <- summary |>
-      dplyr::mutate(quarter = factor(as.integer(quarter)))
+      dplyr::mutate(quarter = as.integer(quarter))
   }
 
   return(summary)
