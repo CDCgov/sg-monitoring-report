@@ -1,5 +1,5 @@
 ---
-title: "Surveillance Group Monitoring Report Version 1.0"
+title: "Surveillance Group Monitoring Report"
 author: Mervin Keith Cuadera
 date: today
 date-format: "MMMM D, YYYY"  # e.g., September 24, 2025
@@ -7,6 +7,34 @@ format:
   html:
     page-layout: custom
     embed-resources: true
+    include-in-header:
+      - text: |
+          <style>
+          .quarto-title-block { 
+            position: relative; 
+            padding-right: 90px;
+          }
+
+          .quarto-title-block::after {
+            content: "";
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            width: 150px;              
+            height: 150px;            
+            background-image: url("images/gpei_logo.png");
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            opacity: 1;
+          }
+
+          /* Optional: smaller logo on narrow screens */
+          @media (max-width: 600px) {
+            .quarto-title-block { padding-right: 60px; }
+            .quarto-title-block::after { width: 45px; height: 45px; }
+          }
+          </style>
 output-file: 
 ---
 
@@ -23,7 +51,7 @@ library(crosstalk)
 library(cowplot)
 
 # Change if creating report using previous run or new run
-use_cache <- FALSE
+use_cache <- TRUE
 
 # Change as needed. Only works for new runs
 end_date <- ceiling_date(Sys.Date() %m-% months(1), unit = "month") %m-% days(1)
@@ -443,7 +471,8 @@ plot_ly(shared_afp_cases_reported, colors = c("lightsteelblue", "steelblue")) |>
 # Graph
 regex_exp <- "(?<=\\()\\d+(?:\\.\\d+)?(?=%\\))"
 shared_prop_60 <- prop_60 |>
-    dplyr::rename_with(dplyr::recode,
+  dplyr::mutate(quarter = factor(quarter, ordered = TRUE)) |>
+  dplyr::rename_with(dplyr::recode,
                 ctry = "Country",
                 quarter = "Quarter",
                 semester = "Semester",
@@ -453,8 +482,7 @@ shared_prop_60 <- prop_60 |>
   dplyr::mutate(prop_prev = as.numeric(stringr::str_extract(!!dplyr::sym(names(prop_60)[length(names(prop_60)) - 1]),
                                                             regex_exp)),
                 prop_cur = as.numeric(stringr::str_extract(!!dplyr::sym(names(prop_60)[length(names(prop_60))]),
-                                                           regex_exp)),
-                Quarter = factor(Quarter, ordered = TRUE)) |>
+                                                           regex_exp))) |>
   dplyr::select(Country, Quarter, 6:9) |>
   SharedData$new()
 
@@ -547,7 +575,7 @@ plot_ly(shared_lab_pending) |>
 
 # Graph
 shared_prop_classified <- prop_classified |>
-    dplyr::rename(
+  dplyr::rename(
       Country = "ctry",
       Quarter = "quarter",
       `% Difference` = "diff",
