@@ -20,6 +20,7 @@ get_afp_lab_processing_timeliness <- function(lab_data, end_date = Sys.Date()) {
   end_date <- lubridate::as_date(end_date)
   end_date_month <- end_date %m-% months(1)
   start_date_month <- end_date %m-% months(3)
+  current_year_used <- lubridate::year(end_date_month)
 
   # Define the three month periods
   included_months <- dplyr::tibble(dates = seq(lubridate::floor_date(end_date %m-% lubridate::years(3) %m-% months(3)),
@@ -53,15 +54,16 @@ get_afp_lab_processing_timeliness <- function(lab_data, end_date = Sys.Date()) {
   summary_full <- dplyr::left_join(full_grid, summary)
 
   current_year <- summary_full |>
-    dplyr::filter(year == lubridate::year(end_date)) |>
+    dplyr::filter(year == current_year_used) |>
     dplyr::select(-year) |>
-    dplyr::rename(!!paste0(lubridate::year(end_date), " Median") := median)
+    dplyr::rename(!!paste0(current_year_used, " Median") := median)
 
   previous_years <- summary_full |>
-    dplyr::filter(year != lubridate::year(end_date)) |>
+    dplyr::filter(year != current_year_used) |>
     dplyr::group_by(culture.itd.lab, month) |>
     dplyr::summarize(median = median(median, na.rm = TRUE)) |>
-    dplyr::rename(!!paste0(lubridate::year(end_date) - 3, "-", lubridate::year(end_date) - 1, " Median") := median)
+    dplyr::rename(!!paste0(current_year_used - 3, "-",
+                           current_year_used - 1, " Median") := median)
 
   summary <- dplyr::left_join(previous_years, current_year) |> dplyr::ungroup()
 

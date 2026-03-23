@@ -27,13 +27,13 @@ get_wpv_vdpv_timeliness <- function(pos, end_date = Sys.Date(), type = "AFP", te
   }
 
   summary <- pos |>
-    dplyr::filter(source == type, whoregion %in% c("AFRO", "EMRO")) |>
+    dplyr::filter(source == type) |>
     dplyr::mutate(month = lubridate::month(dateonset, label = TRUE),
                   quarter = lubridate::quarter(dateonset),
                   year = lubridate::year(dateonset),
                   days.on.notif.hq = as.numeric(lubridate::as_date(datenotificationtohq) - dateonset)) |>
     dplyr::filter(year >= lubridate::year(end_date) - 1,
-                  month < month_end_date,
+                  dateonset <= end_date,
                   !is.na(days.on.notif.hq),
                   dplyr::between(days.on.notif.hq, 0, 365),
                   stringr::str_detect(measurement, "WILD|VDPV")) |>
@@ -75,6 +75,11 @@ get_wpv_vdpv_timeliness <- function(pos, end_date = Sys.Date(), type = "AFP", te
       comparison < 0 ~ "Decrease",
       .default = "No data from both years"
     ))
+
+  if (temporal_scale == "quarter") {
+    summary <- summary |>
+      dplyr::mutate(quarter = as.integer(quarter))
+  }
 
   return(summary)
 

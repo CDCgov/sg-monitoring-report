@@ -22,7 +22,6 @@ get_proportion_lab_pending <- function(afp_data, end_date = Sys.Date()) {
     dplyr::filter(stooltolabdate < lubridate::floor_date(end_date %m-% months(3), unit = "months")) |>
     dplyr::mutate(month = lubridate::month(stooltolabdate, label = TRUE),
                   year = lubridate::year(stooltolabdate)) |>
-    dplyr::filter(year == lubridate::year(end_date)) |>
     dplyr::group_by(whoregion, country = place.admin.0) |>
     dplyr::summarize(pending_samples = sum(cdc.classification.all2 == "LAB PENDING", na.rm = TRUE),
                      prop_pending_samples = round(pending_samples / dplyr::n() * 100),
