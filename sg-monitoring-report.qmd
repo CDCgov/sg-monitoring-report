@@ -1,5 +1,5 @@
 ---
-title: "Surveillance Group Monitoring Report Version 1.0"
+title: "Surveillance Group Monitoring Report"
 author: Mervin Keith Cuadera
 date: today
 date-format: "MMMM D, YYYY"  # e.g., September 24, 2025
@@ -7,6 +7,34 @@ format:
   html:
     page-layout: custom
     embed-resources: true
+    include-in-header:
+      - text: |
+          <style>
+          .quarto-title-block { 
+            position: relative; 
+            padding-right: 90px;
+          }
+
+          .quarto-title-block::after {
+            content: "";
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            width: 150px;              
+            height: 150px;            
+            background-image: url("images/gpei_logo.png");
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            opacity: 1;
+          }
+
+          /* Optional: smaller logo on narrow screens */
+          @media (max-width: 600px) {
+            .quarto-title-block { padding-right: 60px; }
+            .quarto-title-block::after { width: 45px; height: 45px; }
+          }
+          </style>
 output-file: 
 ---
 
@@ -22,8 +50,11 @@ library(plotly)
 library(crosstalk)
 library(cowplot)
 
-use_cache <- TRUE # Change if creating report using previous run or new run
-end_date <- "2025-12-31" # Change as needed. Only works for new runs
+# Change if creating report using previous run or new run
+use_cache <- TRUE
+
+# Change as needed. Only works for new runs
+end_date <- ceiling_date(Sys.Date() %m-% months(1), unit = "month") %m-% days(1)
 
 if (use_cache) {
   if (!dir.exists("data_cache")) {
@@ -440,7 +471,8 @@ plot_ly(shared_afp_cases_reported, colors = c("lightsteelblue", "steelblue")) |>
 # Graph
 regex_exp <- "(?<=\\()\\d+(?:\\.\\d+)?(?=%\\))"
 shared_prop_60 <- prop_60 |>
-    dplyr::rename_with(dplyr::recode,
+  dplyr::mutate(quarter = factor(quarter, ordered = TRUE)) |>
+  dplyr::rename_with(dplyr::recode,
                 ctry = "Country",
                 quarter = "Quarter",
                 semester = "Semester",
@@ -450,8 +482,7 @@ shared_prop_60 <- prop_60 |>
   dplyr::mutate(prop_prev = as.numeric(stringr::str_extract(!!dplyr::sym(names(prop_60)[length(names(prop_60)) - 1]),
                                                             regex_exp)),
                 prop_cur = as.numeric(stringr::str_extract(!!dplyr::sym(names(prop_60)[length(names(prop_60))]),
-                                                           regex_exp)),
-                Quarter = factor(Quarter, ordered = TRUE)) |>
+                                                           regex_exp))) |>
   dplyr::select(Country, Quarter, 6:9) |>
   SharedData$new()
 
@@ -544,16 +575,17 @@ plot_ly(shared_lab_pending) |>
 
 # Graph
 shared_prop_classified <- prop_classified |>
-    dplyr::rename(
+  dplyr::rename(
       Country = "ctry",
       Quarter = "quarter",
       `% Difference` = "diff",
       Trend = "trend",
       `Current Year Performance` = "performance"
     ) |>
-  dplyr::mutate(prop_prev = stringr::str_extract(get(names(prop_classified)[4]), "[0-9]+|NaN"),
-                prop_cur = stringr::str_extract(get(names(prop_classified)[5]), "[0-9]+|NaN")
-                ) |>
+  dplyr::mutate(
+  prop_cur = stringr::str_extract(prop_classified[[4]], "[0-9]+|NaN"),
+  prop_prev = stringr::str_extract(prop_classified[[5]], "[0-9]+|NaN")
+  ) |>
   dplyr::mutate(prop_cur = as.numeric(prop_cur),
                 prop_prev = as.numeric(prop_prev)) |>
   dplyr::select(1,3:5, 9:10) |>
@@ -569,19 +601,19 @@ plot_ly(shared_prop_classified, colors = c("lightsteelblue", "steelblue")) |>
     x = ~Quarter,
     y = ~prop_prev,
     type = "bar",
-    text = ~get(names(prop_classified)[4]),
+    text = ~get(names(prop_classified)[3]),
     textposition = 'outside',
-    name = names(prop_classified)[4],
-    color = as.factor(names(prop_classified)[4])
+    name = names(prop_classified)[3],
+    color = as.factor(names(prop_classified)[3])
   ) |>
   add_trace(
     x = ~Quarter,
     y = ~prop_cur,
     type = "bar",
-    text = ~get(names(prop_classified)[5]),
+    text = ~get(names(prop_classified)[4]),
     textposition = 'outside',
-    name = names(prop_classified)[5],
-    color = as.factor(names(prop_60)[5])
+    name = names(prop_classified)[4],
+    color = as.factor(names(prop_60)[4])
   ) |>
   config(displayModeBar = TRUE) |>
   layout(title = list(
@@ -981,6 +1013,7 @@ plot_ly(shared_es_sites, colors = c("lightsteelblue", "steelblue")) |>
 #| warning: false
 
 shared_es_site_samples <- es_site_samples |>
+  dplyr::filter(ym <= end_date) |>
   SharedData$new()
 
 filter_select("country-es-med-samples", "Country: ", shared_es_site_samples,
@@ -1920,7 +1953,7 @@ lab_workload <- lab_workload |>
   dplyr::arrange(`Culture/ITD Lab`, Month)
 
 last_month <- lab_workload |>
-  filter(Month == lubridate::month(lubridate::month(max_lab_date) - 1, TRUE))
+  filter(Month == lubridate::month(lubridate::month(max_lab_date), TRUE))
 
 top_10 <- last_month |>
   filter(Trend == "Increase") |>

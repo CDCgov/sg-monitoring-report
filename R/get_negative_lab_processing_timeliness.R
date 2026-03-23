@@ -16,14 +16,31 @@
 #' }
 get_negative_lab_processing_timeliness <- function(lab_data, end_date = Sys.Date()) {
   end_date <- lubridate::as_date(end_date)
-  month_end_date <- lubridate::month(end_date, TRUE)
+  month_end_date <- lubridate::month(end_date, TRUE) # actual month
+
+  # In Jan, the previous month happens to be December of last year
+  # However, there are no months less than Jan
+  if (month_end_date == "Jan") {
+    month_end_date <- lubridate::month("2000-12-31", TRUE)
+    years_to_include <- c(
+      lubridate::year(end_date) - 2,
+      lubridate::year(end_date) - 1
+    )
+  } else {
+    month_end_date <- month_end_date - 1
+    years_to_include <- c(
+      lubridate::year(end_date) - 1,
+      lubridate::year(end_date)
+    )
+  }
 
   summary <- lab_data |>
     dplyr::mutate(month = lubridate::month(CaseDate, label = TRUE),
                   days.collect.lab.culture = as.numeric(difftime(DateFinalCellCultureResult,
-                                                              DateStoolCollected, units = "days"))) |>
-    dplyr::filter(year >= lubridate::year(end_date) - 1,
-                  month < month_end_date,
+                                                                 DateStoolCollected,
+                                                                 units = "days"))) |>
+    dplyr::filter(year %in% years_to_include,
+                  month <= month_end_date,
                   !is.na(days.collect.lab.culture),
                   dplyr::between(days.collect.lab.culture, 0, 365),
                   FinalCellCultureResult %in% c("Negative", "NPEV", NA, "")
@@ -42,6 +59,7 @@ get_negative_lab_processing_timeliness <- function(lab_data, end_date = Sys.Date
                        dplyr::distinct())
 
   summary <- dplyr::full_join(complete_dataset, summary)
+
   summary <- summary |>
     tidyr::pivot_wider(names_from = year, values_from = median)
 
@@ -55,4 +73,5 @@ get_negative_lab_processing_timeliness <- function(lab_data, end_date = Sys.Date
     ))
 
   return(summary)
+
 }
