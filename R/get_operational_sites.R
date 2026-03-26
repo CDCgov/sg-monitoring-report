@@ -74,7 +74,7 @@ get_operational_sites <- function(es_data, end_date = Sys.Date()) {
     ))
 
   active_site_summary_wide <- active_site_summary_wide |>
-    dplyr::select(-Region)
+    dplyr::select(-dplyr::any_of("Region"))
 
   cli::cli_alert_info(paste0("Note: active sites are anchored based on the end date specified.",
                              " An active site is a site open for at least 12 months",
