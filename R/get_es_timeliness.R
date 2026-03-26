@@ -117,6 +117,10 @@ get_es_timeliness <- function(es_data, lab_loc = sirfunctions::get_lab_locs(), e
                                               by = c("month", "country", "who.region", "es.lab.type",
                                                                               "category"))
 
+  # Obtain the right who region
+  timeliness_summary_complete <- timeliness_summary_complete |>
+    dplyr::mutate(who.region = sirfunctions::get_region(country))
+
   return(timeliness_summary_complete)
 
 }
