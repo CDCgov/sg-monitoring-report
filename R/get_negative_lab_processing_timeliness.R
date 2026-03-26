@@ -27,7 +27,7 @@ get_negative_lab_processing_timeliness <- function(lab_data, end_date = Sys.Date
       lubridate::year(end_date) - 1
     )
   } else {
-    month_end_date <- month_end_date - 1
+    month_end_date <- lubridate::month(end_date %m-% months(1), TRUE)
     years_to_include <- c(
       lubridate::year(end_date) - 1,
       lubridate::year(end_date)
