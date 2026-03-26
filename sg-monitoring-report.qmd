@@ -51,7 +51,7 @@ library(crosstalk)
 library(cowplot)
 
 # Change if creating report using previous run or new run
-use_cache <- TRUE
+use_cache <- FALSE
 
 # Change as needed. Only works for new runs
 end_date <- ceiling_date(Sys.Date() %m-% months(1), unit = "month") %m-% days(1)
