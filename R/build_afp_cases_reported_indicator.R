@@ -1,16 +1,59 @@
+#' Build AFP Cases Reported Summary
+#'
+#' Calculates AFP case counts for the current 6-month rolling window and
+#' compares to the same months across the prior 3 years. Creates threshold
+#' using a +/-50% around the historical median. The window is dynamic and handles
+#' cross-year periods (e.g. Oct 2025 - Mar 2026).
+#'
+#'
+#' @param afp_data A data frame containing AFP case data. Must include
+#'   \code{dateonset} and \code{place.admin.0} columns.
+#' @param end_date Date to end the current reporting window.
+#'   Defaults to `Sys.Date()`. Typically passed as the last day of the previous month.
+#'
+#' @return A named list with two elements:
+#' \describe{
+#'   \item{data}{A data frame with one row per country-month containing:
+#'     \code{place.admin.0}, \code{whoregion}, \code{month_label},
+#'     \code{current_period_counts}, \code{prior_median},
+#'     \code{prior_yrs_w_data}, \code{lower_50pct}, \code{upper_50pct},
+#'     and \code{flag}.}
+#'   \item{metadata}{A named list containing indicator label, period start/end
+#'     dates, human-readable period labels, number of months and prior years
+#'     assessed, and the threshold rule applied.}
+#'     }
+#'
+#' @examples
+#' \dontrun{
+#' end_date <- ceiling_date(Sys.Date() %m-% months(1), unit = "month") %m-% days(1)
+#' result <- build_afp_cases_reported(raw_data$afp, end_date)
+#' result$data
+#' result$metadata$current_period_label
+#' }
+#'
+#' @export
 build_afp_cases_reported <- function(afp_data, end_date = Sys.Date()) {
+
+  # Basic initial checks -----
+  stopifnot(
+    "afp_data must be a data frame" = is.data.frame(afp_data),
+    "dateonset column required" = "dateonset" %in% names(afp_data),
+    "place.admin.0 column required" = "place.admin.0" %in% names(afp_data)
+  )
 
   # Date Windows -----
   window_start <- lubridate::floor_date(end_date %m-% months(5), unit = "month")
 
   current_months <- seq(window_start, end_date, by = "month")
 
+  # create all possible combinations for current 6 months assessment
   current_combos <- tibble::tibble(
     year      = lubridate::year(current_months),
     month_num = lubridate::month(current_months),
     month     = lubridate::month(current_months, label = TRUE, abbr = TRUE)
   )
 
+  # create all possible combinations for prior 3 years assessment
   prior_combos <- dplyr::bind_rows(
     dplyr::mutate(current_combos, year = year - 1),
     dplyr::mutate(current_combos, year = year - 2),
@@ -19,6 +62,7 @@ build_afp_cases_reported <- function(afp_data, end_date = Sys.Date()) {
 
 
   # Period Labels -----
+  # create labels from dates to export with final data
   current_period_label <- paste0(format(window_start, "%b %Y"), " - ", format(end_date, "%b %Y"))
   prior_period_label <- paste0(format(window_start %m-% lubridate::years(1:3), "%b %Y" )," - ",format(end_date %m-% lubridate::years(1:3), "%b %Y"), collapse = ", ")
 
@@ -49,6 +93,7 @@ build_afp_cases_reported <- function(afp_data, end_date = Sys.Date()) {
     left_join(current_counts, by = c("place.admin.0", "month_num", "month")) |>
     dplyr::mutate(current_period_counts = tidyr::replace_na(current_period_counts, 0))
 
+
   # Prior Period Counts -----
   prior_counts <- afp_prep |>
     inner_join(prior_combos, by = c("year", "month_num")) |>  #limit to the comparison periods of prior three years
@@ -65,9 +110,9 @@ build_afp_cases_reported <- function(afp_data, end_date = Sys.Date()) {
                      .groups = "drop"
                      )
 
-  # Join
+  # Join for full table -----
   final_summary <- current_full |>
-    full_join(prior_full, by = c("place.admin.0", "month_num", "month")) |>
+    left_join(prior_full, by = c("place.admin.0", "month_num", "month")) |>
     mutate(month_label = paste0(month, " ", year)) |>
     select(-year, -month, -month_num) |>
     # add region
@@ -76,17 +121,32 @@ build_afp_cases_reported <- function(afp_data, end_date = Sys.Date()) {
       whoregion = sirfunctions::get_region(place.admin.0),
       # thresholds
       upper_50pct = prior_median * 1.5,
-      lower_50pct = pmax(0, prior_median *.5),  # if lower bound is negative, make it 0
+      lower_50pct = pmax(0, prior_median *.5),  # floor at 0 for safety
       # flag
-      flag = case_when(is.na(prior_median) ~ "Cannot Calculate",
-                       current_period_counts <= upper_50pct & current_period_counts >= lower_50pct ~ "Within Target",
-                       current_period_counts > upper_50pct ~ "Above Target",
-                       current_period_counts < lower_50pct ~ "Below Target",
-                       TRUE ~ "Review"
-                       )
+      flag = case_when(
+        is.na(prior_median) ~ "Cannot Calculate",
+        current_period_counts <= upper_50pct & current_period_counts >= lower_50pct ~ "Within Target",
+        current_period_counts > upper_50pct ~ "Above Target",
+        current_period_counts < lower_50pct ~ "Below Target",
+        TRUE ~ "Review")
       ) |>
     dplyr::select(place.admin.0, whoregion, month_label, current_period_counts, prior_median, prior_yrs_w_data, lower_50pct, upper_50pct, flag)
 
-  return(final_summary)
+ # Return -----
+  meta <- list(
+    indicator_code = "AFP_cases_reported",
+    indicator_label = "AFP cases reported",
+    current_period_start = window_start,
+    current_period_end = end_date,
+    current_period_label = current_period_label,
+    prior_period_label = prior_period_label,
+    n_current_months = 6,
+    n_prior_years = 3,
+    threshold_rule = "±50% of 3-year median"
+  )
+
+  return(list(
+    data = final_summary,
+    metadata = meta))
 
 }
