@@ -124,7 +124,7 @@ build_afp_cases_reported <- function(afp_data, end_date = Sys.Date()) {
       lower_50pct = pmax(0, prior_median *.5),  # floor at 0 for safety
       # flag
       flag = case_when(
-        is.na(prior_median) ~ "Cannot Calculate",
+        is.na(prior_median) ~ "Incomplete Data",
         current_period_counts <= upper_50pct & current_period_counts >= lower_50pct ~ "Within Target",
         current_period_counts > upper_50pct ~ "Above Target",
         current_period_counts < lower_50pct ~ "Below Target",
