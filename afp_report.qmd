@@ -1,0 +1,55 @@
+---
+title: "AFP_refactor"
+format: 
+  html:
+    embed-resources: true
+editor: visual
+execute:
+  echo: false
+  message: false
+  warning: false
+---
+
+# INFO
+
+This is just the example refactor for our AFP code.
+
+End date is last day of the previous month
+
+```{r packages}
+library(sirfunctions)
+library(DT)
+library(tidyverse)
+library(plotly)
+library(crosstalk)
+library(cowplot)
+
+```
+
+```{r parameter}
+
+end_date <- ceiling_date(Sys.Date() %m-% months(1), unit = "month") %m-% days(1)
+
+invisible(lapply(list.files("R"), \(fx) source(file.path("R", fx))))
+```
+
+```{r}
+raw_data <- get_all_polio_data(attach.spatial.data = FALSE)
+```
+
+```{r}
+afp_cases_reported <- build_afp_cases_reported(raw_data$afp, end_date) 
+```
+
+# EXAMPLE TABLE
+
+```{r}
+datatable(
+  afp_cases_reported$data |>
+    dplyr::rename(
+      Region = "whoregion",
+      Country = "place.admin.0",
+      Month = "month_label"
+    ),
+  options = list(scrollX = TRUE) )
+```
