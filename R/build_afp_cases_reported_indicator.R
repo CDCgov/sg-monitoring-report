@@ -142,7 +142,8 @@ build_afp_cases_reported <- function(afp_data, end_date = Sys.Date()) {
     prior_period_label = prior_period_label,
     n_current_months = 6,
     n_prior_years = 3,
-    threshold_rule = "±50% of 3-year median"
+    threshold_rule = "±50% of 3-year median",
+    definition = ""
   )
 
   return(list(
