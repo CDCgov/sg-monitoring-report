@@ -1,6 +1,6 @@
 #' Build Proportion 60-Day Follow-Up Indicator
 #'
-#'#' Calculates the proportion of inadequate AFP cases with completed 60-day
+#' Calculates the proportion of inadequate AFP cases with completed 60-day
 #' follow-up for two rolling 3-month window: the most recent fully eligible window and the
 #' immediately preceding 3-month window. Each window is compared to the same 3-month window
 #' in the prior year. Returns results in long format with one row per country per window.
