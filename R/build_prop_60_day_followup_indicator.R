@@ -195,6 +195,7 @@ build_prop_60_day_follow_up <- function(afp_data) {
     earlier_prior_period_label = earlier_prior_period_label,
     n_prior_years = 1,
     threshold_rule = "Below Target if proportion declines by more than 50 percent compared to same 3-month period in the prior year",
+    definition = "",
     possible_statuses = c("On Target", "Below Target", "Incomplete Data")
   )
 
