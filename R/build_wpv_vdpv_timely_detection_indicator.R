@@ -84,7 +84,7 @@ build_wpv_vdpv_timeliness_indicator <- function(pos, end_date = Sys.Date()) {
     dplyr::mutate(ctry = place.admin.0, # rename for easy merging below
                   days_to_notification = as.numeric(lubridate::as_date(datenotificationtohq) - dateonset),
                   whoregion = sirfunctions::get_region(place.admin.0)) |> #ensures correct region assignment
-    dplyr::filter(dateonset <= recent_end,  # keep within our time frame
+    dplyr::filter(datenotificationtohq <= recent_end,  # keep within our time frame
                   !is.na(days_to_notification),
                   dplyr::between(days_to_notification, 0, 365), # data quality limitation
                   stringr::str_detect(measurement, "WILD|VDPV"))
