@@ -8,9 +8,11 @@
 #'
 #' @details
 #' Only AFP-sourced cases with WILD or VDPV string contained in the \code{measurement}
-#' field are included. Cases with a \code{days_to_notification} outside the
-#' range 0–365 are excluded as likely data quality issues. Cases with a
-#' missing notification date are also excluded.
+#' field are included. Windows are defined by \code{datenotificationtohq} — cases are
+#' included based on when results were reported to HQ, not when onset occurred. This
+#' avoids bias from cases with onset in the window whose results have not yet arrived.
+#' Cases with a \code{days_to_notification} outside the range 0–365 are excluded as
+#' likely data quality issues. Cases with a missing notification date are also excluded.
 #'
 #' @param pos A data frame containing positive case data. Must include
 #'   \code{dateonset}, \code{place.admin.0}, \code{datenotificationtohq},
@@ -82,18 +84,19 @@ build_wpv_vdpv_timeliness_indicator <- function(pos, end_date = Sys.Date()) {
   pos_prep <- pos |>
     dplyr::filter(source == "AFP") |>
     dplyr::mutate(ctry = place.admin.0, # rename for easy merging below
-                  days_to_notification = as.numeric(lubridate::as_date(datenotificationtohq) - dateonset),
+                  days_to_notification = as.numeric(lubridate::as_date(datenotificationtohq) - lubridate::as_date(dateonset)),
                   whoregion = sirfunctions::get_region(place.admin.0)) |> #ensures correct region assignment
     dplyr::filter(datenotificationtohq <= recent_end,  # keep within our time frame
                   !is.na(days_to_notification),
                   dplyr::between(days_to_notification, 0, 365), # data quality limitation
-                  stringr::str_detect(measurement, "WILD|VDPV"))
+                  stringr::str_detect(measurement, "WILD|VDPV")
+                  )
 
 
   # Helper to summarize counts and median for a given window -----
   summarize_window <- function(data, start, end) {
     data |>
-      dplyr::filter(dplyr::between(dateonset, start, end)) |>
+      dplyr::filter(dplyr::between(datenotificationtohq, start, end)) |>
       dplyr::group_by(ctry) |>
       dplyr::summarize(
         counts = dplyr::n(),
