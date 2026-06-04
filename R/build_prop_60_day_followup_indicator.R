@@ -96,6 +96,8 @@ build_prop_60_day_follow_up <- function(afp_data) {
 
   # Filter to eligible inadequate cases only -----
   # got60day %in% c(0,1) retains only cases where follow-up was due and resolvable (onset >= 120 days ago).
+  # got60day 0 represents cases that do not have follow-up date OR follow-up finding,
+  # got60day 1 represents cases that have a follow-up date OR follow-up findings
   # Cases are excluded if they are not inadequate or if got60day == 99  which are those not yet due.
   eligible_cases <- case_60d |>
     dplyr::filter(got60day %in% c(0, 1),
