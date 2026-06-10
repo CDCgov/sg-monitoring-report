@@ -13,57 +13,67 @@ build_prop_inadequate_classified <- function(afp_data, end_date = Sys.Date()) {
   stopifnot(
     "afp_data must be a data frame" = is.data.frame(afp_data),
     "dateonset column required" = "dateonset" %in% names(afp_data),
-    "place.admin.0 column required" = "place.admin.0" %in% names(afp_data)
+    "place.admin.0 column required" = "place.admin.0" %in% names(afp_data),
+    "cdc.classification.all2 column required" = "cdc.classification.all2"  %in% names(afp_data)
   )
 
   # Date Windows -----
 
   # Ensure end_date is a date type
   end_date <- lubridate::as_date(end_date)
+  # Only cases within last 365 days
+  start_date <- end_date - days(365)
 
-  # Recent 3-month window — last complete month
-  recent_end   <- lubridate::floor_date(end_date, unit = "month") %m-% days(1)
-  recent_start <- lubridate::floor_date(recent_end %m-% months(2), unit = "month")
-
-  # Recent 3-month window - one year prior for comparison
-  recent_prior_end   <- recent_end   %m-% lubridate::years(1)
-  recent_prior_start <- recent_start %m-% lubridate::years(1)
-
-  # Period Labels -----
-  recent_period_label  <- paste0(format(recent_start, "%b %Y"), " - ", format(recent_end, "%b %Y"))
-  recent_prior_period_label    <- paste0(format(recent_prior_start, "%b %Y"), " - ", format(recent_prior_end, "%b %Y"))
+  eligibility_note <- paste0(
+    "Eligible cases have onset between ", format(start_date, "%b %d, %Y"),
+    " and ", format(end_date - days(90), "%b %d, %Y"), " (90 to 365 days before ",
+    format(end_date, "%b %d, %Y"), "). ",
+    "The 90-day lag ensures cases have had sufficient time to receive a classification."
+  )
 
   # Prepare data from sirfunctions -----
-  # Use recent_prior_start as start date required parameter in functions - will capture data for both periods
   stool_data <- sirfunctions::generate_stool_data(
     afp_data,
-    start_date = recent_prior_start,
-    end_date   = recent_end)
+    start_date = start_date,
+    end_date   = end_date)
 
   # Filter to eligible inadequate cases only -----
   eligible_cases <- stool_data |>
-    dplyr::mutate(case_age = as.numeric(difftime(recent_end, date, units = "days"))) |>
+    dplyr::mutate(case_age = as.numeric(end_date - lubridate::as_date(date))) |>
     dplyr::filter(adequacy.final2 == "Inadequate",
-                  case_age > 90)
+                  dplyr::between(case_age, 90, 365))
 
-  # Helper to summarize counts for a given window -----
-  summarize_window <- function(data, start, end) {
-    data |>
-      dplyr::filter(dplyr::between(date, start, end)) |>
-      dplyr::group_by(ctry) |>
-      dplyr::summarize(
-        inad_cases   = dplyr::n(),
-        no_classified = sum(cdc.classification.all2 != "PENDING", na.rm = TRUE),
-        prop_classified   = round(no_classified / inad_cases * 100),
-        .groups = "drop"
-      )
+  # Summarize per country -----
+  final_summary <- eligible_cases |>
+    dplyr::group_by(ctry) |>
+    dplyr::summarize(
+      inad_cases   = dplyr::n(),
+      n_classified = sum(cdc.classification.all2 != "PENDING", na.rm = TRUE),
+      n_unclassified = sum(cdc.classification.all2 == "PENDING", na.rm = TRUE),
+      prop_unclassified   = round(n_unclassified / inad_cases * 100),
+      .groups = "drop") |>
+    dplyr::mutate(
+      # add region
+      whoregion = sirfunctions::get_region(ctry),
+      flag = case_when(
+        prop_unclassified <= 10 ~ "Within Target",
+        prop_unclassified > 10 ~ "Above Target",
+        TRUE ~ "Review")) |>
+    dplyr::select(ctry, whoregion, inad_cases, n_classified, n_unclassified,
+                  prop_unclassified, flag)
+
+  meta <- list(
+    indicator_code     = "prop_inad_classified",
+    indicator_label    = "Proportion of Inadequate Cases Classified",
+    eligibility_note   = eligibility_note,
+    threshold_rule     = "Above Target if more than 10% of eligible inadequate cases are unclassified",
+    definition         = "",
+    possible_statuses  = c("Within Target", "Above Target")
+  )
+
+  return(list(
+    data     = final_summary,
+    metadata = meta
+  ))
+
   }
-
-  # Period Counts -----
-  # Count number pending for each of the four time periods
-  recent_counts        <- summarize_window(eligible_cases, recent_start, recent_end)
-  recent_prior_counts  <- summarize_window(eligible_cases, recent_prior_start, recent_prior_end)
-
-
-
-}
