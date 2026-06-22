@@ -28,7 +28,7 @@
 #' @return A named list with two elements:
 #' \describe{
 #'   \item{data}{A long-format data frame with one row per country per quarter
-#'     containing: \code{country}, \code{whoregion}, \code{quarter},
+#'     containing: \code{country}, \code{whoregion}, \code{window},
 #'     \code{current_period}, \code{prior_period}, \code{es.lab.type},
 #'     \code{current_count}, \code{current_median_days}, \code{prior_count},
 #'     \code{prior_median_days}, \code{perc_change}, and \code{flag}.}
@@ -172,14 +172,14 @@ build_timeliness_es_wpv_vdpv_notification_indicator <- function(es_data,
   # Create individual period summaries -----
   recent_summary <- build_period(full_grid, recent_counts, recent_prior_counts) |>
     dplyr::mutate(
-      quarter = "recent",
+      window = "recent",
       current_period = recent_period_label,
       prior_period = recent_prior_period_label
     )
 
   earlier_summary <- build_period(full_grid, earlier_counts, earlier_prior_counts) |>
     dplyr::mutate(
-      quarter = "earlier",
+      window = "earlier",
       current_period = earlier_period_label,
       prior_period = earlier_prior_period_label
     )
@@ -187,7 +187,7 @@ build_timeliness_es_wpv_vdpv_notification_indicator <- function(es_data,
   # Join for full table -----
   final_summary <- dplyr::bind_rows(recent_summary, earlier_summary) |>
     dplyr::select(
-      country, whoregion, quarter, current_period, prior_period, es.lab.type,
+      country, whoregion, window, current_period, prior_period, es.lab.type,
       current_count, current_median_days, prior_count, prior_median_days,
       perc_change, flag
     )
