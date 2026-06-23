@@ -151,15 +151,13 @@ build_prop_60_day_follow_up <- function(afp_data) {
       dplyr::mutate(
         perc_change = round((current_prop_60day - prior_prop_60day) / prior_prop_60day * 100),
         flag = dplyr::case_when(
-          # no change in measured follow-up — both periods 0%
-          current_prop_60day == 0 & prior_prop_60day == 0 ~ "On Target", # handles perc_change NaN
-          # improvement from 0% in prior period
-          current_prop_60day > 0 & prior_prop_60day == 0 ~ "On Target", # handles perc_change Inf
           # missing data — cannot calculate change
           is.na(perc_change) ~ "Incomplete Data", # handles either or both missing
-          # threshold
+          # threshold,
+          prior_prop_60day == 0 ~ "Incomplete Data", # handles perc_change Inf
           perc_change < -50 ~ "Below Target",
-          perc_change >= -50 ~ "On Target",
+          perc_change > 50 ~ "Above Target",
+          dplyr::between(perc_change, -50, 50) ~ "Within Target",
           TRUE ~ "Review"
         )
       )
@@ -197,8 +195,8 @@ build_prop_60_day_follow_up <- function(afp_data) {
     earlier_prior_period_label = earlier_prior_period_label,
     n_prior_years = 1,
     threshold_rule = "Below Target if proportion declines by more than 50 percent compared to same 3-month period in the prior year",
-    definition = "",
-    possible_statuses = c("On Target", "Below Target", "Incomplete Data")
+    definition = "Proportion of 60-day follow-ups completed. On Target if the proportion of 60-day follow-ups completed in the most recent three month period is within +/- 50% of the proportion of 60-days follow-ups completed in the same three month period of the previous year. ",
+    possible_statuses = c("Above Target", "Below Target", "Within Target", "Incomplete Data")
   )
 
 
