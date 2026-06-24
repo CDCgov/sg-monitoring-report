@@ -90,6 +90,12 @@ build_negative_samples_timeliness <- function(lab_data, end_date = Sys.Date()) {
 
   # Prepare Data -----
 
+  # create country+culture.itd.category lookup
+  culture_cat_lookup <- lab_data |>
+    dplyr::distinct(country, culture.itd.cat) |>
+    dplyr::filter(!is.na(culture.itd.cat))
+
+  # create indicator lab data
   lab_prep <- lab_data  |>
     dplyr::mutate(
       # Prepare month and year columns
@@ -127,10 +133,11 @@ build_negative_samples_timeliness <- function(lab_data, end_date = Sys.Date()) {
   final_summary <- tidyr::expand_grid(
     country  = unique(lab_prep$country),
     current_combos |> dplyr::select(year, month_num, month)) |>
-    dplyr::left_join(current_counts, by = c("country", "year", "month_num", "month")) |>
+    dplyr::left_join(culture_cat_lookup, by = "country") |>  # bring in stable culture category
+    dplyr::left_join(current_counts, by = c("country", "culture.itd.cat", "year", "month_num", "month")) |>
     dplyr::left_join(
-      prior_counts |> dplyr::select(country, month_num, prior_n, prior_median_days),
-      by = c("country", "month_num")) |>
+      prior_counts |> dplyr::select(country, culture.itd.cat, month_num, prior_n, prior_median_days),
+      by = c("country", "culture.itd.cat", "month_num")) |>
     dplyr::mutate(month_label = paste0(month, " ", year)) |>
     dplyr::select(-year, -month, -month_num) |>
     dplyr::mutate(
