@@ -1,12 +1,41 @@
-#' Title
+#' Build Proportion of Inadequate Cases Classified Indicator
 #'
-#' @param afp_data
-#' @param end_date
+#' Calculates the proportion of inadequate AFP cases with onset between 90 and
+#' 365 days ago that have a classification. Returns one row per country.
+#' There is no time comparator.
 #'
-#' @return
-#' @export
+#' @details
+#' A 90-day lag is applied based on case age calculated from \code{end_date}.
+#' Only cases where \code{case_age} falls between 90 and 365 days are
+#' eligible, defined using onset date. This window ensures cases have had
+#' sufficient time to receive a classification and excludes very old cases.
+#'
+#' @param afp_data A data frame containing AFP case-level data. Must include
+#'   \code{dateonset}, \code{place.admin.0}, and \code{cdc.classification.all2}.
+#' @param end_date Date used to calculate case age and define the
+#'   eligible window. Defaults to \code{Sys.Date()}. Typically passed as the
+#'   last day of the previous month.
+#'
+#' @return A named list with two elements:
+#' \describe{
+#'   \item{data}{A data frame with one row per country containing:
+#'     \code{ctry}, \code{whoregion}, \code{inad_cases},
+#'     \code{n_classified}, \code{n_unclassified},
+#'     \code{prop_unclassified}, and \code{flag}.}
+#'   \item{metadata}{A named list containing \code{indicator_code},
+#'     \code{indicator_label}, \code{end_date}, \code{eligibility_start},
+#'     \code{eligibility_end}, \code{eligibility_note}, \code{threshold_rule},
+#'     \code{definition}, and \code{possible_statuses}.}
+#' }
 #'
 #' @examples
+#' \dontrun{
+#' result <- build_prop_inadequate_classified(raw_data$afp, end_date)
+#' result$data
+#' result$metadata$eligibility_note
+#' }
+#'
+#' @export
 build_prop_inadequate_classified <- function(afp_data, end_date = Sys.Date()) {
 
   # Basic initial checks -----
@@ -48,8 +77,8 @@ build_prop_inadequate_classified <- function(afp_data, end_date = Sys.Date()) {
     dplyr::group_by(ctry) |>
     dplyr::summarize(
       inad_cases   = dplyr::n(),
-      n_classified = sum(cdc.classification.all2 != "PENDING", na.rm = TRUE),
-      n_unclassified = sum(cdc.classification.all2 == "PENDING", na.rm = TRUE),
+      n_classified = sum(!cdc.classification.all2 %in% c("PENDING", "LAB PENDING"), na.rm = TRUE),
+      n_unclassified = sum(cdc.classification.all2 %in% c("PENDING", "LAB PENDING"), na.rm = TRUE),
       prop_unclassified   = round(n_unclassified / inad_cases * 100),
       .groups = "drop") |>
     dplyr::mutate(
@@ -65,6 +94,9 @@ build_prop_inadequate_classified <- function(afp_data, end_date = Sys.Date()) {
   meta <- list(
     indicator_code     = "prop_inad_classified",
     indicator_label    = "Proportion of Inadequate Cases Classified",
+    end_date           = end_date,
+    eligibility_start  = start_date,
+    eligibility_end    = end_date - days(90),
     eligibility_note   = eligibility_note,
     threshold_rule     = "Above Target if more than 10% of eligible inadequate cases are unclassified",
     definition         = "",
