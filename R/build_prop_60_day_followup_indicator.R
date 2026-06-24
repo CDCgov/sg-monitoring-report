@@ -28,6 +28,7 @@
 #'   \item{metadata}{A named list containing indicator label, eligibility
 #'     cutoff date, eligibility note, all four period labels, threshold rule,
 #'     and possible flag values.}
+#' }
 #'
 #' @examples
 #' \dontrun{
