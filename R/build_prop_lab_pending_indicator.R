@@ -5,8 +5,7 @@
 #' by country with a simple threshold flag.
 #'
 #' @param afp_data A data frame containing AFP case-level data. Must include
-#'   `place.admin.0`, `cdc.classification.all2`, and either `dateonset` or
-#'   `date_onset`.
+#'   `place.admin.0`, `cdc.classification.all2`, and `dateonset`.
 #' @param end_date Date used to determine case age. Defaults to `Sys.Date()`.
 #'
 #' @return A named list with two elements:
@@ -33,18 +32,9 @@ build_prop_lab_pending <- function(afp_data, end_date = Sys.Date()) {
   stopifnot(
     "afp_data must be a data frame" = is.data.frame(afp_data),
     "place.admin.0 column required" = "place.admin.0" %in% names(afp_data),
-    "cdc.classification.all2 column required" = "cdc.classification.all2" %in% names(afp_data)
+    "cdc.classification.all2 column required" = "cdc.classification.all2" %in% names(afp_data),
+    "dateonset column required" = "dateonset" %in% names(afp_data)
   )
-
-  onset_col <- dplyr::case_when(
-    "dateonset" %in% names(afp_data) ~ "dateonset",
-    "date_onset" %in% names(afp_data) ~ "date_onset",
-    TRUE ~ NA_character_
-  )
-
-  if (is.na(onset_col)) {
-    cli::cli_abort("Either `dateonset` or `date_onset` column is required.")
-  }
 
   # Date eligibility -----
   end_date <- lubridate::as_date(end_date) #only allow date onset >90 days or <365 days
@@ -62,7 +52,7 @@ build_prop_lab_pending <- function(afp_data, end_date = Sys.Date()) {
   # Prepare eligible data -----
   afp_prep <- afp_data |>
     dplyr::mutate(
-      date_onset = lubridate::as_date(.data[[onset_col]]),
+      date_onset = lubridate::as_date(dateonset),
       case_age_days = as.numeric(end_date - date_onset)
     )
 
@@ -98,7 +88,7 @@ build_prop_lab_pending <- function(afp_data, end_date = Sys.Date()) {
         eligible_samples == 0 ~ "Incomplete Data",
         is.na(prop_lab_pending) ~ "Incomplete Data",
         prop_lab_pending < 10 ~ "On Target",
-        prop_lab_pending >= 10 ~ "Off Target",
+        prop_lab_pending >= 10 ~ "Below Target",
         TRUE ~ "Review"
       )
     ) |>
