@@ -36,29 +36,38 @@ build_prop_lab_pending <- function(afp_data, end_date = Sys.Date()) {
     "dateonset column required" = "dateonset" %in% names(afp_data)
   )
 
-  # Date eligibility -----
-  end_date <- lubridate::as_date(end_date) #only allow date onset >90 days or <365 days
-  min_case_age_days <- 90
-  max_case_age_days <- 365
+  # Date Windows -----
 
-  earliest_onset <- end_date - lubridate::days(max_case_age_days)
-  latest_onset <- end_date - lubridate::days(min_case_age_days)
+  # Ensure end_date is a date type
+  end_date <- lubridate::as_date(end_date)
+
+  # Only cases within last 365 days
+  start_date <- end_date - days(365)
+  eligibility_end <- end_date - days(90)
+
+  eligibility_note <- paste0(
+    "Eligible cases have onset between ", format(start_date, "%b %d, %Y"),
+    " and ", format(eligibility_end, "%b %d, %Y"), " (90 to 365 days before ",
+    format(end_date, "%b %d, %Y"), "). ",
+    "The 90-day lag ensures cases have had sufficient time to receive a lab result."
+  )
+
   period_label <- paste0(
-    format(earliest_onset, "%b %d, %Y"),
+    format(start_date, "%b %d, %Y"),
     " - ",
-    format(latest_onset, "%b %d, %Y")
+    format(eligibility_end, "%b %d, %Y")
   )
 
   # Prepare eligible data -----
   afp_prep <- afp_data |>
     dplyr::mutate(
       date_onset = lubridate::as_date(dateonset),
-      case_age_days = as.numeric(end_date - date_onset)
+      case_age = as.numeric(end_date - date_onset)
     )
 
   eligible_cases <- afp_prep |>
     dplyr::filter(
-      dplyr::between(case_age_days, min_case_age_days, max_case_age_days)
+      dplyr::between(case_age, 90, 365)
     )
 
   # Country-level summary -----
@@ -102,11 +111,10 @@ build_prop_lab_pending <- function(afp_data, end_date = Sys.Date()) {
     indicator_code = "prop_lab_pending",
     indicator_label = "Proportion lab pending",
     end_date = end_date,
-    earliest_onset = earliest_onset,
-    latest_onset = latest_onset,
+    eligibility_start = start_date,
+    eligibility_end = eligibility_end,
+    eligibility_note = eligibility_note,
     period_label = period_label,
-    min_case_age_days = min_case_age_days,
-    max_case_age_days = max_case_age_days,
     threshold_rule = "On Target if less than 10 percent of AFP samples with onset 90 to 365 days before the end date are lab pending",
     definition = "Proportion of AFP samples pending in labs among cases with onset dates 90 to 365 days before the report end date.",
     possible_statuses = c("On Target", "Below Target", "Incomplete Data")
