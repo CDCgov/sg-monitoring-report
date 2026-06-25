@@ -11,9 +11,9 @@
 #' @return A named list with two elements:
 #' \describe{
 #'   \item{data}{A data frame with one row per country containing:
-#'     \code{ctry}, \code{whoregion}, \code{period},
+#'     \code{ctry}, \code{whoregion},
 #'     \code{eligible_samples}, \code{pending_samples},
-#'     \code{prop_lab_pending}, \code{prop_label}, and \code{flag}.}
+#'     \code{prop_lab_pending}, and \code{flag}.}
 #'   \item{metadata}{A named list containing indicator label, age bounds,
 #'     eligibility period, threshold rule, and possible flag values.}
 #' }
@@ -77,7 +77,6 @@ build_prop_lab_pending <- function(afp_data, end_date = Sys.Date()) {
       eligible_samples = dplyr::n(),
       pending_samples = sum(cdc.classification.all2 == "LAB PENDING", na.rm = TRUE),
       prop_lab_pending = round(pending_samples / eligible_samples * 100),
-      prop_label = paste0(prop_lab_pending, " (", pending_samples, "/", eligible_samples, ")"),
       .groups = "drop"
     )
 
@@ -89,21 +88,18 @@ build_prop_lab_pending <- function(afp_data, end_date = Sys.Date()) {
   final_summary <- full_grid |>
     dplyr::left_join(summary, by = "ctry") |>
     dplyr::mutate(
-      eligible_samples = tidyr::replace_na(eligible_samples, 0L),
-      pending_samples = tidyr::replace_na(pending_samples, 0L),
-      percent_prop = dplyr::if_else(is.na(prop_label), "No eligible samples", prop_label), #return percentage and proportion pending for time period
-      time_period = period_label,
       flag = dplyr::case_when(
+        is.na(eligible_samples) ~ "Incomplete Data",
         eligible_samples == 0 ~ "Incomplete Data",
         is.na(prop_lab_pending) ~ "Incomplete Data",
-        prop_lab_pending < 10 ~ "On Target",
-        prop_lab_pending >= 10 ~ "Below Target",
+        prop_lab_pending < 10 ~ "Within Target",
+        prop_lab_pending >= 10 ~ "Off Target",
         TRUE ~ "Review"
       )
     ) |>
     dplyr::select(
-      ctry, whoregion, time_period, eligible_samples, pending_samples,
-      prop_lab_pending, percent_prop, flag
+      ctry, whoregion, eligible_samples, pending_samples,
+      prop_lab_pending, flag
     )
 
   # Return -----
