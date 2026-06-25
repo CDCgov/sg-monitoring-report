@@ -1,21 +1,31 @@
 #' Build Proportion Lab Pending Indicator
 #'
-#' Calculates the proportion of AFP samples pending in labs among cases with
-#' onset dates 90 to 365 days before the report end date. Results are returned
-#' by country with a simple threshold flag.
+#' Calculates the proportion of AFP samples with a lab pending classification
+#' among cases with onset 90 to 365 days before the report end date. Returns
+#' one row per country. There is no time comparator.
+#'
+#' @details
+#' A 90-day lag is applied based on case age calculated from \code{end_date}.
+#' Only cases where \code{case_age} falls between 90 and 365 days are
+#' eligible, defined using onset date. This window ensures cases have had
+#' sufficient time to receive a lab result and excludes very old cases.
+#' Lab pending is defined as \code{cdc.classification.all2 == "LAB PENDING"}.
 #'
 #' @param afp_data A data frame containing AFP case-level data. Must include
-#'   `place.admin.0`, `cdc.classification.all2`, and `dateonset`.
-#' @param end_date Date used to determine case age. Defaults to `Sys.Date()`.
+#'   \code{place.admin.0}, \code{cdc.classification.all2}, and \code{dateonset}.
+#' @param end_date Date used to calculate case age and define the eligible
+#'   window. Defaults to \code{Sys.Date()}. Typically passed as the last day
+#'   of the previous month.
 #'
 #' @return A named list with two elements:
 #' \describe{
 #'   \item{data}{A data frame with one row per country containing:
-#'     \code{ctry}, \code{whoregion},
-#'     \code{eligible_samples}, \code{pending_samples},
-#'     \code{prop_lab_pending}, and \code{flag}.}
-#'   \item{metadata}{A named list containing indicator label, age bounds,
-#'     eligibility period, threshold rule, and possible flag values.}
+#'     \code{ctry}, \code{whoregion}, \code{eligible_samples},
+#'     \code{pending_samples}, \code{prop_lab_pending}, and \code{flag}.}
+#'   \item{metadata}{A named list containing \code{indicator_code},
+#'     \code{indicator_label}, \code{end_date}, \code{eligibility_start},
+#'     \code{eligibility_end}, \code{eligibility_note}, \code{threshold_rule},
+#'     \code{definition}, and \code{possible_statuses}.}
 #' }
 #'
 #' @examples
@@ -52,23 +62,11 @@ build_prop_lab_pending <- function(afp_data, end_date = Sys.Date()) {
     "The 90-day lag ensures cases have had sufficient time to receive a lab result."
   )
 
-  period_label <- paste0(
-    format(start_date, "%b %d, %Y"),
-    " - ",
-    format(eligibility_end, "%b %d, %Y")
-  )
-
   # Prepare eligible data -----
-  afp_prep <- afp_data |>
-    dplyr::mutate(
-      date_onset = lubridate::as_date(dateonset),
-      case_age = as.numeric(end_date - date_onset)
-    )
+  eligible_cases <- afp_data |>
+    dplyr::mutate(case_age = as.numeric(end_date - lubridate::as_date(dateonset))) |>
+    dplyr::filter(dplyr::between(case_age, 90, 365))
 
-  eligible_cases <- afp_prep |>
-    dplyr::filter(
-      dplyr::between(case_age, 90, 365)
-    )
 
   # Country-level summary -----
   summary <- eligible_cases |>
@@ -80,27 +78,26 @@ build_prop_lab_pending <- function(afp_data, end_date = Sys.Date()) {
       .groups = "drop"
     )
 
+  # Create Full Grid of all Countries + Region -----
   full_grid <- tibble::tibble(
-    ctry = unique(afp_data$place.admin.0)
-  ) |>
+    ctry = unique(afp_data$place.admin.0)) |>
     dplyr::mutate(whoregion = sirfunctions::get_region(ctry))
 
+
+  # Join for full table -----
   final_summary <- full_grid |>
     dplyr::left_join(summary, by = "ctry") |>
     dplyr::mutate(
       flag = dplyr::case_when(
         is.na(eligible_samples) ~ "Incomplete Data",
-        eligible_samples == 0 ~ "Incomplete Data",
-        is.na(prop_lab_pending) ~ "Incomplete Data",
+        eligible_samples == 0 ~ "Incomplete Data", # safety
+        is.na(prop_lab_pending) ~ "Incomplete Data", # safety
         prop_lab_pending < 10 ~ "Within Target",
         prop_lab_pending >= 10 ~ "Off Target",
         TRUE ~ "Review"
       )
     ) |>
-    dplyr::select(
-      ctry, whoregion, eligible_samples, pending_samples,
-      prop_lab_pending, flag
-    )
+    dplyr::select(ctry, whoregion, eligible_samples, pending_samples, prop_lab_pending, flag)
 
   # Return -----
   meta <- list(
@@ -110,10 +107,9 @@ build_prop_lab_pending <- function(afp_data, end_date = Sys.Date()) {
     eligibility_start = start_date,
     eligibility_end = eligibility_end,
     eligibility_note = eligibility_note,
-    period_label = period_label,
-    threshold_rule = "On Target if less than 10 percent of AFP samples with onset 90 to 365 days before the end date are lab pending",
-    definition = "Proportion of AFP samples pending in labs among cases with onset dates 90 to 365 days before the report end date.",
-    possible_statuses = c("On Target", "Below Target", "Incomplete Data")
+    threshold_rule = "Off Target if 10% or more of AFP samples with onset 90 to 365 days before the end date are lab pending",
+    definition = "Proportion of AFP samples 90 to 365 days old that are lab pending.",
+    possible_statuses = c("Within Target", "Off Target", "Incomplete Data")
   )
 
   return(list(
