@@ -52,23 +52,11 @@ build_prop_lab_pending <- function(afp_data, end_date = Sys.Date()) {
     "The 90-day lag ensures cases have had sufficient time to receive a lab result."
   )
 
-  period_label <- paste0(
-    format(start_date, "%b %d, %Y"),
-    " - ",
-    format(eligibility_end, "%b %d, %Y")
-  )
-
   # Prepare eligible data -----
-  afp_prep <- afp_data |>
-    dplyr::mutate(
-      date_onset = lubridate::as_date(dateonset),
-      case_age = as.numeric(end_date - date_onset)
-    )
+  eligible_cases <- afp_data |>
+    dplyr::mutate(case_age = as.numeric(end_date - lubridate::as_date(dateonset))) |>
+    dplyr::filter(dplyr::between(case_age, 90, 365))
 
-  eligible_cases <- afp_prep |>
-    dplyr::filter(
-      dplyr::between(case_age, 90, 365)
-    )
 
   # Country-level summary -----
   summary <- eligible_cases |>
@@ -77,13 +65,12 @@ build_prop_lab_pending <- function(afp_data, end_date = Sys.Date()) {
       eligible_samples = dplyr::n(),
       pending_samples = sum(cdc.classification.all2 == "LAB PENDING", na.rm = TRUE),
       prop_lab_pending = round(pending_samples / eligible_samples * 100),
-      prop_label = paste0(prop_lab_pending, " (", pending_samples, "/", eligible_samples, ")"),
+      prop_label = paste0(prop_lab_pending, "% (", pending_samples, "/", eligible_samples, ")"),
       .groups = "drop"
     )
-
+  # Create Full Grid of all Countries + Region -----
   full_grid <- tibble::tibble(
-    ctry = unique(afp_data$place.admin.0)
-  ) |>
+    ctry = unique(afp_data$place.admin.0)) |>
     dplyr::mutate(whoregion = sirfunctions::get_region(ctry))
 
   final_summary <- full_grid |>
@@ -91,20 +78,17 @@ build_prop_lab_pending <- function(afp_data, end_date = Sys.Date()) {
     dplyr::mutate(
       eligible_samples = tidyr::replace_na(eligible_samples, 0L),
       pending_samples = tidyr::replace_na(pending_samples, 0L),
-      percent_prop = dplyr::if_else(is.na(prop_label), "No eligible samples", prop_label), #return percentage and proportion pending for time period
       time_period = period_label,
       flag = dplyr::case_when(
         eligible_samples == 0 ~ "Incomplete Data",
         is.na(prop_lab_pending) ~ "Incomplete Data",
-        prop_lab_pending < 10 ~ "On Target",
-        prop_lab_pending >= 10 ~ "Below Target",
+        prop_lab_pending < 10 ~ "Within Target",
+        prop_lab_pending >= 10 ~ "Off Target",
         TRUE ~ "Review"
       )
     ) |>
     dplyr::select(
-      ctry, whoregion, time_period, eligible_samples, pending_samples,
-      prop_lab_pending, percent_prop, flag
-    )
+      ctry, whoregion, time_period, eligible_samples, pending_samples, prop_lab_pending, flag)
 
   # Return -----
   meta <- list(
