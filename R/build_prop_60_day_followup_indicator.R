@@ -152,13 +152,15 @@ build_prop_60_day_follow_up <- function(afp_data) {
       dplyr::mutate(
         perc_change = round((current_prop_60day - prior_prop_60day) / prior_prop_60day * 100),
         flag = dplyr::case_when(
+          # no change in measured follow-up — both periods 0% with inadequate cases in both time periods, no 60_day_follow_up
+          current_prop_60day == 0 & prior_prop_60day == 0 ~ "Below Target", # handles perc_change NaN
+          # improvement from 0% in prior period
+          current_prop_60day > 0 & prior_prop_60day == 0 ~ "Within Target", # handles perc_change Inf
           # missing data — cannot calculate change
           is.na(perc_change) ~ "Incomplete Data", # handles either or both missing
-          # threshold,
-          prior_prop_60day == 0 ~ "Incomplete Data", # handles perc_change Inf
+          # threshold
           perc_change < -50 ~ "Below Target",
-          perc_change > 50 ~ "Above Target",
-          dplyr::between(perc_change, -50, 50) ~ "Within Target",
+          perc_change >= -50 ~ "Within Target",
           TRUE ~ "Review"
         )
       )
