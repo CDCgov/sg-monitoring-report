@@ -72,25 +72,39 @@ build_prop_inadequate_classified <- function(afp_data, end_date = Sys.Date()) {
     dplyr::filter(adequacy.final2 == "Inadequate",
                   dplyr::between(case_age, 90, 365))
 
+
   # Summarize per country -----
-  final_summary <- eligible_cases |>
+  summary <- eligible_cases |>
     dplyr::group_by(ctry) |>
     dplyr::summarize(
       inad_cases   = dplyr::n(),
       n_classified = sum(!cdc.classification.all2 %in% c("PENDING", "LAB PENDING"), na.rm = TRUE),
       n_unclassified = sum(cdc.classification.all2 %in% c("PENDING", "LAB PENDING"), na.rm = TRUE),
       prop_unclassified   = round(n_unclassified / inad_cases * 100),
-      .groups = "drop") |>
+      .groups = "drop")
+
+
+  # Create Full Grid of all Countries + Region -----
+  full_grid <- tibble::tibble(
+    ctry = unique(afp_data$place.admin.0)
+  ) |>
+    dplyr::mutate(whoregion = sirfunctions::get_region(ctry))
+
+
+  # Join for full table -----
+  final_summary <- full_grid |>
+    dplyr::left_join(summary, by = "ctry") |>
     dplyr::mutate(
-      # add region
-      whoregion = sirfunctions::get_region(ctry),
       flag = case_when(
-        prop_unclassified <= 10 ~ "Within Target",
-        prop_unclassified > 10 ~ "Above Target",
+        is.na(prop_unclassified) ~ "Incomplete Data", # handles when all data is missing
+        prop_unclassified < 10 ~ "Within Target",
+        prop_unclassified >= 10 ~ "Off Target",
         TRUE ~ "Review")) |>
     dplyr::select(ctry, whoregion, inad_cases, n_classified, n_unclassified,
                   prop_unclassified, flag)
 
+
+  # Return -----
   meta <- list(
     indicator_code     = "prop_inad_classified",
     indicator_label    = "Proportion of Inadequate Cases Classified",
@@ -98,9 +112,9 @@ build_prop_inadequate_classified <- function(afp_data, end_date = Sys.Date()) {
     eligibility_start  = start_date,
     eligibility_end    = end_date - days(90),
     eligibility_note   = eligibility_note,
-    threshold_rule     = "Above Target if more than 10% of eligible inadequate cases are unclassified",
+    threshold_rule     = "Off Target if 10% or more of eligible inadequate cases are unclassified",
     definition         = "",
-    possible_statuses  = c("Within Target", "Above Target")
+    possible_statuses  = c("Within Target", "Off Target", "Incomplete Data")
   )
 
   return(list(
