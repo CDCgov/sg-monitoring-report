@@ -52,6 +52,7 @@ build_prop_lab_pending <- function(afp_data, end_date = Sys.Date()) {
     "The 90-day lag ensures cases have had sufficient time to receive a lab result."
   )
 
+
   # Prepare eligible data -----
   eligible_cases <- afp_data |>
     dplyr::mutate(case_age = as.numeric(end_date - lubridate::as_date(dateonset))) |>
