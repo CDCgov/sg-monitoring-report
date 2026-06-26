@@ -44,7 +44,7 @@
 #' }
 #'
 #' @export
-build_negative_samples_timeliness <- function(lab_data, end_date = Sys.Date()) {
+build_negative_samples_timeliness_indicator <- function(lab_data, end_date = Sys.Date()) {
 
   # Basic initial checks -----
   required_cols <- c("CaseDate", "country", "culture.itd.cat",
@@ -131,7 +131,7 @@ build_negative_samples_timeliness <- function(lab_data, end_date = Sys.Date()) {
 
   # Full grid and join for full table -----
   final_summary <- tidyr::expand_grid(
-    country  = unique(lab_prep$country),
+    country  = unique(lab_data$country),
     current_combos |> dplyr::select(year, month_num, month)) |>
     dplyr::left_join(culture_cat_lookup, by = "country") |>  # bring in stable culture category
     dplyr::left_join(current_counts, by = c("country", "culture.itd.cat", "year", "month_num", "month")) |>
@@ -149,6 +149,8 @@ build_negative_samples_timeliness <- function(lab_data, end_date = Sys.Date()) {
       # Create percent change of median
       perc_change = round((current_median_days - prior_median_days) / prior_median_days * 100),
       flag = case_when(
+        # either median is 0 — likely data quality issue as collection and result date are the same
+        current_median_days == 0 | prior_median_days == 0 ~ "Incomplete Data",
         # missing data — cannot calculate change
         is.na(perc_change) ~ "Incomplete Data", # handles either or both medians missing
         # threshold
