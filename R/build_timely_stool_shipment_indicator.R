@@ -11,8 +11,8 @@
 #' issues. \code{CaseDate} is used to assign samples to months.
 #'
 #' @param lab_data A data frame containing lab data. Must include
-#'   \code{CaseDate}, \code{country}, \code{DateStoolCollected}, and
-#'   \code{DateStoolReceivedinLab}.
+#'   \code{CaseDate}, \code{country}, \code{culture.itd.cat},
+#'   \code{DateStoolCollected}, and \code{DateStoolReceivedinLab}.
 #' @param end_date The maximum date available in the lab dataset. Typically
 #'   passed as \code{max(lab_data$CaseDate, na.rm = TRUE)}.
 #'   Defaults to \code{Sys.Date()}.
@@ -69,11 +69,8 @@ build_timely_stool_shipment_indicator <- function(lab_data, end_date = Sys.Date(
 
   # Period Labels -----
   current_period_label <- paste0(format(window_start, "%b %Y"), " - ", format(analysis_end, "%b %Y"))
-  prior_period_label <- paste0(
-    format(window_start %m-% lubridate::years(1), "%b %Y"),
-    " - ",
-    format(analysis_end %m-% lubridate::years(1), "%b %Y")
-  )
+  prior_period_label <- paste0(format(window_start %m-% lubridate::years(1), "%b %Y"), " - ",
+                               format(analysis_end %m-% lubridate::years(1), "%b %Y"))
 
   eligibility_note <- paste0(
     "Lab data end date: ", format(end_date, "%b %d, %Y"), ". ",
@@ -82,32 +79,29 @@ build_timely_stool_shipment_indicator <- function(lab_data, end_date = Sys.Date(
   )
 
   # Prepare Data -----
+
+  # create country+culture.itd.category lookup
+  culture_cat_lookup <- lab_data |>
+    dplyr::distinct(country, culture.itd.cat) |>
+    dplyr::filter(!is.na(culture.itd.cat))
+
+  # create indicator lab data
   lab_prep <- lab_data |>
     dplyr::mutate(
       year = lubridate::year(CaseDate),
       month_num = lubridate::month(CaseDate),
       month = lubridate::month(CaseDate, label = TRUE, abbr = TRUE),
-      days_collect_to_lab = as.numeric(
-        lubridate::as_date(DateStoolReceivedinLab) - lubridate::as_date(DateStoolCollected)
-      )
-    ) |>
+      # Days collection to lab
+      days_collect_to_lab = as.numeric(lubridate::as_date(DateStoolReceivedinLab) - lubridate::as_date(DateStoolCollected))) |>
     dplyr::filter(
       !is.na(days_collect_to_lab),
-      dplyr::between(days_collect_to_lab, 0, 365)
-    )
+      dplyr::between(days_collect_to_lab, 0, 365)) # data quality limitation
 
-  country_lab_type <- lab_prep |>
-    dplyr::distinct(country, culture.itd.cat) |>
-    dplyr::group_by(country) |>
-    dplyr::summarise(
-      culture.itd.cat = paste(sort(unique(culture.itd.cat)), collapse = "; "),
-      .groups = "drop"
-    )
 
   # Current Period Counts -----
   current_counts <- lab_prep |>
     dplyr::inner_join(current_combos, by = c("year", "month_num", "month")) |>
-    dplyr::group_by(country, year, month_num, month) |>
+    dplyr::group_by(country, culture.itd.cat, year, month_num, month) |>
     dplyr::summarise(
       current_n = dplyr::n(),
       current_median_days = median(days_collect_to_lab, na.rm = TRUE),
@@ -117,7 +111,7 @@ build_timely_stool_shipment_indicator <- function(lab_data, end_date = Sys.Date(
   # Prior Period Counts -----
   prior_counts <- lab_prep |>
     dplyr::inner_join(prior_combos, by = c("year", "month_num", "month")) |>
-    dplyr::group_by(country, month_num, month) |>
+    dplyr::group_by(country, culture.itd.cat, month_num, month) |>
     dplyr::summarise(
       prior_n = dplyr::n(),
       prior_median_days = median(days_collect_to_lab, na.rm = TRUE),
@@ -127,24 +121,29 @@ build_timely_stool_shipment_indicator <- function(lab_data, end_date = Sys.Date(
   # Full grid and join for full table -----
   final_summary <- tidyr::expand_grid(
     country = unique(lab_data$country),
-    current_combos |> dplyr::select(year, month_num, month)
-  ) |>
-    dplyr::left_join(country_lab_type, by = "country") |>
-    dplyr::left_join(current_counts, by = c("country", "year", "month_num", "month")) |>
+    current_combos |> dplyr::select(year, month_num, month)) |>
+    dplyr::left_join(culture_cat_lookup, by = "country") |>
+    dplyr::left_join(current_counts, by = c("country", "culture.itd.cat", "year", "month_num", "month")) |>
     dplyr::left_join(
-      prior_counts |> dplyr::select(country, month_num, prior_n, prior_median_days),
-      by = c("country", "month_num")
+      prior_counts |> dplyr::select(country, culture.itd.cat, month_num, prior_n, prior_median_days),
+      by = c("country", "culture.itd.cat", "month_num")
     ) |>
     dplyr::mutate(month_label = paste0(month, " ", year)) |>
     dplyr::select(-year, -month, -month_num) |>
     dplyr::mutate(
+      # add region
       whoregion = sirfunctions::get_region(country),
+      # For counts, NA is to be assumed as 0
       current_n = tidyr::replace_na(current_n, 0),
       prior_n = tidyr::replace_na(prior_n, 0),
+      # Create percent change of median
       perc_change = round((current_median_days - prior_median_days) / prior_median_days * 100),
       flag = dplyr::case_when(
+        # if either medians are 0, likely data quality issue as all samples were delivered same day
+        current_median_days == 0 | prior_median_days == 0 ~ "Incomplete Data",
+        # missing data — cannot calculate change
         is.na(perc_change) ~ "Incomplete Data",
-        prior_median_days == 0 ~ "Incomplete Data",
+        # threshold
         perc_change < -50 ~ "Above Target",
         perc_change > 50 ~ "Below Target",
         dplyr::between(perc_change, -50, 50) ~ "Within Target",
@@ -153,8 +152,7 @@ build_timely_stool_shipment_indicator <- function(lab_data, end_date = Sys.Date(
     ) |>
     dplyr::select(
       country, whoregion, month_label, culture.itd.cat, current_n, current_median_days,
-      prior_n, prior_median_days, perc_change, flag
-    )
+      prior_n, prior_median_days, perc_change, flag)
 
   # Return -----
   meta <- list(
