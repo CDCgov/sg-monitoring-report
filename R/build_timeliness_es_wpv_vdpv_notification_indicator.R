@@ -98,7 +98,7 @@ build_timeliness_es_wpv_vdpv_notification_indicator <- function(es_data,
   # Prepare Data -----
   lab_type <- lab_loc |>
     dplyr::distinct(country, es.lab.type) |>
-    dplry::filter(!is.na(es.lab.type))
+    dplyr::filter(!is.na(es.lab.type))
 
   es_prep <- es_data |>
     dplyr::rename(country = ADM0_NAME) |>
