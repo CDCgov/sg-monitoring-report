@@ -11,9 +11,10 @@
 #' month. The active-site count is anchored to each month end.
 #'
 #' A country showing 0 active sites may represent a country with ES activity
-#' where no sites met the >= 5 collection threshold, or a country with no ES
-#' data at all. These cases are not distinguished in the output and are both
-#' flagged as \code{"No Current Active ES"}.
+#' where no sites met the >= 5 collection threshold in that 12 month rolling
+#' periods, or a country with no ES data at all. These cases are not
+#' distinguished in the output and are both flagged
+#' as \code{"No Current Active ES"}.
 #'
 #' @param es_data A data frame containing ES sample data. Must include
 #'   \code{ADM0_NAME}, \code{collect.date}, and \code{site.name}.
@@ -179,7 +180,7 @@ build_number_of_active_ES_sites <- function(es_data, end_date = Sys.Date()) {
       perc_change = round((current_active_sites - prior_active_sites) /
                                      prior_active_sites * 100),
       flag = dplyr::case_when(
-        current_active_sites == 0 ~ "No Current Active ES",
+        current_active_sites == 0 & prior_active_sites == 0 ~ "No Current Active ES",
         is.infinite(perc_change) ~ "Above Target",  # prior = 0, current > 0
         perc_change < -50 ~ "Below Target",
         perc_change >  50 ~ "Above Target",
