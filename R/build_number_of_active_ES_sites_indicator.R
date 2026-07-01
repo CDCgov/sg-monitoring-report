@@ -6,11 +6,14 @@
 #' per month.
 #'
 #' @details
-#' Active ES sites are calculated using the same logic as
-#' \code{sirfunctions::get_es_site_age()}, but with a 5-collection threshold.
-#' A site is counted as active if it has at least 5 collections in the prior
-#' 12-month rolling period and has a sample collection history spanning at least
-#' 12 months. The active-site count is anchored to each month end.
+#' A site is counted as active for a given assessment month if it has at least
+#' 5 collections in the 12-month rolling period ending on the last day of that
+#' month. The active-site count is anchored to each month end.
+#'
+#' A country showing 0 active sites may represent a country with ES activity
+#' where no sites met the >= 5 collection threshold, or a country with no ES
+#' data at all. These cases are not distinguished in the output and are both
+#' flagged as \code{"No Current Active ES"}.
 #'
 #' @param es_data A data frame containing ES sample data. Must include
 #'   \code{ADM0_NAME}, \code{collect.date}, and \code{site.name}.
@@ -20,19 +23,21 @@
 #'
 #' @return A named list with two elements:
 #' \describe{
-#'   \item{data}{A data frame with one row per country-month containing:
+#'   \item{data}{A data frame with one row per country per month containing:
 #'     \code{country}, \code{whoregion}, \code{month_label},
 #'     \code{current_active_sites}, \code{prior_active_sites},
-#'     \code{perc_change}, \code{lower_50pct}, \code{upper_50pct},
-#'     and \code{flag}.}
-#'   \item{metadata}{A named list containing indicator label, period start/end
-#'     dates, human-readable period labels, number of months and prior years
-#'     assessed, and the threshold rule applied.}
+#'     \code{perc_change}, and \code{flag}.}
+#'   \item{metadata}{A named list containing \code{indicator_code},
+#'     \code{indicator_label}, \code{current_period_start},
+#'     \code{current_period_end}, \code{current_period_label},
+#'     \code{prior_period_label}, \code{n_current_months},
+#'     \code{n_prior_years}, \code{threshold_rule}, \code{definition},
+#'     and \code{possible_statuses}.}
 #' }
 #'
 #' @examples
 #' \dontrun{
-#' end_date <- lubridate::floor_date(Sys.Date(), unit = "month") - 1
+#' end_date <- lubridate::floor_date(Sys.Date(), unit = "month") %m-% days(1)
 #' result <- build_number_of_active_ES_sites(raw_data$es, end_date)
 #' result$data
 #' result$metadata$current_period_label
@@ -50,38 +55,50 @@ build_number_of_active_ES_sites <- function(es_data, end_date = Sys.Date()) {
   )
 
   # Date Windows -----
+
+  # Ensure end_date is a date type
   end_date <- lubridate::as_date(end_date)
-  current_months <- rev(seq(lubridate::floor_date(end_date, unit = "month"),
-                            by = "-1 month",
-                            length.out = 6))
-  window_start <- min(current_months)
-  current_month_ends <- lubridate::ceiling_date(current_months, unit = "month") - 1
+
+  window_start <- lubridate::floor_date(end_date %m-% months(5), unit = "month")
+  current_months <- seq(window_start, end_date, by = "month")
 
   # create all possible combinations for current 6 months assessment
+  # Unlike other indicators, current_combos includes period_end
+  # as real dates because the 12-month rolling window is anchored to each
+  # month's actual end date, not just a year/month label
   current_combos <- tibble::tibble(
     year = lubridate::year(current_months),
     month_num = lubridate::month(current_months),
     month = lubridate::month(current_months, label = TRUE, abbr = TRUE),
-    period_start = current_months,
-    period_end = current_month_ends
+    period_end = lubridate::ceiling_date(current_months, unit = "month") %m-% days(1)
   )
 
-  # create all possible combinations for prior year
+  # create all possible combinations for prior year for comparison
   prior_combos <- current_combos |>
     dplyr::mutate(
       year = year - 1,
-      period_start = as.Date(paste(year, month_num, "01", sep = "-")),
-      period_end = lubridate::ceiling_date(period_start, unit = "month") - 1
-    )
+      period_end = period_end %m-% lubridate::years(1))
 
 
   # Period Labels -----
   current_period_label <- paste0(format(window_start, "%b %Y"), " - ", format(end_date, "%b %Y"))
-  prior_period_label <- paste0(format(min(prior_combos$period_start), "%b %Y"), " - ",
-                               format(max(prior_combos$period_end), "%b %Y"))
+  prior_period_label   <- paste0(format(min(prior_combos$period_end) |>
+                                          lubridate::floor_date(unit = "month"), "%b %Y"), " - ",
+                                 format(max(prior_combos$period_end), "%b %Y"))
+
+
+  # Assessment Windows -----
+  # Bind all data windows and create dates needed for the rolling 12 month windows for each period
+  # Rolling_start defines the beginning of the 12-month lookback window for each period
+  assessment_windows <- dplyr::bind_rows(
+    dplyr::mutate(current_combos, period_type = "current"),
+    dplyr::mutate(prior_combos, period_type = "prior")) |>
+    dplyr::mutate(rolling_start = period_end %m-% months(12) + days(1))
 
 
   # Prepare Data -----
+
+  # Initial ES prep - remove observations with missing values for key data variables
   es_prep <- es_data |>
     dplyr::select(ADM0_NAME, collect.date, site.name) |>
     dplyr::mutate(collect.date = lubridate::as_date(collect.date)) |>
@@ -89,51 +106,35 @@ build_number_of_active_ES_sites <- function(es_data, end_date = Sys.Date()) {
                   !is.na(collect.date),
                   !is.na(site.name))
 
-  assessment_windows <- dplyr::bind_rows(
-    current_combos |>
-      dplyr::mutate(period_type = "current"),
-    prior_combos |>
-      dplyr::mutate(period_type = "prior")
-  ) |>
-    dplyr::mutate(
-      rolling_start = do.call(c, lapply(period_start, function(x) {
-        seq(as.Date(x, origin = "1970-01-01"), by = "-11 months", length.out = 2)[2]
-      }))
-    )
 
-  site_first_collection <- es_prep |>
-    dplyr::filter(collect.date <= max(assessment_windows$period_end)) |>
-    dplyr::group_by(ADM0_NAME, site.name) |>
-    dplyr::summarize(first_collect_date = min(collect.date), .groups = "drop")
-
+  # Site monthly counts & last collection date
+  # Create collections per site per calendar month
   site_month_counts <- es_prep |>
     dplyr::filter(dplyr::between(collect.date,
                                  min(assessment_windows$rolling_start),
                                  max(assessment_windows$period_end))) |>
-    dplyr::mutate(collect_month = lubridate::floor_date(collect.date, unit = "month")) |>
+    dplyr::mutate(collect_month = lubridate::floor_date(collect.date, unit = "month")) |> #set all to first of month for ease in grouping
     dplyr::group_by(ADM0_NAME, site.name, collect_month) |>
-    dplyr::summarize(
-      n_samples = dplyr::n(),
-      latest_collect_date = max(collect.date),
-      .groups = "drop"
-    )
+    dplyr::summarize(n_samples = dplyr::n(), # total samples per month
+                     .groups = "drop")
+
+
+  # Active Site Counts -----
+  # cross_join pairs every site-month record with all 12 assessment windows.
+  # between() then keeps only pairings where the collection month falls within
+  # that assessment window's 12-month lookback.
+  # group_by is on the assessment month (not collection month) so sum(n_samples)
+  # collapses all qualifying collection months into a single 12-month rolling total
+  # for that particular assessment month.
+  # Sites with >= 5 samples qualify as active.
 
   active_site_counts <- site_month_counts |>
     dplyr::cross_join(assessment_windows) |>
-    dplyr::filter(dplyr::between(collect_month, rolling_start, period_start)) |>
-    dplyr::group_by(period_type, year, month_num, month, ADM0_NAME, site.name) |>
-    dplyr::summarize(
-      n_samples_12_mo = sum(n_samples),
-      latest_collect_date = max(latest_collect_date),
-      .groups = "drop"
-    ) |>
-    dplyr::left_join(site_first_collection, by = c("ADM0_NAME", "site.name")) |>
-    dplyr::mutate(
-      sampling_interval = lubridate::interval(first_collect_date, latest_collect_date),
-      site_age = lubridate::time_length(sampling_interval, unit = "month")
-    ) |>
-    dplyr::filter(n_samples_12_mo >= 5, site_age >= 12) |>
-    dplyr::distinct(period_type, year, month_num, month, ADM0_NAME, site.name) |>
+    dplyr::filter(dplyr::between(collect_month, rolling_start, period_end)) |>
+    dplyr::group_by(period_type, year, month_num, month, ADM0_NAME, site.name) |> # groups by assessment month, which is associated with all rolling 12 months in it's window
+    dplyr::summarize(n_samples_12_mo = sum(n_samples), # samples in the rolling 12 months
+                     .groups = "drop") |>
+    dplyr::filter(n_samples_12_mo >= 5) |> # keep only Active sites that had at least 5 samples in the rolling 12 months
     dplyr::group_by(period_type, year, month_num, month, ADM0_NAME) |>
     dplyr::summarize(active_sites = dplyr::n(), .groups = "drop")
 
@@ -144,8 +145,7 @@ build_number_of_active_ES_sites <- function(es_data, end_date = Sys.Date()) {
     dplyr::select(-period_type) |>
     dplyr::rename(
       country = ADM0_NAME,
-      current_active_sites = active_sites
-    )
+      current_active_sites = active_sites)
 
 
   # Prior Period Counts -----
@@ -154,47 +154,38 @@ build_number_of_active_ES_sites <- function(es_data, end_date = Sys.Date()) {
     dplyr::select(-period_type) |>
     dplyr::rename(
       country = ADM0_NAME,
-      prior_active_sites = active_sites
-    )
+      prior_active_sites = active_sites)
 
 
   # Full grid and join for full table -----
+  # Note: after replace_na, a 0 may represent a country where no sites met the >= 5 threshold to be Active,
+  # or could also represent a country that had no ES data at all in the window
   final_summary <- tidyr::expand_grid(
     country = unique(es_data$ADM0_NAME),
-    current_combos |> dplyr::select(year, month_num, month)
-  ) |>
+    current_combos |> dplyr::select(year, month_num, month)) |>
     dplyr::left_join(current_counts, by = c("country", "year", "month_num", "month")) |>
     dplyr::left_join(
       prior_counts |> dplyr::select(country, month_num, prior_active_sites),
-      by = c("country", "month_num")
-    ) |>
+      by = c("country", "month_num")) |>
     dplyr::mutate(month_label = paste0(month, " ", year)) |>
     dplyr::select(-year, -month, -month_num) |>
     dplyr::mutate(
       # add region
       whoregion = sirfunctions::get_region(country),
-      # for counts, NA is assumed as 0
+      # for counts, NA is assumed as 0 active sites (either no ES or no Active ES)
       current_active_sites = tidyr::replace_na(current_active_sites, 0),
       prior_active_sites = tidyr::replace_na(prior_active_sites, 0),
-      # thresholds
-      upper_50pct = prior_active_sites * 1.5,
-      lower_50pct = pmax(0, prior_active_sites * 0.5),
-      # percent change is undefined when the prior-year value is 0 and current is > 0
-      perc_change = dplyr::case_when(
-        prior_active_sites == 0 & current_active_sites == 0 ~ 0,
-        prior_active_sites == 0 ~ NA_real_,
-        TRUE ~ round((current_active_sites - prior_active_sites) / prior_active_sites * 100)
-      ),
+      # Create percent change of prior year count
+      perc_change = round((current_active_sites - prior_active_sites) /
+                                     prior_active_sites * 100),
       flag = dplyr::case_when(
-        current_active_sites == 0 & prior_active_sites == 0 ~ "No ES",
-        current_active_sites <= upper_50pct & current_active_sites >= lower_50pct ~ "Within Target",
-        current_active_sites > upper_50pct ~ "Above Target",
-        current_active_sites < lower_50pct ~ "Below Target",
-        TRUE ~ "Review"
-      )
-    ) |>
-    dplyr::select(country, whoregion, month_label, current_active_sites,
-                  prior_active_sites, perc_change, lower_50pct, upper_50pct, flag)
+        current_active_sites == 0 ~ "No Current Active ES",
+        is.infinite(perc_change) ~ "Above Target",  # prior = 0, current > 0
+        perc_change < -50 ~ "Below Target",
+        perc_change >  50 ~ "Above Target",
+        dplyr::between(perc_change, -50, 50) ~ "Within Target",
+        TRUE ~ "Review"))|>
+    dplyr::select(country, whoregion, month_label, current_active_sites, prior_active_sites, perc_change, flag)
 
 
   # Return -----
@@ -208,9 +199,9 @@ build_number_of_active_ES_sites <- function(es_data, end_date = Sys.Date()) {
     n_current_months = 6,
     n_prior_years = 1,
     threshold_rule = "+/-50% of the same-month active-site count from the prior year",
-    definition = "Number of active ES sites defined as sites at least 12 months old with at least 5 collections over the past 12-month rolling period.",
+    definition = "Number of active ES sites defined as sites with at least 5 collections over the past 12-month rolling period.",
     possible_statuses = c("Within Target", "Below Target", "Above Target",
-                          "No Current Active ES Sites", "Review")
+                          "No Current Active ES", "Review")
   )
 
   return(list(
