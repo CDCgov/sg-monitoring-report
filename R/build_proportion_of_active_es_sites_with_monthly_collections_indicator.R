@@ -120,10 +120,11 @@ build_proportion_of_active_es_sites_with_monthly_collections <- function(es_data
     dplyr::filter(n_samples_12_mo >= 5)
 
 
-  # Monthly Collection Numerator -----
+  # Same-Month Collection Counts -----
   # Active sites are defined using a rolling 12-month denominator.
-  # The numerator checks whether each active site had at least 1 collection
-  # in the assessment month.
+  # This object keeps one row per country, site, and collection month so that
+  # same-month collection counts can be joined back to the active-site list for
+  # each assessment month.
   monthly_collections <- site_month_counts |>
     dplyr::select(ADM0_NAME, site.name, collect_month, n_samples_current_month = n_samples)
 
@@ -131,8 +132,10 @@ build_proportion_of_active_es_sites_with_monthly_collections <- function(es_data
   # Country-Month Summary -----
   # Joins the active-site denominator to the same-month collection counts above.
   # Sites with a matching collection month and n_samples_current_month >= 1
-  # count toward the numerator. Sites without a matching same-month collection
-  # do not count toward sites_with_1_collection, but remain in active_sites.
+  # are counted in sites_with_1_collection. Sites without a matching same-month
+  # collection do not count toward sites_with_1_collection, but remain in
+  # active_sites. The final proportion is:
+  # active sites with >= 1 collection in the month / all active sites that month.
   monthly_summary <- active_site_months |>
     dplyr::left_join(
       monthly_collections,
