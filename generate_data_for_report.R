@@ -12,7 +12,7 @@ source_pattern <- function(folder, pattern) {
 }
 
 source_pattern("R", "^build_")
-source_pattern("R", "^create_")
+#source_pattern("R", "^create_")
 
 
 # Data Prep ------------------------------------------------------------------------------------------------------------
@@ -65,8 +65,8 @@ afp_prop_60$data <- add_risk(afp_prop_60$data, "ctry")
 afp_prop_inad_classified$data <- add_risk(afp_prop_inad_classified$data, "ctry")
 afp_prop_lab_pending$data <- add_risk(afp_prop_lab_pending$data, "ctry")
 afp_wpv_vdpv_timeliness$data <- add_risk(afp_wpv_vdpv_timeliness$data, "ctry")
-afp_neg_samples <- add_risk(afp_neg_samples$data, "country")
-afp_timely_stool <-  add_risk(afp_timely_stool$data, "country")
+afp_neg_samples$data <- add_risk(afp_neg_samples$data, "country")
+afp_timely_stool$data <- add_risk(afp_timely_stool$data, "country")
 
 
 # ES Indicators ----
