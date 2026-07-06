@@ -18,7 +18,7 @@
 #'   \code{dateonset}, \code{place.admin.0}, \code{datenotificationtohq},
 #'   \code{source}, and \code{measurement}.
 #' @param end_date Date to end the current reporting window.
-#'   Defaults to `Sys.Date()`. Typically passed as the last day of the previous month.
+#'   Defaults to \code{Sys.Date()}. Typically passed as the last day of the previous month.
 #'
 #' @return A named list with two elements:
 #' \describe{
@@ -27,9 +27,12 @@
 #'     \code{current_period}, \code{prior_period}, \code{current_count},
 #'     \code{current_median_days}, \code{prior_count}, \code{prior_median_days},
 #'     \code{perc_change}, and \code{flag}.}
-#'   \item{metadata}{A named list containing indicator label, all
-#'     four period labels, threshold rule, and possible flag values.}
-#' }
+#'   \item{metadata}{A named list containing \code{indicator_code},
+#'     \code{indicator_label}, \code{end_date}, \code{recent_period_label},
+#'     \code{recent_prior_period_label}, \code{earlier_period_label},
+#'     \code{earlier_prior_period_label}, \code{threshold_rule},
+#'     \code{definition}, and \code{possible_statuses}.}
+#'     }
 #'
 #' @examples
 #' \dontrun{
@@ -137,12 +140,14 @@ build_wpv_vdpv_timeliness_indicator <- function(pos, end_date = Sys.Date()) {
       dplyr::mutate(
         perc_change = round((current_median_days - prior_median_days) / prior_median_days * 100),
         flag = dplyr::case_when(
+          # either median is 0 — likely data quality issue as all samples in the period had the same onset and notification date
+          current_median_days == 0 | prior_median_days == 0 ~ "Incomplete Data",
           # missing data — cannot calculate change
           is.na(perc_change) ~ "Incomplete Data", # handles either or both missing
-          prior_median_days == 0 ~ "Incomplete Data", # safety - would be Inf
           # threshold
-          perc_change >= 50 ~ "Below Target",
-          perc_change < 50 ~ "On Target",
+          perc_change < -50 ~ "Above Target",
+          perc_change > 50 ~ "Below Target",
+          dplyr::between(perc_change, -50, 50) ~ "Within Target",
           TRUE ~ "Review"
         )
       )
@@ -172,13 +177,14 @@ build_wpv_vdpv_timeliness_indicator <- function(pos, end_date = Sys.Date()) {
   meta <- list(
     indicator_code = "wpv_vdpv_timeliness",
     indicator_label = "Timely AFP WPV/VDPV Detection",
+    end_date = end_date,
     recent_period_label = recent_period_label,
     recent_prior_period_label = recent_prior_period_label,
     earlier_period_label = earlier_period_label,
     earlier_prior_period_label = earlier_prior_period_label,
-    threshold_rule = "Below Target if median increases by more than 50 percent compared to same 3-month period in the prior year",
+    threshold_rule = "+/-50% of the median from the same 3-month period one year prior",
     definition = "",
-    possible_statuses = c("On Target", "Below Target", "Incomplete Data")
+    possible_statuses = c("Within Target", "Below Target", "Above Target", "Incomplete Data")
   )
 
 
