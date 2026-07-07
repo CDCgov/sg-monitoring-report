@@ -9,7 +9,7 @@
 #' @param afp_data A data frame containing AFP case data. Must include
 #'   \code{dateonset} and \code{place.admin.0} columns.
 #' @param end_date Date to end the current reporting window.
-#'   Defaults to `Sys.Date()`. Typically passed as the last day of the previous month.
+#'   Defaults to \code{Sys.Date()}. Typically passed as the last day of the previous month.
 #'
 #' @return A named list with two elements:
 #' \describe{
@@ -37,11 +37,13 @@ build_afp_cases_reported <- function(afp_data, end_date = Sys.Date()) {
   # Basic initial checks -----
   stopifnot(
     "afp_data must be a data frame" = is.data.frame(afp_data),
-    "dateonset column required" = "dateonset" %in% names(afp_data),
     "place.admin.0 column required" = "place.admin.0" %in% names(afp_data)
   )
 
   # Date Windows -----
+
+  # Ensure end_date is a date type
+  end_date <- lubridate::as_date(end_date)
   window_start <- lubridate::floor_date(end_date %m-% months(5), unit = "month")
 
   current_months <- seq(window_start, end_date, by = "month")
@@ -90,7 +92,7 @@ build_afp_cases_reported <- function(afp_data, end_date = Sys.Date()) {
     place.admin.0 = unique(afp_prep$place.admin.0),
     current_combos |> dplyr::select(year, month_num, month)) |>
     # Combine
-    left_join(current_counts, by = c("place.admin.0", "month_num", "month")) |>
+    dplyr::left_join(current_counts, by = c("place.admin.0", "month_num", "month")) |>
     dplyr::mutate(current_period_counts = tidyr::replace_na(current_period_counts, 0))
 
 
@@ -103,8 +105,8 @@ build_afp_cases_reported <- function(afp_data, end_date = Sys.Date()) {
   prior_full <- tidyr::expand_grid(
     place.admin.0 = unique(afp_prep$place.admin.0),
     prior_combos |> dplyr::select(year, month_num, month)) |>
-    left_join(prior_counts, by = c("place.admin.0", "year", "month_num")) |>
-    group_by(place.admin.0, month_num, month) |>
+    dplyr::left_join(prior_counts, by = c("place.admin.0", "year", "month_num")) |>
+    dplyr::group_by(place.admin.0, month_num, month) |>
     dplyr::summarize(prior_median = round(median(n, na.rm = TRUE)),
                      prior_yrs_w_data = sum(!is.na(n)),
                      .groups = "drop"
@@ -112,18 +114,18 @@ build_afp_cases_reported <- function(afp_data, end_date = Sys.Date()) {
 
   # Join for full table -----
   final_summary <- current_full |>
-    left_join(prior_full, by = c("place.admin.0", "month_num", "month")) |>
-    mutate(month_label = paste0(month, " ", year)) |>
-    select(-year, -month, -month_num) |>
+    dplyr::left_join(prior_full, by = c("place.admin.0", "month_num", "month")) |>
+    dplyr::mutate(month_label = paste0(month, " ", year)) |>
+    dplyr::select(-year, -month, -month_num) |>
     # add region
-    mutate(
+    dplyr::mutate(
       # add region
       whoregion = sirfunctions::get_region(place.admin.0),
       # thresholds
       upper_50pct = prior_median * 1.5,
       lower_50pct = pmax(0, prior_median *.5),  # floor at 0 for safety
       # flag
-      flag = case_when(
+      flag = dplyr::case_when(
         is.na(prior_median) ~ "Incomplete Data",
         current_period_counts <= upper_50pct & current_period_counts >= lower_50pct ~ "Within Target",
         current_period_counts > upper_50pct ~ "Above Target",
@@ -143,7 +145,9 @@ build_afp_cases_reported <- function(afp_data, end_date = Sys.Date()) {
     n_current_months = 6,
     n_prior_years = 3,
     threshold_rule = "±50% of 3-year median",
-    definition = ""
+    definition = "On target if the number of AFP cases reported the most recent completed month is within +/-50% of the prior 3 year median for that month.",
+    possible_statuses = c("Within Target", "Below Target", "Above Target", "Incomplete Data")
+
   )
 
   return(list(
