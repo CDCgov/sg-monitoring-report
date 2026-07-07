@@ -147,7 +147,6 @@ build_afp_cases_reported <- function(afp_data, end_date = Sys.Date()) {
     threshold_rule = "±50% of 3-year median",
     definition = "On target if the number of AFP cases reported the most recent completed month is within +/-50% of the prior 3 year median for that month.",
     possible_statuses = c("Within Target", "Below Target", "Above Target", "Incomplete Data")
-
   )
 
   return(list(
