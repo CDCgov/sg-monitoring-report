@@ -44,7 +44,7 @@
 #' }
 #'
 #' @export
-build_proportion_of_active_es_sites_with_monthly_collections <- function(es_data,
+build_prop_active_es_sites_with_monthly_collections <- function(es_data,
                                                                          end_date = Sys.Date()) {
 
   # Basic initial checks -----
@@ -189,8 +189,7 @@ build_proportion_of_active_es_sites_with_monthly_collections <- function(es_data
     n_current_months = 6,
     threshold_rule = "Within Target if at least 80% of active ES sites have at least 1 collection in the assessment month",
     definition = "Proportion of active ES sites with at least one collection per month. Active sites are defined as sites with at least 5 collections over the past 12-month rolling period.",
-    possible_statuses = c("Within Target", "Below Target", "No Current Active ES",
-                          "Incomplete Data", "Review")
+    possible_statuses = c("Within Target", "Below Target", "No Current Active ES")
   )
 
   return(list(
