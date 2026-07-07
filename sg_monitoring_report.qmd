@@ -360,6 +360,38 @@ datatable(
 )
 ```
 
+
+### Proportion of Active ES Sites with Monthly Collections
+
+**Period:** `r es_prop_active_sites_collections$metadata$current_period_label`  
+**Threshold:** `r es_prop_active_sites_collections$metadata$threshold_rule`
+
+```{r es-prop-active-collections-table}
+datatable(
+  es_prop_active_sites_collections$data |>
+    dplyr::arrange(country, month_label) |>
+    dplyr::rename(
+      Country                  = country,
+      Region                   = whoregion,
+      `SG Priority Level`      = sg_priority_level,
+      Month                    = month_label,
+      `Active Sites`           = active_sites,
+      `Sites w/ ≥1 Collection` = sites_with_1_collection,
+      `% With Collection`      = prop_sites_with_1_collection,
+      Flag                     = flag
+    ),
+  filter = "top",
+  extensions = "Buttons",
+  options = list(
+    dom = "Bfrtip",
+    buttons = c("copy", "csv", "excel"),
+    pageLength = 15,
+    scrollX = TRUE
+  )
+)
+```
+
+
 ### Number of Active ES Sites
 
 **Period:** `r es_active_sites$metadata$current_period_label`  

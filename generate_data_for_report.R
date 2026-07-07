@@ -74,11 +74,13 @@ afp_timely_stool$data <- add_risk(afp_timely_stool$data, "country")
 es_active_sites <- build_number_of_active_ES_sites(raw_data$es, end_date)
 es_timely_shipment <- build_timeliness_of_es_shipment_indicator(raw_data$es, end_date)
 es_wpv_vdpv_timeliness <- build_timeliness_es_wpv_vdpv_notification_indicator(raw_data$es, end_date)
+es_prop_active_sites_collections <- build_prop_active_es_sites_with_monthly_collections(raw_data$es, end_date)
 
 # Add risk category
 es_active_sites$data <- add_risk(es_active_sites$data, "country")
 es_timely_shipment$data <- add_risk(es_timely_shipment$data, "country")
 es_wpv_vdpv_timeliness$data <- add_risk(es_wpv_vdpv_timeliness$data, "country")
+es_prop_active_sites_collections$data <- add_risk(es_prop_active_sites_collections$data, "country")
 
 
 # Lab Indicators ----
