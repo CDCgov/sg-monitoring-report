@@ -134,7 +134,14 @@ build_timeliness_of_shipment_for_sequencing_indicator <- function(lab_data,
     "Pasteur Institute-Paris",
     "NICD-South Africa/Pasteur Institute-Paris",
     "NOGUCHI-Ghana",
-    "Ibadan-Nigeria"
+    "Ibadan-Nigeria",
+    "Uganda",
+    "UVRI-Uganda",
+    "Pakistan",
+    "Egypt",
+    "RIVM-Netherlands",
+    "Oman / CDC-Atlanta",
+    "Jordan",
   )
   excluded_same_site_lab_keys <- normalize_lab_name(excluded_same_site_labs)
 
