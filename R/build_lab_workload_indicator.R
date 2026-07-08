@@ -23,7 +23,7 @@
 #'   \item{data}{A long-format data frame with one row per lab per month
 #'     containing: \code{culture.itd.lab}, \code{month_label},
 #'     \code{current_n}, \code{prior_3yr_median}, \code{prior_yrs_w_data},
-#'     \code{lower_50pct}, \code{upper_50pct}, and \code{flag}.}
+#'     \code{perc_change}, and \code{flag}.}
 #'   \item{metadata}{A named list containing: \code{indicator_code},
 #'     \code{indicator_label}, \code{unit}, \code{lab_end_date},
 #'     \code{eligibility_note}, \code{current_period_start},
@@ -36,8 +36,7 @@
 #' @examples
 #' \dontrun{
 #' max_lab_date <- max(lab_data$DateStoolReceivedinLab, na.rm = TRUE)
-#' end_date <- max_lab_date
-#' result <- build_lab_workload_indicator(lab_data, max_lab_received_date)
+#' result <- build_lab_workload_indicator(lab_data, max_lab_date)
 #' result$data
 #' result$metadata$current_period_label
 #' }
@@ -150,23 +149,22 @@ build_lab_workload_indicator <- function(lab_data, end_date = Sys.Date()) {
     dplyr::mutate(
       # For counts, NA is to be assumed as 0
       current_n = tidyr::replace_na(current_n, 0),
-      # Thresholds
-      upper_50pct = prior_3yr_median * 1.5,
-      lower_50pct = pmax(0, prior_3yr_median * 0.5),
+      # Create percent change of current count from prior 3-year median
+      perc_change = round((current_n - prior_3yr_median) / prior_3yr_median * 100),
       # For workload, higher than expected volume is flagged as Below Target
       # because excess workload is the concern; lower than expected volume is
       # flagged as Above Target.
       flag = dplyr::case_when(
         prior_yrs_w_data == 0 ~ "Incomplete Data",
-        current_n >= lower_50pct & current_n <= upper_50pct ~ "Within Target",
-        current_n > upper_50pct ~ "Below Target",
-        current_n < lower_50pct ~ "Above Target",
+        perc_change > 50 ~ "Below Target",
+        perc_change < -50 ~ "Above Target",
+        dplyr::between(perc_change, -50, 50) ~ "Within Target",
         TRUE ~ "Review"
       )
     ) |>
     dplyr::select(
       culture.itd.lab, month_label, current_n, prior_3yr_median,
-      prior_yrs_w_data, lower_50pct, upper_50pct, flag
+      prior_yrs_w_data, perc_change, flag
     )
 
   # Return -----
