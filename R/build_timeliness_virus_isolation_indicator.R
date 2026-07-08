@@ -103,38 +103,33 @@ build_timeliness_virus_isolation_indicator <- function(lab_data, end_date = Sys.
 
   # Prepare Data -----
 
-  # remove missing, blank, or unknown culture/ITD labs
-  lab_data_clean <- lab_data |>
-    dplyr::mutate(culture.itd.lab = trimws(as.character(culture.itd.lab))) |>
-    dplyr::filter(
-      !is.na(culture.itd.lab),
-      culture.itd.lab != "",
-      tolower(culture.itd.lab) != "unknown"
-    )
-
-  # create indicator lab data
-  lab_prep <- lab_data_clean |>
+  lab_prep <- lab_data |>
     dplyr::mutate(
-      DateStoolReceivedinLab = lubridate::as_date(DateStoolReceivedinLab),
-      DateFinalCellCultureResult = lubridate::as_date(DateFinalCellCultureResult),
-      days.lab.culture = as.numeric(DateFinalCellCultureResult - DateStoolReceivedinLab),
-      t1 = !is.na(days.lab.culture) & dplyr::between(days.lab.culture, 0, 365),
+      # Prepare month and year columns
       year = lubridate::year(DateFinalCellCultureResult),
       month_num = lubridate::month(DateFinalCellCultureResult),
-      month = lubridate::month(DateFinalCellCultureResult, label = TRUE, abbr = TRUE)
-    ) |>
-    dplyr::filter(t1)
+      month = lubridate::month(DateFinalCellCultureResult, label = TRUE, abbr = TRUE),
+      # Clean lab variable for filtering below
+      culture.itd.lab = trimws(as.character(culture.itd.lab)),
+      # Days recieved in lab to results
+      days_lab_to_culture = as.numeric(DateFinalCellCultureResult - DateStoolReceivedinLab)) |>
+    dplyr::filter(
+      # Remove missing, blank, or unknown culture/ITD labs
+      !is.na(culture.itd.lab),
+      culture.itd.lab != "", # safety guard
+      tolower(culture.itd.lab) != "unknown", # safety guard
+      !is.na(days_lab_to_culture),
+      dplyr::between(days_lab_to_culture, 0, 365))
 
-  labs <- lab_data_clean |>
-    dplyr::distinct(culture.itd.lab)
 
   # Current Period Counts -----
+
   current_counts <- lab_prep |>
     dplyr::inner_join(current_combos, by = c("year", "month_num", "month")) |>
     dplyr::group_by(culture.itd.lab, year, month_num, month) |>
     dplyr::summarise(
       current_n = dplyr::n(),
-      current_median_days = median(days.lab.culture, na.rm = TRUE),
+      current_median_days = median(days_lab_to_culture, na.rm = TRUE),
       .groups = "drop"
     )
 
@@ -146,31 +141,22 @@ build_timeliness_virus_isolation_indicator <- function(lab_data, end_date = Sys.
     dplyr::group_by(culture.itd.lab, month_num, month) |>
     dplyr::summarise(
       prior_3yr_n = dplyr::n(),
-      prior_3yr_median_days = median(days.lab.culture, na.rm = TRUE),
+      prior_3yr_median_days = median(days_lab_to_culture, na.rm = TRUE),
       prior_yrs_w_data = dplyr::n_distinct(year),
       .groups = "drop"
     )
 
-  prior_summary <- tidyr::expand_grid(
-    labs,
-    prior_combos |> dplyr::distinct(month_num, month)
-  ) |>
-    dplyr::left_join(prior_counts, by = c("culture.itd.lab", "month_num", "month"))
 
   # Full grid and join for full table -----
   final_summary <- tidyr::expand_grid(
-    labs,
-    current_combos |> dplyr::select(year, month_num, month)
-  ) |>
+    culture.itd.lab = unique(lab_prep$culture.itd.lab),
+    current_combos |> dplyr::select(year, month_num, month)) |>
     dplyr::left_join(current_counts, by = c("culture.itd.lab", "year", "month_num", "month")) |>
     dplyr::left_join(
-      prior_summary |>
-        dplyr::select(
-          culture.itd.lab, month_num, prior_3yr_n,
-          prior_3yr_median_days, prior_yrs_w_data
-        ),
-      by = c("culture.itd.lab", "month_num")
-    ) |>
+      prior_counts |>
+        dplyr::select(culture.itd.lab, month_num, prior_3yr_n,
+                      prior_3yr_median_days, prior_yrs_w_data),
+      by = c("culture.itd.lab", "month_num")) |>
     dplyr::mutate(month_label = paste0(month, " ", year)) |>
     dplyr::select(-year, -month, -month_num) |>
     dplyr::mutate(
@@ -181,8 +167,13 @@ build_timeliness_virus_isolation_indicator <- function(lab_data, end_date = Sys.
         (current_median_days - prior_3yr_median_days) / prior_3yr_median_days * 100
       ),
       flag = dplyr::case_when(
-        current_median_days == 0 | prior_3yr_median_days == 0 ~ "No virus isolation data",
-        is.na(perc_change) ~ "No virus isolation data",
+        # missing data — cannot calculate change
+        current_n == 0 & prior_3yr_n == 0 ~ "No virus isolation data",
+        current_n == 0 & prior_3yr_n != 0 ~ "No current virus isolation data",
+        current_n != 0 & prior_3yr_n == 0 ~ "No prior virus isolation data",
+        is.na(perc_change) ~ "Incomplete Data", # safety guard if something falls through the above
+
+        # threshold
         perc_change < -50 ~ "Above Target",
         perc_change > 50 ~ "Below Target",
         dplyr::between(perc_change, -50, 50) ~ "Within Target",
@@ -195,12 +186,13 @@ build_timeliness_virus_isolation_indicator <- function(lab_data, end_date = Sys.
       perc_change, flag
     )
 
+
   # Return -----
   meta <- list(
     indicator_code = "timeliness_virus_isolation",
     indicator_label = "Timeliness of Virus Isolation",
     unit = "Month",
-    lab_end_date = end_date,
+    lab_end_date = analysis_end,
     eligibility_note = eligibility_note,
     current_period_start = window_start,
     current_period_end = analysis_end,
@@ -211,16 +203,12 @@ build_timeliness_virus_isolation_indicator <- function(lab_data, end_date = Sys.
     threshold_rule = "+/-50% of the pooled same-month median from the prior 3 years",
     definition = paste0(
       "Median days between received in lab to virus isolation results. ",
-      "On target if the median timeliness for the current month is +/-50% ",
-      "compared with the pooled previous 3-year median of that month."
-    ),
-    possible_statuses = c(
-      "Within Target",
-      "Below Target",
-      "Above Target",
-      "No virus isolation data"
+      "Within target if the median timeliness for the current month is +/-50% ",
+      "compared with the pooled previous 3-year median of that month."),
+    possible_statuses = c("Within Target", "Below Target", "Above Target", "No virus isolation data",
+      "No current virus isolation data","No prior virus isolation data", "Incomplete Data", "Review")
     )
-  )
+
 
   return(list(
     data = final_summary,
