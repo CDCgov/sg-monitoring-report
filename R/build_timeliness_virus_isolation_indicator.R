@@ -16,8 +16,8 @@
 #' @param lab_data A data frame containing lab data. Must include
 #'   \code{culture.itd.lab}, \code{DateStoolReceivedinLab}, and
 #'   \code{DateFinalCellCultureResult}.
-#' @param end_date The maximum date available in the lab dataset. Typically
-#'   passed as \code{max(lab_data$DateFinalCellCultureResult, na.rm = TRUE)}.
+#' @param end_date The maximum date available in the lab dataset for the variable representing the
+#'   culture result. Typically passed as \code{max(lab_data$DateFinalCellCultureResult, na.rm = TRUE)}.
 #'   Defaults to \code{Sys.Date()}.
 #'
 #' @return A named list with two elements:
@@ -60,7 +60,10 @@ build_timeliness_virus_isolation_indicator <- function(lab_data, end_date = Sys.
   )
 
   # Date Windows -----
+  # Ensure end_date is a date type
   end_date <- lubridate::as_date(end_date)
+
+  # Lab data end date may fall mid-month — step back to last fully completed month
   analysis_end <- lubridate::floor_date(end_date, unit = "month") %m-% days(1)
   window_start <- lubridate::floor_date(analysis_end %m-% months(5), unit = "month")
 
@@ -93,7 +96,7 @@ build_timeliness_virus_isolation_indicator <- function(lab_data, end_date = Sys.
   )
 
   eligibility_note <- paste0(
-    "Lab data end date: ", format(end_date, "%b %d, %Y"), ". ",
+    "Lab data end date is: ", format(end_date, "%b %d, %Y"), ", based on DateFinalCellCultureResult. ",
     "Analysis window is derived from the last complete month prior to lab data end date. ",
     "Samples are assigned to months by DateFinalCellCultureResult."
   )
