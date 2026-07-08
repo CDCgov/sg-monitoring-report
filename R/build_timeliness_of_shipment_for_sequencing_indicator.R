@@ -127,7 +127,8 @@ build_timeliness_of_shipment_for_sequencing_indicator <- function(lab_data,
       tolower()
   }
 
-  # create list of labs to exclude because samples are not shipped for sequencing
+  # create list of labs to exclude because samples are not shipped for
+  # sequencing, note this list will need to be manually updated
   excluded_same_site_labs <- c(
     "CDC-Atlanta",
     "NICD-South Africa",
@@ -141,7 +142,7 @@ build_timeliness_of_shipment_for_sequencing_indicator <- function(lab_data,
     "Egypt",
     "RIVM-Netherlands",
     "Oman / CDC-Atlanta",
-    "Jordan",
+    "Jordan"
   )
   excluded_same_site_lab_keys <- normalize_lab_name(excluded_same_site_labs)
 
