@@ -15,9 +15,8 @@
 #' \describe{
 #'   \item{data}{A data frame with one row per country-month containing:
 #'     \code{place.admin.0}, \code{whoregion}, \code{month_label},
-#'     \code{current_period_counts}, \code{prior_median},
-#'     \code{prior_yrs_w_data}, \code{lower_50pct}, \code{upper_50pct},
-#'     and \code{flag}.}
+#'     \code{current_period_counts}, \code{prior_3yr_median},
+#'     \code{prior_yrs_w_data}, \code{perc_change}, and \code{flag}.}
 #'   \item{metadata}{A named list containing indicator label, period start/end
 #'     dates, human-readable period labels, number of months and prior years
 #'     assessed, and the threshold rule applied.}
@@ -107,7 +106,7 @@ build_afp_cases_reported <- function(afp_data, end_date = Sys.Date()) {
     prior_combos |> dplyr::select(year, month_num, month)) |>
     dplyr::left_join(prior_counts, by = c("place.admin.0", "year", "month_num")) |>
     dplyr::group_by(place.admin.0, month_num, month) |>
-    dplyr::summarize(prior_median = round(median(n, na.rm = TRUE)),
+    dplyr::summarize(prior_3yr_median = round(median(n, na.rm = TRUE)),
                      prior_yrs_w_data = sum(!is.na(n)),
                      .groups = "drop"
                      )
@@ -121,18 +120,23 @@ build_afp_cases_reported <- function(afp_data, end_date = Sys.Date()) {
     dplyr::mutate(
       # add region
       whoregion = sirfunctions::get_region(place.admin.0),
-      # thresholds
-      upper_50pct = prior_median * 1.5,
-      lower_50pct = pmax(0, prior_median *.5),  # floor at 0 for safety
+      # percent change from prior 3-year median
+      perc_change = dplyr::case_when(
+        prior_3yr_median == 0 & current_period_counts == 0 ~ 0,
+        prior_3yr_median == 0 & current_period_counts > 0 ~ Inf,
+        TRUE ~ round((current_period_counts - prior_3yr_median) / prior_3yr_median * 100)
+      ),
       # flag
       flag = dplyr::case_when(
-        is.na(prior_median) ~ "Incomplete Data",
-        current_period_counts <= upper_50pct & current_period_counts >= lower_50pct ~ "Within Target",
-        current_period_counts > upper_50pct ~ "Above Target",
-        current_period_counts < lower_50pct ~ "Below Target",
+        is.na(prior_3yr_median) ~ "Incomplete Data",
+        prior_3yr_median == 0 & current_period_counts == 0 ~ "Within Target",
+        prior_3yr_median == 0 & current_period_counts > 0 ~ "Above Target",
+        perc_change > 50 ~ "Above Target",
+        perc_change < -50 ~ "Below Target",
+        dplyr::between(perc_change, -50, 50) ~ "Within Target",
         TRUE ~ "Review")
       ) |>
-    dplyr::select(place.admin.0, whoregion, month_label, current_period_counts, prior_median, prior_yrs_w_data, lower_50pct, upper_50pct, flag)
+    dplyr::select(place.admin.0, whoregion, month_label, current_period_counts, prior_3yr_median, prior_yrs_w_data, perc_change, flag)
 
  # Return -----
   meta <- list(
