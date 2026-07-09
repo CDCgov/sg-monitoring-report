@@ -426,8 +426,43 @@ datatable(
 
 ## Lab Indicators
 
-*Lab indicators are currently being rebuilt. This section will be updated.*
+::: panel-tabset
+
+### Timeliness of Virus Isolation
+
+**Period:** `r lab_virus_isolation_timeliness$metadata$current_period_label`  
+**Compared to:** `r lab_virus_isolation_timeliness$metadata$prior_period_label`  
+**Threshold:** `r lab_virus_isolation_timeliness$metadata$threshold_rule`
+
+> **Note:** `r lab_virus_isolation_timeliness$metadata$eligibility_note`
+
+```{r virus-isolation-table}
+datatable(
+  lab_virus_isolation_timeliness$data |>
+    dplyr::arrange(culture.itd.lab, month_label) |>
+    dplyr::rename(
+      `Culture/ITD Lab`      = culture.itd.lab,
+      Month                  = month_label,
+      `Current N`            = current_n,
+      `Current Median (d)`   = current_median_days,
+      `Prior 3yr N`          = prior_3yr_n,
+      `Prior 3yr Median (d)` = prior_3yr_median_days,
+      `Yrs w/ Data`          = prior_yrs_w_data,
+      `% Change`             = perc_change,
+      Flag                   = flag
+    ),
+  filter = "top",
+  extensions = "Buttons",
+  options = list(
+    dom = "Bfrtip",
+    buttons = c("copy", "csv", "excel"),
+    pageLength = 15,
+    scrollX = TRUE
+  )
+)
+```
 
 :::
 
+:::
 
