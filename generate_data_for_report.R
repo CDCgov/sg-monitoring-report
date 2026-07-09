@@ -84,8 +84,10 @@ es_prop_active_sites_collections$data <- add_risk(es_prop_active_sites_collectio
 
 
 # Lab Indicators ----
+lab_virus_isolation_timliness <- build_timeliness_virus_isolation_indicator(lab_data, max(lab_data$DateFinalCellCultureResult, na.rm = TRUE))
 
-# NEED TO ADD
+
+
 
 # Save and Cache -------------------------------------------------------------------------------------------------------
 
