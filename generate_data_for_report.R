@@ -85,7 +85,10 @@ es_prop_active_sites_collections$data <- add_risk(es_prop_active_sites_collectio
 
 # Lab Indicators ----
 lab_virus_isolation_timeliness <- build_timeliness_virus_isolation_indicator(lab_data, max(lab_data$DateFinalCellCultureResult, na.rm = TRUE))
-
+lab_virus_ITD_results_timeliness <- build_timeliness_of_ITD_results_indicator(lab_data, max(lab_data$DateFinalrRTPCRResults, na.rm=TRUE))
+lab_sequencing_shipment_timeliness <- build_timeliness_of_shipment_for_sequencing_indicator(lab_data, max(lab_data$DateIsolateRcvdForSeq, na.rm=TRUE))
+#lab_workload <- build_lab_workload_indicator(lab_data, max(lab_data$DateStoolReceivedinLab, na.rm = TRUE))
+#lab_sequencing_timeliness <- build_timeliness_of_sequencing_results_indicator(lab_data, max(lab_data$DateofSequencing, na.rm = TRUE))
 
 
 
