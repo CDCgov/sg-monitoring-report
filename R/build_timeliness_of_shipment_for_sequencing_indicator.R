@@ -21,7 +21,7 @@
 #' @param lab_data A data frame containing lab data. Must include
 #'   \code{culture.itd.lab}, \code{DateFinalrRTPCRResults}, and
 #'   \code{DateIsolateRcvdForSeq}.
-#' @param end_date The maximum date available in the lab dataset. Typically
+#' @param end_date The maximum date available in the lab dataset for the variable representing date isolate received for sequencing. Typically
 #'   passed as \code{max(lab_data$DateIsolateRcvdForSeq, na.rm = TRUE)}.
 #'   Defaults to \code{Sys.Date()}.
 #'
