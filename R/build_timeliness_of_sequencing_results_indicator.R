@@ -107,7 +107,8 @@ build_timeliness_of_sequencing_results_indicator <- function(lab_data, end_date 
   )
 
   eligibility_note <- paste0(
-    "Lab data end date: ", format(end_date, "%b %d, %Y"), ". ",
+    "Lab data end date: ", format(end_date, "%b %d, %Y"), ", based on the ",
+    "latest date in POLIS for date of sequencing (DateofSequencing). ",
     "Analysis windows are derived from the last complete month prior to lab data end date. ",
     "Samples are assigned to windows by DateofSequencing."
   )

@@ -96,7 +96,8 @@ build_timeliness_virus_isolation_indicator <- function(lab_data, end_date = Sys.
   )
 
   eligibility_note <- paste0(
-    "Lab data end date is: ", format(end_date, "%b %d, %Y"), ", based on DateFinalCellCultureResult. ",
+    "Lab data end date is: ", format(end_date, "%b %d, %Y"), ", based on the ",
+    "latest date in POLIS for date of final cell culture result (DateFinalCellCultureResult). ",
     "Analysis window is derived from the last complete month prior to lab data end date. ",
     "Samples are assigned to months by DateFinalCellCultureResult."
   )
