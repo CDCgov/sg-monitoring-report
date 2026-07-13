@@ -7,3 +7,5 @@
 sg-monitoring-report.html
 /data_cache
 /Excel_Output
+
+**/*.quarto_ipynb
