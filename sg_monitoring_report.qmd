@@ -1,5 +1,5 @@
 ---
-title: "AFP Surveillance Monitoring"
+title: "GPEI Surveillance Group Monitoring Report"
 date: today
 date-format: "MMMM D, YYYY"
 format:
