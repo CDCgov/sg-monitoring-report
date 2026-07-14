@@ -1,6 +1,6 @@
 # generate_data_for_report.R
 # Sourced by the QMD. Loads raw data, runs all build_ indicators, and saves
-# to cache. All analytical work happens here — QMD is presentation only.
+# to a folder within the directory. All analytic work happens here — QMD is presentation only.
 
 
 # Set Up ---------------------------------------------------------------------------------------------------------------
@@ -92,7 +92,17 @@ lab_sequencing_timeliness <- build_timeliness_of_sequencing_results_indicator(la
 
 
 
-# Save and Cache -------------------------------------------------------------------------------------------------------
+# Save -------------------------------------------------------------------------------------------------------
 
 # NEED TO ADD
-
+# Save tables ----
+if(!(".datatables/" %in% list.dirs())){
+  dir.create("./datatables")
+}
+save(end_date, max_lab_date, afp_cases_reported, afp_prop_60, afp_prop_inad_classified,
+     afp_prop_lab_pending, afp_wpv_vdpv_timeliness, afp_neg_samples,
+     afp_timely_stool, es_active_sites, es_timely_shipment, es_wpv_vdpv_timeliness,
+     es_prop_active_sites_collections, lab_virus_isolation_timeliness,
+     lab_virus_ITD_results_timeliness, lab_sequencing_shipment_timeliness,
+     lab_workload, lab_sequencing_timeliness,
+     file = "datatables/datatables.rda")

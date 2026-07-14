@@ -5,7 +5,8 @@
 
 /.quarto/
 sg_monitoring_report.html
-/data_cache
+/datatables
 /Excel_Output
 
 **/*.quarto_ipynb
+
