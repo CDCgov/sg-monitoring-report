@@ -96,8 +96,8 @@ lab_sequencing_timeliness <- build_timeliness_of_sequencing_results_indicator(la
 
 # NEED TO ADD
 # Save tables ----
-if(!(".datatables/" %in% list.dirs())){
-  dir.create("./datatables")
+if(!dir.exists("datatables")){
+  dir.create("datatables")
 }
 save(end_date, max_lab_date, afp_cases_reported, afp_prop_60, afp_prop_inad_classified,
      afp_prop_lab_pending, afp_wpv_vdpv_timeliness, afp_neg_samples,

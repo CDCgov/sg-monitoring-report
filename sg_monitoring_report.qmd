@@ -106,7 +106,7 @@ Indicators are presented at the country level across AFP, ES, and Lab.
 
 ```{r afp-cases-table}
 afp_cases_reported$data |>
-    dplyr::arrange(place.admin.0, month_label) |>
+    dplyr::arrange(place.admin.0, lubridate::my(month_label)) |>
     dplyr::rename(
       Country = place.admin.0,
       Region = whoregion,
@@ -143,6 +143,7 @@ datatable(
       `Prop 60d (%)` = prop_60day,
       Flag = flag
     ),
+  rownames=FALSE,
   filter = "top", 
   extensions = "Buttons",
   options = list(
@@ -172,6 +173,7 @@ datatable(
       `% Pending` = prop_lab_pending,
       Flag = flag
     ),
+  rownames=FALSE,
   filter = "top", 
   extensions = "Buttons",
   options = list(
@@ -202,6 +204,7 @@ datatable(
       `% Unclassified` = prop_unclassified,
       Flag = flag
     ),
+  rownames=FALSE,
   filter = "top", 
   extensions = "Buttons",
   options = list(
@@ -238,6 +241,7 @@ datatable(
       `% Change` = perc_change,
       Flag = flag
     ),
+  rownames=FALSE,
   filter = "top", 
   extensions = "Buttons",
   options = list(
@@ -258,7 +262,7 @@ datatable(
 ```{r neg-samples-table}
 
  afp_neg_samples$data |>
-    dplyr::arrange(country, month_label) |>
+    dplyr::arrange(country, lubridate::my(month_label)) |>
     dplyr::rename(
       Country = country,
       Region = whoregion,
@@ -282,7 +286,7 @@ datatable(
 
 ```{r stool-shipment-table}
 afp_timely_stool$data |>
-    dplyr::arrange(country, month_label) |>
+    dplyr::arrange(country, lubridate::my(month_label)) |>
     dplyr::rename(
       Country = country,
       Region = whoregion,
@@ -314,7 +318,7 @@ afp_timely_stool$data |>
 
 ```{r es-shipment-table}
   es_timely_shipment$data |>
-    dplyr::arrange(country, month_label) |>
+    dplyr::arrange(country, lubridate::my(month_label)) |>
     dplyr::rename(
       Country = country,
       Region = whoregion,
@@ -357,6 +361,7 @@ datatable(
       `% Change` = perc_change,
       Flag = flag
     ),
+  rownames=FALSE,
   filter = "top", 
   extensions = "Buttons",
   options = list(
@@ -377,7 +382,7 @@ datatable(
 ```{r es-prop-active-collections-table}
 
   es_prop_active_sites_collections$data |>
-    dplyr::arrange(country, month_label) |>
+    dplyr::arrange(country, lubridate::my(month_label)) |>
     dplyr::rename(
       Country                  = country,
       Region                   = whoregion,
@@ -402,7 +407,7 @@ datatable(
 ```{r es-active-sites-table}
 
   es_active_sites$data |>
-    dplyr::arrange(country, month_label) |>
+    dplyr::arrange(country, lubridate::my(month_label)) |>
     dplyr::rename(
       Country = country,
       Region = whoregion,
@@ -434,7 +439,7 @@ datatable(
 ```{r virus-isolation-table}
 
   lab_virus_isolation_timeliness$data |>
-    dplyr::arrange(culture.itd.lab, month_label) |>
+    dplyr::arrange(culture.itd.lab, lubridate::my(month_label)) |>
     dplyr::rename(
       `Culture/ITD Lab`      = culture.itd.lab,
       Month                  = month_label,
@@ -476,6 +481,7 @@ datatable(
       `% Change` = perc_change,
       Flag = flag
     ),
+  rownames=FALSE,
   filter = "top",
   extensions = "Buttons",
   options = list(
@@ -514,6 +520,7 @@ datatable(
       `% Change` = perc_change,
       Flag = flag
     ),
+  rownames=FALSE,
   filter = "top",
   extensions = "Buttons",
   options = list(
@@ -536,7 +543,7 @@ datatable(
 ```{r lab-workload-table}
 
   lab_workload$data |>
-    dplyr::arrange(culture.itd.lab, month_label) |>
+    dplyr::arrange(culture.itd.lab, lubridate::my(month_label)) |>
     dplyr::rename(
       `Culture/ITD Lab`      = culture.itd.lab,
       Month                  = month_label,
@@ -577,6 +584,7 @@ datatable(
       `% Change` = perc_change,
       Flag = flag
     ),
+  rownames=FALSE,
   filter = "top",
   extensions = "Buttons",
   options = list(
