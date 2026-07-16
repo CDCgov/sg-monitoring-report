@@ -29,15 +29,58 @@ library(cowplot)
 # Set end date for report
 end_date <- lubridate::ceiling_date(Sys.Date() %m-% months(1), unit = "month") %m-% days(1)
 
-# Get report data from cache or by sourcing generate_data_for_report.R
-use_cache <- FALSE  # set TRUE to skip data reload during QMD development
+# Get report data from existing tables or by sourcing generate_data_for_report.R
+use_existing_data <- FALSE  # set TRUE to skip data reload during QMD development
 
-if (use_cache) {
-  load("data_cache/cache.rda")
+if (use_existing_data) {
+  load("datatables/datatables.rda")
 } else {
   source("generate_data_for_report.R")
 }
 # Note: build_ and create_ functions are sourced inside generate_data_for_report.R
+
+#function for making month column sortable chronologically instead of alphabetically (should eventually be moved to a helper function )
+make_sortable_month_col <- function(data, 
+                                       month_col_name = "Month",
+                                       filter = "top",
+                                       buttons = c("copy", "csv", "excel"),
+                                       pageLength = 15,
+                                       scrollX = TRUE) {
+  
+  month_col <- which(names(data) == month_col_name) - 1
+  
+  if (length(month_col) == 0) {
+    warning(paste0("Column '", month_col_name, "' not found — sorting fix not applied."))
+  }
+  
+  datatable(
+    data,
+    rownames = FALSE,
+    filter = filter,
+    extensions = "Buttons",
+    options = list(
+      dom = "Bfrtip",
+      buttons = buttons,
+      pageLength = pageLength,
+      scrollX = scrollX,
+      columnDefs = list(
+        list(
+          targets = month_col,
+          type = "num",
+          render = DT::JS(
+            "function(data, type, row) {",
+            "  if (type === 'sort' || type === 'type') {",
+            "    var d = new Date('01 ' + data);",
+            "    return d.getTime();",
+            "  }",
+            "  return data;",
+            "}"
+          )
+        )
+      )
+    )
+  )
+}
 
 ```
 
@@ -62,9 +105,8 @@ Indicators are presented at the country level across AFP, ES, and Lab.
 **Threshold:** `r afp_cases_reported$metadata$threshold_rule`
 
 ```{r afp-cases-table}
-datatable(
-  afp_cases_reported$data |>
-    dplyr::arrange(place.admin.0, month_label) |>
+afp_cases_reported$data |>
+    dplyr::arrange(place.admin.0, lubridate::my(month_label)) |>
     dplyr::rename(
       Country = place.admin.0,
       Region = whoregion,
@@ -75,16 +117,8 @@ datatable(
       `Yrs w/ Data` = prior_yrs_w_data,
       `Percent Change` = perc_change,
       Flag = flag
-    ),
-  filter = "top", 
-  extensions = "Buttons",
-  options = list(
-    dom = "Bfrtip", 
-    buttons = c("copy", "csv", "excel"),
-    pageLength = 15, 
-    scrollX = TRUE
-    )
-)
+    ) |>
+  make_sortable_month_col()
 ```
 
 ### Proportion 60-Day Follow-Up
@@ -109,6 +143,7 @@ datatable(
       `Prop 60d (%)` = prop_60day,
       Flag = flag
     ),
+  rownames=FALSE,
   filter = "top", 
   extensions = "Buttons",
   options = list(
@@ -138,6 +173,7 @@ datatable(
       `% Pending` = prop_lab_pending,
       Flag = flag
     ),
+  rownames=FALSE,
   filter = "top", 
   extensions = "Buttons",
   options = list(
@@ -168,6 +204,7 @@ datatable(
       `% Unclassified` = prop_unclassified,
       Flag = flag
     ),
+  rownames=FALSE,
   filter = "top", 
   extensions = "Buttons",
   options = list(
@@ -204,6 +241,7 @@ datatable(
       `% Change` = perc_change,
       Flag = flag
     ),
+  rownames=FALSE,
   filter = "top", 
   extensions = "Buttons",
   options = list(
@@ -222,9 +260,9 @@ datatable(
 **Threshold:** `r afp_neg_samples$metadata$threshold_rule`
 
 ```{r neg-samples-table}
-datatable(
-  afp_neg_samples$data |>
-    dplyr::arrange(country, month_label) |>
+
+ afp_neg_samples$data |>
+    dplyr::arrange(country, lubridate::my(month_label)) |>
     dplyr::rename(
       Country = country,
       Region = whoregion,
@@ -236,17 +274,8 @@ datatable(
       `Prior N` = prior_n,
       `Prior Median (d)` = prior_median_days,
       `% Change` = perc_change,
-      Flag = flag
-    ),
-  filter = "top", 
-  extensions = "Buttons",
-  options = list(
-    dom = "Bfrtip", 
-    buttons = c("copy", "csv", "excel"),
-    pageLength = 15, 
-    scrollX = TRUE
-    )
-)
+      Flag = flag) |>
+  make_sortable_month_col()
 ```
 
 ### Timely Stool Shipment
@@ -256,9 +285,8 @@ datatable(
 **Threshold:** `r afp_timely_stool$metadata$threshold_rule`
 
 ```{r stool-shipment-table}
-datatable(
-  afp_timely_stool$data |>
-    dplyr::arrange(country, month_label) |>
+afp_timely_stool$data |>
+    dplyr::arrange(country, lubridate::my(month_label)) |>
     dplyr::rename(
       Country = country,
       Region = whoregion,
@@ -271,16 +299,9 @@ datatable(
       `Prior Median (d)` = prior_median_days,
       `% Change` = perc_change,
       Flag = flag
-    ),
-  filter = "top", 
-  extensions = "Buttons",
-  options = list(
-    dom = "Bfrtip", 
-    buttons = c("copy", "csv", "excel"),
-    pageLength = 15, 
-    scrollX = TRUE
-    )
-)
+    ) |>
+  make_sortable_month_col()
+
 ```
 
 :::
@@ -296,9 +317,8 @@ datatable(
 **Threshold:** `r es_timely_shipment$metadata$threshold_rule`
 
 ```{r es-shipment-table}
-datatable(
   es_timely_shipment$data |>
-    dplyr::arrange(country, month_label) |>
+    dplyr::arrange(country, lubridate::my(month_label)) |>
     dplyr::rename(
       Country = country,
       Region = whoregion,
@@ -311,16 +331,9 @@ datatable(
       `Prior Median (d)` = prior_median_days,
       `% Change` = perc_change,
       Flag = flag
-    ),
-  filter = "top", 
-  extensions = "Buttons",
-  options = list(
-    dom = "Bfrtip", 
-    buttons = c("copy", "csv", "excel"),
-    pageLength = 15, 
-    scrollX = TRUE
-    )
-)
+    ) |>
+  make_sortable_month_col()
+  
 ```
 
 ### Timeliness of ES WPV/VDPV Notification
@@ -348,6 +361,7 @@ datatable(
       `% Change` = perc_change,
       Flag = flag
     ),
+  rownames=FALSE,
   filter = "top", 
   extensions = "Buttons",
   options = list(
@@ -366,9 +380,9 @@ datatable(
 **Threshold:** `r es_prop_active_sites_collections$metadata$threshold_rule`
 
 ```{r es-prop-active-collections-table}
-datatable(
+
   es_prop_active_sites_collections$data |>
-    dplyr::arrange(country, month_label) |>
+    dplyr::arrange(country, lubridate::my(month_label)) |>
     dplyr::rename(
       Country                  = country,
       Region                   = whoregion,
@@ -378,16 +392,9 @@ datatable(
       `Sites w/ ≥1 Collection` = sites_with_1_collection,
       `% With Collection`      = prop_sites_with_1_collection,
       Flag                     = flag
-    ),
-  filter = "top",
-  extensions = "Buttons",
-  options = list(
-    dom = "Bfrtip",
-    buttons = c("copy", "csv", "excel"),
-    pageLength = 15,
-    scrollX = TRUE
-  )
-)
+    ) |>
+  make_sortable_month_col()
+
 ```
 
 
@@ -398,9 +405,9 @@ datatable(
 **Threshold:** `r es_active_sites$metadata$threshold_rule`
 
 ```{r es-active-sites-table}
-datatable(
+
   es_active_sites$data |>
-    dplyr::arrange(country, month_label) |>
+    dplyr::arrange(country, lubridate::my(month_label)) |>
     dplyr::rename(
       Country = country,
       Region = whoregion,
@@ -410,15 +417,9 @@ datatable(
       `Prior Sites` = prior_active_sites,
       `% Change` = perc_change,
       Flag = flag
-    ),
-  filter = "top", 
-  extensions = "Buttons",
-  options = list(
-    dom = "Bfrtip", 
-    buttons = c("copy", "csv", "excel"),
-    pageLength = 15, 
-    scrollX = TRUE)
-)
+    ) |>
+  make_sortable_month_col()
+
 ```
 
 :::
@@ -436,9 +437,9 @@ datatable(
 > **Note:** `r lab_virus_isolation_timeliness$metadata$eligibility_note`
 
 ```{r virus-isolation-table}
-datatable(
+
   lab_virus_isolation_timeliness$data |>
-    dplyr::arrange(culture.itd.lab, month_label) |>
+    dplyr::arrange(culture.itd.lab, lubridate::my(month_label)) |>
     dplyr::rename(
       `Culture/ITD Lab`      = culture.itd.lab,
       Month                  = month_label,
@@ -449,16 +450,9 @@ datatable(
       `Yrs w/ Data`          = prior_yrs_w_data,
       `% Change`             = perc_change,
       Flag                   = flag
-    ),
-  filter = "top",
-  extensions = "Buttons",
-  options = list(
-    dom = "Bfrtip",
-    buttons = c("copy", "csv", "excel"),
-    pageLength = 15,
-    scrollX = TRUE
-  )
-)
+    ) |>
+  make_sortable_month_col()
+
 ```
 
 ### Timeliness of ITD results
@@ -487,6 +481,7 @@ datatable(
       `% Change` = perc_change,
       Flag = flag
     ),
+  rownames=FALSE,
   filter = "top",
   extensions = "Buttons",
   options = list(
@@ -525,6 +520,7 @@ datatable(
       `% Change` = perc_change,
       Flag = flag
     ),
+  rownames=FALSE,
   filter = "top",
   extensions = "Buttons",
   options = list(
@@ -545,9 +541,9 @@ datatable(
 > **Note:** `r lab_workload$metadata$eligibility_note`
 
 ```{r lab-workload-table}
-datatable(
+
   lab_workload$data |>
-    dplyr::arrange(culture.itd.lab, month_label) |>
+    dplyr::arrange(culture.itd.lab, lubridate::my(month_label)) |>
     dplyr::rename(
       `Culture/ITD Lab`      = culture.itd.lab,
       Month                  = month_label,
@@ -556,16 +552,9 @@ datatable(
       `Yrs w/ Data`          = prior_yrs_w_data,
       `% Change`             = perc_change,
       Flag                   = flag
-    ),
-  filter = "top",
-  extensions = "Buttons",
-  options = list(
-    dom = "Bfrtip",
-    buttons = c("copy", "csv", "excel"),
-    pageLength = 15,
-    scrollX = TRUE
-  )
-)
+    ) |>
+  make_sortable_month_col()
+
 ```
 
 
@@ -595,6 +584,7 @@ datatable(
       `% Change` = perc_change,
       Flag = flag
     ),
+  rownames=FALSE,
   filter = "top",
   extensions = "Buttons",
   options = list(
