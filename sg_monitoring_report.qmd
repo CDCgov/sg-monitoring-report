@@ -30,7 +30,7 @@ library(cowplot)
 end_date <- lubridate::ceiling_date(Sys.Date() %m-% months(1), unit = "month") %m-% days(1)
 
 # Get report data from existing tables or by sourcing generate_data_for_report.R
-use_existing_data <- FALSE  # set TRUE to skip data reload during QMD development
+use_existing_data <- TRUE  # set TRUE to skip data reload during QMD development
 
 if (use_existing_data) {
   load("datatables/datatables.rda")
@@ -90,19 +90,21 @@ make_sortable_month_col <- function(data,
 
 End date: **`r format(end_date, "%B %d, %Y")`**
 
-The objective of the monthly SG Monitoring Report is as an early indicator warning for potential disruption in the surveillance system. 
-Indicators are presented at the country level across AFP, ES, and Lab. 
+The objective of the monthly SG Monitoring Report is as an early warning for potential disruption in the surveillance system.  
+Monitoring Flags are presented at the country level across AFP, ES, and Lab. 
 
 
-## AFP Indicators
+## AFP Monitoring Flags
 
 ::: panel-tabset
 
-### AFP Cases Reported
+### Number of AFP Cases Reported
 
-**Period:** `r afp_cases_reported$metadata$current_period_label`  
-**Compared to:** `r afp_cases_reported$metadata$prior_period_label`  
-**Threshold:** `r afp_cases_reported$metadata$threshold_rule`
+**Definition:**  
+**Period of focus:** `r afp_cases_reported$metadata$current_period_label`  
+**Comparison periods:** `r afp_cases_reported$metadata$prior_period_label`  
+**Threshold for above or below target:** `r afp_cases_reported$metadata$threshold_rule`  
+**Interpretation:**
 
 ```{r afp-cases-table}
 afp_cases_reported$data |>
@@ -121,13 +123,12 @@ afp_cases_reported$data |>
   make_sortable_month_col()
 ```
 
-### Proportion 60-Day Follow-Up
+### Proportion 60-Day Follow-Up Completed
 
-**Recent period:** `r afp_prop_60$metadata$recent_period_label`  
-**Earlier period:** `r afp_prop_60$metadata$earlier_period_label`  
+**Period of focus:** `r afp_prop_60$metadata$recent_period_label`  
+**Earlier period (for context):** `r afp_prop_60$metadata$earlier_period_label`  
+**Eligibility:** `r afp_prop_60$metadata$eligibility_note`
 **Threshold:** `r afp_prop_60$metadata$threshold_rule`
-
-> **Note:** `r afp_prop_60$metadata$eligibility_note`
 
 ```{r prop-60-table}
 datatable(
@@ -140,7 +141,7 @@ datatable(
       Period = period,
       `Inadequate Cases` = inad_cases,
       `Got 60d` = got_60day,
-      `Prop 60d (%)` = prop_60day,
+      `% Got 60d` = prop_60day,
       Flag = flag
     ),
   rownames=FALSE,
@@ -152,6 +153,36 @@ datatable(
     pageLength = 15, 
     scrollX = TRUE
     )
+)
+```
+
+### Proportion Inadequate Cases Unclassified
+
+**Eligibility:** `r afp_prop_inad_classified$metadata$eligibility_note`  
+**Threshold:** `r afp_prop_inad_classified$metadata$threshold_rule`
+
+```{r prop-classified-table}
+datatable(
+  afp_prop_inad_classified$data |>
+    dplyr::arrange(ctry) |>
+    dplyr::rename(
+      Country = ctry,
+      Region = whoregion,
+      `SG Priority Level` = sg_priority_level,
+      `Inad Cases` = inad_cases,
+      `# Classified` = n_classified,
+      `# Unclassified` = n_unclassified,
+      `% Unclassified` = prop_unclassified,
+      Flag = flag
+    ),
+  rownames=FALSE,
+  filter = "top", 
+  extensions = "Buttons",
+  options = list(
+    dom = "Bfrtip", 
+    buttons = c("copy", "csv", "excel"),
+    pageLength = 15, 
+    scrollX = TRUE)
 )
 ```
 
@@ -185,42 +216,12 @@ datatable(
 )
 ```
 
-### Proportion Inadequate Cases Unclassified
+### Timeliness of AFP WPV/VDPV Detection
 
-**Eligibility:** `r afp_prop_inad_classified$metadata$eligibility_note`  
-**Threshold:** `r afp_prop_inad_classified$metadata$threshold_rule`
-
-```{r prop-classified-table}
-datatable(
-  afp_prop_inad_classified$data |>
-    dplyr::arrange(ctry) |>
-    dplyr::rename(
-      Country = ctry,
-      Region = whoregion,
-      `SG Priority Level` = sg_priority_level,
-      `Inad Cases` = inad_cases,
-      `N Classified` = n_classified,
-      `N Unclassified` = n_unclassified,
-      `% Unclassified` = prop_unclassified,
-      Flag = flag
-    ),
-  rownames=FALSE,
-  filter = "top", 
-  extensions = "Buttons",
-  options = list(
-    dom = "Bfrtip", 
-    buttons = c("copy", "csv", "excel"),
-    pageLength = 15, 
-    scrollX = TRUE)
-)
-```
-
-### Timely AFP WPV/VDPV Detection
-
-**Recent period:** `r afp_wpv_vdpv_timeliness$metadata$recent_period_label`  
-**Compared to:** `r afp_wpv_vdpv_timeliness$metadata$recent_prior_period_label`  
-**Earlier period:** `r afp_wpv_vdpv_timeliness$metadata$earlier_period_label`  
-**Compared to:** `r afp_wpv_vdpv_timeliness$metadata$earlier_prior_period_label`  
+**Period of focus:** `r afp_wpv_vdpv_timeliness$metadata$recent_period_label`  
+**Comparison period:** `r afp_wpv_vdpv_timeliness$metadata$recent_prior_period_label`  
+**Earlier period of focus (for context):** `r afp_wpv_vdpv_timeliness$metadata$earlier_period_label`  
+**Earlier comparison period (for context):** `r afp_wpv_vdpv_timeliness$metadata$earlier_prior_period_label`  
 **Threshold:** `r afp_wpv_vdpv_timeliness$metadata$threshold_rule`
 
 ```{r wpv-vdpv-table}
@@ -234,10 +235,10 @@ datatable(
       Window = window,
       `Current Period` = current_period,
       `Prior Period` = prior_period,
-      `Current N` = current_count,
-      `Current Median (d)` = current_median_days,
-      `Prior N` = prior_count,
-      `Prior Median (d)` = prior_median_days,
+      `Current #` = current_count,
+      `Current Median (days)` = current_median_days,
+      `Prior #` = prior_count,
+      `Prior Median (days)` = prior_median_days,
       `% Change` = perc_change,
       Flag = flag
     ),
@@ -253,10 +254,10 @@ datatable(
 )
 ```
 
-### Timely Detection of Negative AFP Samples
+### Timeliness of Detection of Negative AFP Samples
 
-**Period:** `r afp_neg_samples$metadata$current_period_label`  
-**Compared to:** `r afp_neg_samples$metadata$prior_period_label`  
+**Period of focus:** `r afp_neg_samples$metadata$current_period_label`  
+**Comparison period:** `r afp_neg_samples$metadata$prior_period_label`  
 **Threshold:** `r afp_neg_samples$metadata$threshold_rule`
 
 ```{r neg-samples-table}
@@ -269,19 +270,19 @@ datatable(
       `SG Priority Level` = sg_priority_level,
       Month = month_label,
       `Lab Type` = culture.itd.cat,
-      `Current N` = current_n,
-      `Current Median (d)` = current_median_days,
-      `Prior N` = prior_n,
-      `Prior Median (d)` = prior_median_days,
+      `Current #` = current_n,
+      `Current Median (days)` = current_median_days,
+      `Prior #` = prior_n,
+      `Prior Median (days)` = prior_median_days,
       `% Change` = perc_change,
       Flag = flag) |>
   make_sortable_month_col()
 ```
 
-### Timely Stool Shipment
+### Timeliness of Stool Shipment
 
-**Period:** `r afp_timely_stool$metadata$current_period_label`  
-**Compared to:** `r afp_timely_stool$metadata$prior_period_label`  
+**Period of focus:** `r afp_timely_stool$metadata$current_period_label`  
+**Comparison period:** `r afp_timely_stool$metadata$prior_period_label`  
 **Threshold:** `r afp_timely_stool$metadata$threshold_rule`
 
 ```{r stool-shipment-table}
@@ -293,10 +294,10 @@ afp_timely_stool$data |>
       `SG Priority Level` = sg_priority_level,
       Month = month_label,
       `Lab Type` = culture.itd.cat,
-      `Current N` = current_n,
-      `Current Median (d)` = current_median_days,
-      `Prior N` = prior_n,
-      `Prior Median (d)` = prior_median_days,
+      `Current #` = current_n,
+      `Current Median (days)` = current_median_days,
+      `Prior #` = prior_n,
+      `Prior Median (days)` = prior_median_days,
       `% Change` = perc_change,
       Flag = flag
     ) |>
@@ -306,77 +307,14 @@ afp_timely_stool$data |>
 
 :::
 
-## ES Indicators
+## ES Monitoring Flags
 
 ::: panel-tabset
-
-### Timeliness of ES Shipment
-
-**Period:** `r es_timely_shipment$metadata$current_period_label`  
-**Compared to:** `r es_timely_shipment$metadata$prior_period_label`  
-**Threshold:** `r es_timely_shipment$metadata$threshold_rule`
-
-```{r es-shipment-table}
-  es_timely_shipment$data |>
-    dplyr::arrange(country, lubridate::my(month_label)) |>
-    dplyr::rename(
-      Country = country,
-      Region = whoregion,
-      `SG Priority Level` = sg_priority_level,
-      Month = month_label,
-      `Lab Type` = es.lab.type,
-      `Current N` = current_count,
-      `Current Median (d)` = current_median_days,
-      `Prior N` = prior_count,
-      `Prior Median (d)` = prior_median_days,
-      `% Change` = perc_change,
-      Flag = flag
-    ) |>
-  make_sortable_month_col()
-  
-```
-
-### Timeliness of ES WPV/VDPV Notification
-
-**Recent period:** `r es_wpv_vdpv_timeliness$metadata$recent_period_label`  
-**Compared to:** `r es_wpv_vdpv_timeliness$metadata$recent_prior_period_label`  
-**Threshold:** `r es_wpv_vdpv_timeliness$metadata$threshold_rule`
-
-```{r es-wpv-vdpv-table}
-datatable(
-  es_wpv_vdpv_timeliness$data |>
-    dplyr::arrange(country, current_period) |>
-    dplyr::rename(
-      Country = country,
-      Region = whoregion,
-      `SG Priority Level` = sg_priority_level,
-      Window = window,
-      `Current Period` = current_period,
-      `Prior Period` = prior_period,
-      `Lab Type` = es.lab.type,
-      `Current N` = current_count,
-      `Current Median (d)` = current_median_days,
-      `Prior N` = prior_count,
-      `Prior Median (d)` = prior_median_days,
-      `% Change` = perc_change,
-      Flag = flag
-    ),
-  rownames=FALSE,
-  filter = "top", 
-  extensions = "Buttons",
-  options = list(
-    dom = "Bfrtip", 
-    buttons = c("copy", "csv", "excel"),
-    pageLength = 15,
-    scrollX = TRUE
-    )
-)
-```
 
 
 ### Proportion of Active ES Sites with Monthly Collections
 
-**Period:** `r es_prop_active_sites_collections$metadata$current_period_label`  
+**Period of focus:** `r es_prop_active_sites_collections$metadata$current_period_label`  
 **Threshold:** `r es_prop_active_sites_collections$metadata$threshold_rule`
 
 ```{r es-prop-active-collections-table}
@@ -397,11 +335,10 @@ datatable(
 
 ```
 
-
 ### Number of Active ES Sites
 
-**Period:** `r es_active_sites$metadata$current_period_label`  
-**Compared to:** `r es_active_sites$metadata$prior_period_label`  
+**Period of focus:** `r es_active_sites$metadata$current_period_label`  
+**Comparison period:** `r es_active_sites$metadata$prior_period_label`  
 **Threshold:** `r es_active_sites$metadata$threshold_rule`
 
 ```{r es-active-sites-table}
@@ -422,16 +359,79 @@ datatable(
 
 ```
 
+### Timeliness of ES Shipment
+
+**Period of focus:** `r es_timely_shipment$metadata$current_period_label`  
+**Comparison period:** `r es_timely_shipment$metadata$prior_period_label`  
+**Threshold:** `r es_timely_shipment$metadata$threshold_rule`
+
+```{r es-shipment-table}
+  es_timely_shipment$data |>
+    dplyr::arrange(country, lubridate::my(month_label)) |>
+    dplyr::rename(
+      Country = country,
+      Region = whoregion,
+      `SG Priority Level` = sg_priority_level,
+      Month = month_label,
+      `Lab Type` = es.lab.type,
+      `Current #` = current_count,
+      `Current Median (days)` = current_median_days,
+      `Prior #` = prior_count,
+      `Prior Median (days)` = prior_median_days,
+      `% Change` = perc_change,
+      Flag = flag
+    ) |>
+  make_sortable_month_col()
+  
+```
+
+### Timeliness of ES WPV/VDPV Notification
+
+**Period of focus:** `r es_wpv_vdpv_timeliness$metadata$recent_period_label`  
+**Comparison period:** `r es_wpv_vdpv_timeliness$metadata$recent_prior_period_label`  
+**Threshold:** `r es_wpv_vdpv_timeliness$metadata$threshold_rule`
+
+```{r es-wpv-vdpv-table}
+datatable(
+  es_wpv_vdpv_timeliness$data |>
+    dplyr::arrange(country, current_period) |>
+    dplyr::rename(
+      Country = country,
+      Region = whoregion,
+      `SG Priority Level` = sg_priority_level,
+      Window = window,
+      `Current Period` = current_period,
+      `Prior Period` = prior_period,
+      `Lab Type` = es.lab.type,
+      `Current #` = current_count,
+      `Current Median (days)` = current_median_days,
+      `Prior #` = prior_count,
+      `Prior Median (days)` = prior_median_days,
+      `% Change` = perc_change,
+      Flag = flag
+    ),
+  rownames=FALSE,
+  filter = "top", 
+  extensions = "Buttons",
+  options = list(
+    dom = "Bfrtip", 
+    buttons = c("copy", "csv", "excel"),
+    pageLength = 15,
+    scrollX = TRUE
+    )
+)
+```
+
 :::
 
-## Lab Indicators
+## Lab Monitoring Flags
 
 ::: panel-tabset
 
 ### Timeliness of Virus Isolation
 
-**Period:** `r lab_virus_isolation_timeliness$metadata$current_period_label`  
-**Compared to:** `r lab_virus_isolation_timeliness$metadata$prior_period_label`  
+**Period of focus:** `r lab_virus_isolation_timeliness$metadata$current_period_label`  
+**Comparison period:** `r lab_virus_isolation_timeliness$metadata$prior_period_label`  
 **Threshold:** `r lab_virus_isolation_timeliness$metadata$threshold_rule`
 
 > **Note:** `r lab_virus_isolation_timeliness$metadata$eligibility_note`
@@ -443,10 +443,10 @@ datatable(
     dplyr::rename(
       `Culture/ITD Lab`      = culture.itd.lab,
       Month                  = month_label,
-      `Current N`            = current_n,
-      `Current Median (d)`   = current_median_days,
-      `Prior 3yr N`          = prior_3yr_n,
-      `Prior 3yr Median (d)` = prior_3yr_median_days,
+      `Current #`            = current_n,
+      `Current Median (days)`   = current_median_days,
+      `Prior 3yr #`          = prior_3yr_n,
+      `Prior 3yr Median (days)` = prior_3yr_median_days,
       `Yrs w/ Data`          = prior_yrs_w_data,
       `% Change`             = perc_change,
       Flag                   = flag
@@ -457,10 +457,10 @@ datatable(
 
 ### Timeliness of ITD results
 
-**Recent period:** `r lab_virus_ITD_results_timeliness$metadata$recent_period_label`  
-**Compared to:** `r lab_virus_ITD_results_timeliness$metadata$recent_prior_period_label`  
-**Earlier period:** `r lab_virus_ITD_results_timeliness$metadata$earlier_period_label`  
-**Compared to:** `r lab_virus_ITD_results_timeliness$metadata$earlier_prior_period_label`  
+**Period of focus:** `r lab_virus_ITD_results_timeliness$metadata$recent_period_label`  
+**Comparison period:** `r lab_virus_ITD_results_timeliness$metadata$recent_prior_period_label`  
+**Earlier period of focus (for context):** `r lab_virus_ITD_results_timeliness$metadata$earlier_period_label`  
+**Earlier comparison period (for context):** `r lab_virus_ITD_results_timeliness$metadata$earlier_prior_period_label`  
 **Threshold:** `r lab_virus_ITD_results_timeliness$metadata$threshold_rule`
 
 > **Note:** `r lab_virus_ITD_results_timeliness$metadata$eligibility_note`
@@ -474,10 +474,10 @@ datatable(
       Window = window,
       `Current Period` = current_period,
       `Prior Period` = prior_period,
-      `Current N` = current_n,
-      `Current Median (d)` = current_median_days,
-      `Prior N` = prior_n,
-      `Prior Median (d)` = prior_median_days,
+      `Current #` = current_n,
+      `Current Median (days)` = current_median_days,
+      `Prior #` = prior_n,
+      `Prior Median (days)` = prior_median_days,
       `% Change` = perc_change,
       Flag = flag
     ),
@@ -496,10 +496,10 @@ datatable(
 
 ### Timeliness of Shipment for Sequencing
 
-**Recent period:** `r lab_sequencing_shipment_timeliness$metadata$recent_period_label`  
-**Compared to:** `r lab_sequencing_shipment_timeliness$metadata$recent_prior_period_label`  
-**Earlier period:** `r lab_sequencing_shipment_timeliness$metadata$earlier_period_label`  
-**Compared to:** `r lab_sequencing_shipment_timeliness$metadata$earlier_prior_period_label`  
+**Period of focus:** `r lab_sequencing_shipment_timeliness$metadata$recent_period_label`  
+**Comparison period:** `r lab_sequencing_shipment_timeliness$metadata$recent_prior_period_label`  
+**Earlier period of focus (for context):** `r lab_sequencing_shipment_timeliness$metadata$earlier_period_label`  
+**Earlier comparison period (for context):** `r lab_sequencing_shipment_timeliness$metadata$earlier_prior_period_label`  
 **Threshold:** `r lab_sequencing_shipment_timeliness$metadata$threshold_rule`
 
 > **Note:** `r lab_sequencing_shipment_timeliness$metadata$eligibility_note`
@@ -513,10 +513,10 @@ datatable(
       Window                  = window,
       `Current Period` = current_period,
       `Prior Period` = prior_period,
-      `Current N` = current_n,
-      `Current Median (d)` = current_median_days,
-      `Prior N` = prior_n,
-      `Prior Median (d)` = prior_median_days,
+      `Current #` = current_n,
+      `Current Median (days)` = current_median_days,
+      `Prior #` = prior_n,
+      `Prior Median (days)` = prior_median_days,
       `% Change` = perc_change,
       Flag = flag
     ),
@@ -534,8 +534,8 @@ datatable(
 
 ### Lab Workload
 
-**Period:** `r lab_workload$metadata$current_period_label`  
-**Compared to:** `r lab_workload$metadata$prior_period_label`  
+**Period of focus:** `r lab_workload$metadata$current_period_label`  
+**Comparison period:** `r lab_workload$metadata$prior_period_label`  
 **Threshold:** `r lab_workload$metadata$threshold_rule`
 
 > **Note:** `r lab_workload$metadata$eligibility_note`
@@ -547,8 +547,8 @@ datatable(
     dplyr::rename(
       `Culture/ITD Lab`      = culture.itd.lab,
       Month                  = month_label,
-      `Current N`            = current_n,
-      `Prior 3yr Median (d)` = prior_3yr_median,
+      `Current #`            = current_n,
+      `Prior 3yr Median (days)` = prior_3yr_median,
       `Yrs w/ Data`          = prior_yrs_w_data,
       `% Change`             = perc_change,
       Flag                   = flag
@@ -560,10 +560,10 @@ datatable(
 
 ### Timeliness of Sequencing Results
 
-**Recent period:** `r lab_sequencing_timeliness$metadata$recent_period_label`  
-**Compared to:** `r lab_sequencing_timeliness$metadata$recent_prior_period_label`  
-**Earlier period:** `r lab_sequencing_timeliness$metadata$earlier_period_label`  
-**Compared to:** `r lab_sequencing_timeliness$metadata$earlier_prior_period_label`  
+**Period of focus:** `r lab_sequencing_timeliness$metadata$recent_period_label`  
+**Comparison period:** `r lab_sequencing_timeliness$metadata$recent_prior_period_label`  
+**Earlier period of focus (for context):** `r lab_sequencing_timeliness$metadata$earlier_period_label`  
+**Earlier comparison period (for context):** `r lab_sequencing_timeliness$metadata$earlier_prior_period_label`  
 **Threshold:** `r lab_sequencing_timeliness$metadata$threshold_rule`
 
 > **Note:** `r lab_sequencing_timeliness$metadata$eligibility_note`
@@ -577,10 +577,10 @@ datatable(
       Window                  = window,
       `Current Period` = current_period,
       `Prior Period` = prior_period,
-      `Current N` = current_n,
-      `Current Median (d)` = current_median_days,
-      `Prior N` = prior_n,
-      `Prior Median (d)` = prior_median_days,
+      `Current #` = current_n,
+      `Current Median (days)` = current_median_days,
+      `Prior #` = prior_n,
+      `Prior Median (days)` = prior_median_days,
       `% Change` = perc_change,
       Flag = flag
     ),
