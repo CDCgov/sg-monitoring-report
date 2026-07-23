@@ -88,10 +88,20 @@ make_sortable_month_col <- function(data,
 
 ## Overview
 
+::: panel-tabset
+
+### Summary
+
 End date: **`r format(end_date, "%B %d, %Y")`**
 
 The objective of the monthly SG Monitoring Report is as an early warning for potential disruption in the surveillance system.  
 Monitoring Flags are presented at the country level across AFP, ES, and Lab. 
+
+### Summary Tables - Region
+
+### Summary Tables- Country
+
+:::
 
 
 ## AFP Monitoring Flags
@@ -127,7 +137,7 @@ afp_cases_reported$data |>
 
 **Period of focus:** `r afp_prop_60$metadata$recent_period_label`  
 **Earlier period (for context):** `r afp_prop_60$metadata$earlier_period_label`  
-**Eligibility:** `r afp_prop_60$metadata$eligibility_note`
+**Eligibility:** `r afp_prop_60$metadata$eligibility_note`  
 **Threshold:** `r afp_prop_60$metadata$threshold_rule`
 
 ```{r prop-60-table}
