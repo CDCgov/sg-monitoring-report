@@ -59,7 +59,7 @@ build_negative_samples_timeliness_indicator <- function(lab_data, end_date = Sys
 
   # Ensure end_date is a date type
   end_date <- lubridate::as_date(end_date)
-  analysis_end <- lubridate::floor_date(end_date,  unit = "month") %m-% days(1)
+  analysis_end <- end_date
   window_start <- lubridate::floor_date(analysis_end %m-% months(5), unit = "month")
 
   current_months <- seq(window_start, analysis_end, by = "month")
@@ -83,8 +83,8 @@ build_negative_samples_timeliness_indicator <- function(lab_data, end_date = Sys
 
   eligibility_note <- paste0(
     "Lab data end date: ", format(end_date, "%b %d, %Y"), ". ",
-    "Analysis window is derived from last complete month prior to lab data end date. ",
-    "Lab data may lag behind end date used for AFP indicators."
+    "Analysis window ends on the supplied end_date. ",
+    "Callers should pass the desired analysis end date."
   )
 
 
