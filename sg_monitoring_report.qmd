@@ -30,7 +30,7 @@ library(cowplot)
 end_date <- lubridate::ceiling_date(Sys.Date() %m-% months(1), unit = "month") %m-% days(1)
 
 # Get report data from existing tables or by sourcing generate_data_for_report.R
-use_existing_data <- TRUE  # set TRUE to skip data reload during QMD development
+use_existing_data <- FALSE  # set TRUE to skip data reload during QMD development
 
 if (use_existing_data) {
   load("datatables/datatables.rda")
