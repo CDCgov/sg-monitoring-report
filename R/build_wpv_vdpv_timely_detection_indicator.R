@@ -61,7 +61,7 @@ build_wpv_vdpv_timeliness_indicator <- function(pos, end_date = Sys.Date()) {
   end_date <- lubridate::as_date(end_date)
 
   # Recent 3-month window — last complete month
-  recent_end <- lubridate::floor_date(end_date, unit = "month") %m-% days(1)
+  recent_end <- end_date # use supplied end_date as the analysis end
   recent_start <- lubridate::floor_date(recent_end %m-% months(2), unit = "month")
 
   # Recent 3-month window - one year prior for comparison

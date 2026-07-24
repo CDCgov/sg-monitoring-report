@@ -54,7 +54,7 @@ build_timely_stool_shipment_indicator <- function(lab_data, end_date = Sys.Date(
 
   # Date Windows -----
   end_date <- lubridate::as_date(end_date)
-  analysis_end <- lubridate::floor_date(end_date, unit = "month") %m-% days(1)
+  analysis_end <- end_date
   window_start <- lubridate::floor_date(analysis_end %m-% months(5), unit = "month")
 
   current_months <- seq(window_start, analysis_end, by = "month")
