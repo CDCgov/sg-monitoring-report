@@ -202,7 +202,7 @@ build_number_of_active_ES_sites <- function(es_data, end_date = Sys.Date()) {
     threshold_rule = "+/-50% of the same-month active-site count from the prior year",
     definition = "Number of active ES sites defined as sites with at least 5 collections over the past 12-month rolling period.",
     possible_statuses = c("Within Target", "Below Target", "Above Target",
-                          "No Current Active ES", "Review")
+                          "No Current Active ES")
   )
 
   return(list(
