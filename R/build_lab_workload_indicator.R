@@ -54,7 +54,7 @@ build_lab_workload_indicator <- function(lab_data, end_date = Sys.Date()) {
   # Date Windows -----
   # Ensure end_date is a date type
   end_date <- lubridate::as_date(end_date)
-  analysis_end <- lubridate::floor_date(end_date, unit = "month") %m-% days(1)
+  analysis_end <- end_date
   window_start <- lubridate::floor_date(analysis_end %m-% months(5), unit = "month")
 
   current_months <- seq(window_start, analysis_end, by = "month")
@@ -83,7 +83,7 @@ build_lab_workload_indicator <- function(lab_data, end_date = Sys.Date()) {
   eligibility_note <- paste0(
     "Lab data end date: ", format(end_date, "%b %d, %Y"), ", based on the ",
     "latest date in POLIS for date stool was received in lab (DateStoolReceivedinLab). ",
-    "Analysis window is derived from the last complete month prior to the analysis end date. ",
+    "Analysis window ends on the supplied end_date. ",
     "Samples are counted by DateStoolReceivedinLab."
   )
 

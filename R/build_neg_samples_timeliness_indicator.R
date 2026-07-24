@@ -16,8 +16,8 @@
 #'   \code{CaseDate}, \code{country},
 #'   \code{culture.itd.cat}, \code{DateStoolCollected},
 #'   \code{DateFinalCellCultureResult}, and \code{FinalCellCultureResult}.
-#' @param end_date The maximum date available in the lab dataset. Typically
-#'   passed as \code{max(lab_data$CaseDate, na.rm = TRUE)}.
+#' @param end_date The analysis end date. Typically passed as the last day of
+#'   the month containing the maximum \code{CaseDate}.
 #'   Defaults to \code{Sys.Date()}.
 #'
 #' @return A named list with two elements:

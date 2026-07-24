@@ -13,8 +13,8 @@
 #' @param lab_data A data frame containing lab data. Must include
 #'   \code{CaseDate}, \code{country}, \code{culture.itd.cat},
 #'   \code{DateStoolCollected}, and \code{DateStoolReceivedinLab}.
-#' @param end_date The maximum date available in the lab dataset. Typically
-#'   passed as \code{max(lab_data$CaseDate, na.rm = TRUE)}.
+#' @param end_date The analysis end date. Typically passed as the last day of
+#'   the month containing the maximum \code{CaseDate}.
 #'   Defaults to \code{Sys.Date()}.
 #'
 #' @return A named list with two elements:
@@ -74,8 +74,8 @@ build_timely_stool_shipment_indicator <- function(lab_data, end_date = Sys.Date(
 
   eligibility_note <- paste0(
     "Lab data end date: ", format(end_date, "%b %d, %Y"), ". ",
-    "Analysis window is derived from the last complete month prior to lab data end date. ",
-    "Lab data may lag behind end date used for AFP indicators."
+    "Analysis window ends on the supplied end_date. ",
+    "Callers should pass the desired analysis end date."
   )
 
   # Prepare Data -----
