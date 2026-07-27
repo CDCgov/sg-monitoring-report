@@ -82,9 +82,9 @@ build_lab_workload_indicator <- function(lab_data, end_date = Sys.Date()) {
 
   eligibility_note <- paste0(
     "Lab data end date: ", format(end_date, "%b %d, %Y"), ", based on the ",
-    "latest date in POLIS for date stool was received in lab (DateStoolReceivedinLab). ",
-    "Analysis window ends on the supplied end_date. ",
-    "Samples are counted by DateStoolReceivedinLab."
+    "last day of the month of the maximum date in the lab data for Case date. ",
+    "Data may be incomplete for the latest month. ",
+    "Samples are assigned to months based on DateStoolReceivedinLab."
   )
 
   # Prepare Data -----

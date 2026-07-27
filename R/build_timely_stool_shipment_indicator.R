@@ -73,9 +73,10 @@ build_timely_stool_shipment_indicator <- function(lab_data, end_date = Sys.Date(
                                format(analysis_end %m-% lubridate::years(1), "%b %Y"))
 
   eligibility_note <- paste0(
-    "Lab data end date: ", format(end_date, "%b %d, %Y"), ". ",
-    "Analysis window ends on the supplied end_date. ",
-    "Callers should pass the desired analysis end date."
+    "Lab data end date is: ", format(end_date, "%b %d, %Y"), ", based on the ",
+    "last day of the month of the maximum date in the lab data for Case date. ",
+    "Data may be incomplete for the latest month. ",
+    "Samples are assigned to months by CaseDate."
   )
 
   # Prepare Data -----

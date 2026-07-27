@@ -109,8 +109,8 @@ build_timeliness_of_shipment_for_sequencing_indicator <- function(lab_data,
 
   eligibility_note <- paste0(
     "Lab data end date: ", format(end_date, "%b %d, %Y"), ", based on the ",
-    "latest date in POLIS for date Isolate received for sequencing (DateIsolateRcvdForSeq.). ",
-    "Analysis windows end on the supplied end_date. ",
+    "last day of the month of the maximum date in the lab data for Case date. ",
+    "Data may be incomplete for the latest month. ",
     "Samples are assigned to windows by DateIsolateRcvdForSeq."
   )
 

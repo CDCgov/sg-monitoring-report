@@ -83,8 +83,9 @@ build_negative_samples_timeliness_indicator <- function(lab_data, end_date = Sys
 
   eligibility_note <- paste0(
     "Lab data end date: ", format(end_date, "%b %d, %Y"), ". ",
-    "Analysis window ends on the supplied end_date. ",
-    "Callers should pass the desired analysis end date."
+    "last day of the month of the maximum date in the lab data for Case date. ",
+    "Data may be incomplete for the latest month. ",
+    "Samples are assigned to months by CaseDate."
   )
 
 

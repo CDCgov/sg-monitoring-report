@@ -23,8 +23,8 @@ raw_data   <- get_all_polio_data(attach.spatial.data = FALSE)
 
 # Load and clean Lab data ----
 sirfunctions_io("read", file_loc = get_constant("CLEANED_LAB_DATA"))
-lab_data <- clean_lab_data(lab_data, "2019-01-01", end_date, afp_data = raw_data$afp)
 max_lab_date <- max(lab_data$CaseDate, na.rm = TRUE)
+lab_data <- clean_lab_data(lab_data, "2019-01-01", max_lab_date, afp_data = raw_data$afp)
 
 # Manual country name fix ----
 raw_data_df_names <- c("afp", "afp.epi", "para.case", "es", "pos", "other", "sia")
@@ -72,8 +72,8 @@ afp_prop_60 <- build_prop_60_day_follow_up_indicator(raw_data$afp)
 afp_prop_inad_classified <- build_prop_inadequate_classified(raw_data$afp, end_date)
 afp_prop_lab_pending <- build_prop_lab_pending(raw_data$afp, end_date)
 afp_wpv_vdpv_timeliness <- build_wpv_vdpv_timeliness_indicator(raw_data$pos, end_date)
-afp_neg_samples <- build_negative_samples_timeliness_indicator(lab_data, get_month_end_from_max(lab_data$CaseDate))
-afp_timely_stool <- build_timely_stool_shipment_indicator(lab_data, get_month_end_from_max(lab_data$CaseDate))
+afp_neg_samples <- build_negative_samples_timeliness_indicator(lab_data, get_month_end_from_max(max_lab_date))
+afp_timely_stool <- build_timely_stool_shipment_indicator(lab_data, get_month_end_from_max(max_lab_date))
 
 # Add risk category
 afp_cases_reported$data <- add_risk(afp_cases_reported$data, "place.admin.0")
@@ -100,11 +100,11 @@ es_prop_active_sites_collections$data <- add_risk(es_prop_active_sites_collectio
 
 
 # Lab Indicators ----
-lab_virus_isolation_timeliness <- build_timeliness_virus_isolation_indicator(lab_data, get_month_end_from_max(lab_data$DateFinalCellCultureResult))
-lab_virus_ITD_results_timeliness <- build_timeliness_of_ITD_results_indicator(lab_data, get_month_end_from_max(lab_data$DateFinalrRTPCRResults))
-lab_sequencing_shipment_timeliness <- build_timeliness_of_shipment_for_sequencing_indicator(lab_data, get_month_end_from_max(lab_data$DateIsolateRcvdForSeq))
-lab_workload <- build_lab_workload_indicator(lab_data, get_month_end_from_max(lab_data$DateStoolReceivedinLab))
-lab_sequencing_timeliness <- build_timeliness_of_sequencing_results_indicator(lab_data, get_month_end_from_max(lab_data$DateofSequencing))
+lab_virus_isolation_timeliness <- build_timeliness_virus_isolation_indicator(lab_data, get_month_end_from_max(max_lab_date))
+lab_virus_ITD_results_timeliness <- build_timeliness_of_ITD_results_indicator(lab_data, get_month_end_from_max(max_lab_date))
+lab_sequencing_shipment_timeliness <- build_timeliness_of_shipment_for_sequencing_indicator(lab_data, get_month_end_from_max(max_lab_date))
+lab_workload <- build_lab_workload_indicator(lab_data, get_month_end_from_max(max_lab_date))
+lab_sequencing_timeliness <- build_timeliness_of_sequencing_results_indicator(lab_data, get_month_end_from_max(max_lab_date))
 
 
 

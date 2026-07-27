@@ -103,8 +103,8 @@ build_timeliness_of_ITD_results_indicator <- function(lab_data, end_date = Sys.D
 
   eligibility_note <- paste0(
     "Lab data end date: ", format(end_date, "%b %d, %Y"), ", based on the ",
-    "latest date in POLIS for date of final RTPCR results (DateFinalrRTPCRResults). ",
-    "Analysis windows end on the supplied end_date. ",
+    "last day of the month of the maximum date in the lab data for Case date. ",
+    "Data may be incomplete for the latest month. ",
     "Samples are assigned to windows by DateFinalrRTPCRResults."
   )
 

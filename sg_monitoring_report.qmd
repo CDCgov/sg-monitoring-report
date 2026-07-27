@@ -27,7 +27,7 @@ library(crosstalk)
 library(cowplot)
 
 # Set end date for report
-end_date <- lubridate::ceiling_date(Sys.Date() %m-% months(1), unit = "month") %m-% days(1)
+end_date <- lubridate::ceiling_date(Sys.Date() %m-% months(2), unit = "month") %m-% days(1)
 
 # Get report data from existing tables or by sourcing generate_data_for_report.R
 use_existing_data <- FALSE  # set TRUE to skip data reload during QMD development
@@ -270,6 +270,9 @@ datatable(
 **Comparison period:** `r afp_neg_samples$metadata$prior_period_label`  
 **Threshold:** `r afp_neg_samples$metadata$threshold_rule`
 
+> **Note:** `r afp_neg_samples$metadata$eligibility_note`
+
+
 ```{r neg-samples-table}
 
  afp_neg_samples$data |>
@@ -294,6 +297,9 @@ datatable(
 **Period of focus:** `r afp_timely_stool$metadata$current_period_label`  
 **Comparison period:** `r afp_timely_stool$metadata$prior_period_label`  
 **Threshold:** `r afp_timely_stool$metadata$threshold_rule`
+
+> **Note:** `r afp_timely_stool$metadata$eligibility_note`
+
 
 ```{r stool-shipment-table}
 afp_timely_stool$data |>
