@@ -63,8 +63,8 @@ build_timeliness_virus_isolation_indicator <- function(lab_data, end_date = Sys.
   # Ensure end_date is a date type
   end_date <- lubridate::as_date(end_date)
 
-  # Lab data end date may fall mid-month — step back to last fully completed month
-  analysis_end <- lubridate::floor_date(end_date, unit = "month") %m-% days(1)
+  # Analysis window ends on the supplied end_date
+  analysis_end <- end_date
   window_start <- lubridate::floor_date(analysis_end %m-% months(5), unit = "month")
 
   current_months <- seq(window_start, analysis_end, by = "month")
@@ -97,8 +97,8 @@ build_timeliness_virus_isolation_indicator <- function(lab_data, end_date = Sys.
 
   eligibility_note <- paste0(
     "Lab data end date is: ", format(end_date, "%b %d, %Y"), ", based on the ",
-    "latest date in POLIS for date of final cell culture result (DateFinalCellCultureResult). ",
-    "Analysis window is derived from the last complete month prior to lab data end date. ",
+    "last day of the month of the maximum date in the lab data for Case date. ",
+    "Data may be incomplete for the latest month. ",
     "Samples are assigned to months by DateFinalCellCultureResult."
   )
 

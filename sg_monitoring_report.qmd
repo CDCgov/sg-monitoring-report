@@ -270,6 +270,9 @@ datatable(
 **Comparison period:** `r afp_neg_samples$metadata$prior_period_label`  
 **Threshold:** `r afp_neg_samples$metadata$threshold_rule`
 
+> **Note:** `r afp_neg_samples$metadata$eligibility_note`
+
+
 ```{r neg-samples-table}
 
  afp_neg_samples$data |>
@@ -294,6 +297,9 @@ datatable(
 **Period of focus:** `r afp_timely_stool$metadata$current_period_label`  
 **Comparison period:** `r afp_timely_stool$metadata$prior_period_label`  
 **Threshold:** `r afp_timely_stool$metadata$threshold_rule`
+
+> **Note:** `r afp_timely_stool$metadata$eligibility_note`
+
 
 ```{r stool-shipment-table}
 afp_timely_stool$data |>

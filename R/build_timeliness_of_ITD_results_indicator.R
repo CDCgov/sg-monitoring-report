@@ -63,8 +63,8 @@ build_timeliness_of_ITD_results_indicator <- function(lab_data, end_date = Sys.D
   # Date Windows -----
   end_date <- lubridate::as_date(end_date)
 
-  # Recent 3-month window - last complete month
-  recent_end <- lubridate::floor_date(end_date, unit = "month") %m-% lubridate::days(1)
+  # Recent 3-month window ending on the supplied end_date
+  recent_end <- end_date
   recent_start <- lubridate::floor_date(recent_end %m-% months(2), unit = "month")
 
   # Recent 3-month window - one year prior for comparison
@@ -103,8 +103,8 @@ build_timeliness_of_ITD_results_indicator <- function(lab_data, end_date = Sys.D
 
   eligibility_note <- paste0(
     "Lab data end date: ", format(end_date, "%b %d, %Y"), ", based on the ",
-    "latest date in POLIS for date of final RTPCR results (DateFinalrRTPCRResults). ",
-    "Analysis windows are derived from the last complete month prior to lab data end date. ",
+    "last day of the month of the maximum date in the lab data for Case date. ",
+    "Data may be incomplete for the latest month. ",
     "Samples are assigned to windows by DateFinalrRTPCRResults."
   )
 

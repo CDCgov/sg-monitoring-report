@@ -16,8 +16,8 @@
 #'   \code{CaseDate}, \code{country},
 #'   \code{culture.itd.cat}, \code{DateStoolCollected},
 #'   \code{DateFinalCellCultureResult}, and \code{FinalCellCultureResult}.
-#' @param end_date The maximum date available in the lab dataset. Typically
-#'   passed as \code{max(lab_data$CaseDate, na.rm = TRUE)}.
+#' @param end_date The analysis end date. Typically passed as the last day of
+#'   the month containing the maximum \code{CaseDate}.
 #'   Defaults to \code{Sys.Date()}.
 #'
 #' @return A named list with two elements:
@@ -83,8 +83,9 @@ build_negative_samples_timeliness_indicator <- function(lab_data, end_date = Sys
 
   eligibility_note <- paste0(
     "Lab data end date: ", format(end_date, "%b %d, %Y"), ". ",
-    "Analysis window ends on the supplied end_date. ",
-    "Callers should pass the desired analysis end date."
+    "last day of the month of the maximum date in the lab data for Case date. ",
+    "Data may be incomplete for the latest month. ",
+    "Samples are assigned to months by CaseDate."
   )
 
 
