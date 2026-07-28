@@ -26,6 +26,11 @@ sirfunctions_io("read", file_loc = get_constant("CLEANED_LAB_DATA"))
 max_lab_date <- max(lab_data$CaseDate, na.rm = TRUE)
 lab_data <- clean_lab_data(lab_data, "2019-01-01", max_lab_date, afp_data = raw_data$afp)
 
+lab_data <- lab_data |>
+  #need to standardize how South Africa is referred to in the culture lab column. this will eventually need to be fixed in the lab locs file...
+  dplyr::mutate(culture.itd.lab = dplyr::case_when(culture.itd.lab == "South Africa" ~ "NICD-South Africa",
+                                   TRUE ~ culture.itd.lab))
+
 # Manual country name fix ----
 raw_data_df_names <- c("afp", "afp.epi", "para.case", "es", "pos", "other", "sia")
 for (i in raw_data_df_names) {
