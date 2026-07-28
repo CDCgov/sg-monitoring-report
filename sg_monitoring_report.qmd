@@ -110,11 +110,9 @@ Monitoring Flags are presented at the country level across AFP, ES, and Lab.
 
 ### Number of AFP Cases Reported
 
-**Definition:**  
 **Period of focus:** `r afp_cases_reported$metadata$current_period_label`  
 **Comparison periods:** `r afp_cases_reported$metadata$prior_period_label`  
 **Threshold for above or below target:** `r afp_cases_reported$metadata$threshold_rule`  
-**Interpretation:**
 
 ```{r afp-cases-table}
 afp_cases_reported$data |>
@@ -320,6 +318,33 @@ afp_timely_stool$data |>
   make_sortable_month_col()
 
 ```
+
+
+### Number of Inadequate Cases
+
+**Definition:**  `r afp_inadequate_cases$metadata$definition`
+**Period of focus:** `r afp_inadequate_cases$metadata$current_period_label`  
+**Comparison periods:** `r afp_inadequate_cases$metadata$prior_period_label`  
+**Threshold for above or below target:** `r afp_inadequate_cases$metadata$threshold_rule`  
+
+```{r inadequate-cases-table}
+afp_inadequate_cases$data |>
+    dplyr::arrange(place.admin.0, lubridate::my(month_label)) |>
+    dplyr::rename(
+      Country = place.admin.0,
+      Region = whoregion,
+      `SG Priority Level` = sg_priority_level,
+      Month = month_label,
+      Cases = current_period_counts,
+      `3yr Median` = prior_3yr_median,
+      `Yrs w/ Data` = prior_yrs_w_data,
+      `Percent Change` = perc_change,
+      Flag = flag
+    ) |>
+  make_sortable_month_col()
+
+```
+
 
 :::
 

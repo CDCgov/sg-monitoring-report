@@ -165,6 +165,7 @@ afp_prop_lab_pending <- build_prop_lab_pending(raw_data$afp, end_date)
 afp_wpv_vdpv_timeliness <- build_wpv_vdpv_timeliness_indicator(raw_data$pos, end_date)
 afp_neg_samples <- build_negative_samples_timeliness_indicator(lab_data, get_month_end_from_max(max_lab_date))
 afp_timely_stool <- build_timely_stool_shipment_indicator(lab_data, get_month_end_from_max(max_lab_date))
+afp_inadequate_cases <-build_number_of_inadequate_cases(raw_data$afp, end_date)
 
 # Add risk category
 afp_cases_reported$data <- add_risk(afp_cases_reported$data, "place.admin.0")
@@ -174,6 +175,7 @@ afp_prop_lab_pending$data <- add_risk(afp_prop_lab_pending$data, "ctry")
 afp_wpv_vdpv_timeliness$data <- add_risk(afp_wpv_vdpv_timeliness$data, "ctry")
 afp_neg_samples$data <- add_risk(afp_neg_samples$data, "country")
 afp_timely_stool$data <- add_risk(afp_timely_stool$data, "country")
+afp_inadequate_cases$data <-add_risk(afp_inadequate_cases$data, "place.admin.0")
 
 
 # ES Indicators ----
@@ -214,8 +216,8 @@ if(!dir.exists("datatables")){
   dir.create("datatables")
 }
 save(end_date, max_lab_date, afp_cases_reported, afp_prop_60, afp_prop_inad_classified,
-     afp_prop_lab_pending, afp_wpv_vdpv_timeliness, afp_neg_samples,
-     afp_timely_stool, es_active_sites, es_timely_shipment, es_wpv_vdpv_timeliness,
+     afp_prop_lab_pending, afp_wpv_vdpv_timeliness, afp_neg_samples, afp_timely_stool,
+     afp_inadequate_cases, es_active_sites, es_timely_shipment, es_wpv_vdpv_timeliness,
      es_prop_active_sites_collections, lab_virus_isolation_timeliness,
      lab_virus_ITD_results_timeliness, lab_sequencing_shipment_timeliness,
      lab_workload, lab_sequencing_timeliness,
