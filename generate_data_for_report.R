@@ -26,6 +26,11 @@ sirfunctions_io("read", file_loc = get_constant("CLEANED_LAB_DATA"))
 max_lab_date <- max(lab_data$CaseDate, na.rm = TRUE)
 lab_data <- clean_lab_data(lab_data, "2019-01-01", max_lab_date, afp_data = raw_data$afp)
 
+lab_data <- lab_data |>
+  #need to standardize how South Africa is referred to in the culture lab column. this will eventually need to be fixed in the lab locs file...
+  dplyr::mutate(culture.itd.lab = dplyr::case_when(culture.itd.lab == "South Africa" ~ "NICD-South Africa",
+                                   TRUE ~ culture.itd.lab))
+
 # Manual country name fix ----
 raw_data_df_names <- c("afp", "afp.epi", "para.case", "es", "pos", "other", "sia")
 for (i in raw_data_df_names) {
@@ -59,6 +64,92 @@ get_month_end_from_max <- function(date_var) {
                           length.out = 2)[2]
 
   next_month_start - 1
+}
+
+# Helper function: add WHO region based on physical culture/ITD lab location ----
+add_culture_itd_lab_who_region <- function(data) {
+  stopifnot(
+    "data must be a data frame" = is.data.frame(data),
+    "culture.itd.lab column required" = "culture.itd.lab" %in% names(data)
+  )
+
+  # Update this lookup if culture.itd.lab names change in lab_locs.
+  culture_itd_lab_regions <- tibble::tribble(
+    ~culture.itd.lab,             ~whoregion,
+    "Pakistan",                   "EMRO",
+    "Algeria",                    "AFRO",
+    "NICD-South Africa",          "AFRO",
+    "Unknown",                    NA_character_,
+    "Oman",                       "EMRO",
+    "Noguchi-Ghana",              "AFRO",
+    "Cote d'Ivoire",              "AFRO",
+    "UVRI-Uganda",                "AFRO",
+    "Cameroon",                   "AFRO",
+    "Central African Republic",   "AFRO",
+    "DRC",                        "AFRO",
+    "KEMRI-Kenya",                "AFRO",
+    "Egypt",                      "EMRO",
+    "Ethiopia",                   "AFRO",
+    "Senegal",                    "AFRO",
+    "Iran",                       "EMRO",
+    "Iraq",                       "EMRO",
+    "Israel",                     "EURO",
+    "Jordan",                     "EMRO",
+    "Kuwait",                     "EMRO",
+    "Jordan/Syria",               "EMRO",
+    "Tunisia",                    "EMRO",
+    "Madagascar",                 "AFRO",
+    "Morocco",                    "EMRO",
+    "Nigeria",                    "AFRO",
+    "Saudi Arabia",               "EMRO",
+    "South Africa",               "AFRO",
+    "Egypt/Sudan",                "EMRO",
+    "Syria",                      "EMRO",
+    "Oman/Jordan",                "EMRO",
+    "Zambia",                     "AFRO",
+    "Zimbabwe",                   "AFRO"
+  )
+
+  data |>
+    dplyr::select(-dplyr::any_of("whoregion")) |>
+    dplyr::mutate(culture.itd.lab = trimws(as.character(culture.itd.lab))) |>
+    dplyr::left_join(culture_itd_lab_regions, by = "culture.itd.lab") |>
+    dplyr::relocate(whoregion, .after = culture.itd.lab)
+}
+
+# Helper function: add WHO region based on physical sequencing lab location ----
+add_seq_lab_who_region <- function(data) {
+  stopifnot(
+    "data must be a data frame" = is.data.frame(data),
+    "seq.lab column required" = "seq.lab" %in% names(data)
+  )
+
+  # Update this lookup if seq.lab names change in lab_locs.
+  seq_lab_regions <- tibble::tribble(
+    ~seq.lab,                  ~whoregion,
+    "Pakistan",                "EMRO",
+    "Pasteur Institute-Paris", "EURO",
+    "NICD-South Africa",       "AFRO",
+    "Unknown",                 NA_character_,
+    "CDC-Atlanta",             "PAHO",
+    "Noguchi-Ghana",           "AFRO",
+    "UVRI-Uganda",             "AFRO",
+    "Egypt",                   "EMRO",
+    "Iran",                    "EMRO",
+    "Israel",                  "EURO",
+    "Egypt/CDC-Atlanta",       "EMRO",
+    "Tunisia",                 "EMRO",
+    "Ibadan-Nigeria",          "AFRO",
+    "Jordan",                  "EMRO",
+    "Oman",                    "EMRO",
+    "Oman/Egypt",              "EMRO"
+  )
+
+  data |>
+    dplyr::select(-dplyr::any_of("whoregion")) |>
+    dplyr::mutate(seq.lab = trimws(as.character(seq.lab))) |>
+    dplyr::left_join(seq_lab_regions, by = "seq.lab") |>
+    dplyr::relocate(whoregion, .after = seq.lab)
 }
 
 
@@ -105,6 +196,13 @@ lab_virus_ITD_results_timeliness <- build_timeliness_of_ITD_results_indicator(la
 lab_sequencing_shipment_timeliness <- build_timeliness_of_shipment_for_sequencing_indicator(lab_data, get_month_end_from_max(max_lab_date))
 lab_workload <- build_lab_workload_indicator(lab_data, get_month_end_from_max(max_lab_date))
 lab_sequencing_timeliness <- build_timeliness_of_sequencing_results_indicator(lab_data, get_month_end_from_max(max_lab_date))
+
+# Add lab WHO region based on physical lab location
+lab_virus_isolation_timeliness$data <- add_culture_itd_lab_who_region(lab_virus_isolation_timeliness$data)
+lab_virus_ITD_results_timeliness$data <- add_culture_itd_lab_who_region(lab_virus_ITD_results_timeliness$data)
+lab_sequencing_shipment_timeliness$data <- add_culture_itd_lab_who_region(lab_sequencing_shipment_timeliness$data)
+lab_workload$data <- add_culture_itd_lab_who_region(lab_workload$data)
+lab_sequencing_timeliness$data <- add_seq_lab_who_region(lab_sequencing_timeliness$data)
 
 
 

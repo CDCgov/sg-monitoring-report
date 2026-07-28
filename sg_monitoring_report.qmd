@@ -458,6 +458,7 @@ datatable(
     dplyr::arrange(culture.itd.lab, lubridate::my(month_label)) |>
     dplyr::rename(
       `Culture/ITD Lab`      = culture.itd.lab,
+      Region = whoregion,
       Month                  = month_label,
       `Current #`            = current_n,
       `Current Median (days)`   = current_median_days,
@@ -487,6 +488,7 @@ datatable(
     dplyr::arrange(culture.itd.lab, window) |>
     dplyr::rename(
       `Culture/ITD Lab`      = culture.itd.lab,
+      Region = whoregion,
       Window = window,
       `Current Period` = current_period,
       `Prior Period` = prior_period,
@@ -526,6 +528,7 @@ datatable(
     dplyr::arrange(culture.itd.lab, window) |>
     dplyr::rename(
       `Culture/ITD Lab`      = culture.itd.lab,
+      Region = whoregion,
       Window                  = window,
       `Current Period` = current_period,
       `Prior Period` = prior_period,
@@ -562,6 +565,7 @@ datatable(
     dplyr::arrange(culture.itd.lab, lubridate::my(month_label)) |>
     dplyr::rename(
       `Culture/ITD Lab`      = culture.itd.lab,
+      Region = whoregion,
       Month                  = month_label,
       `Current #`            = current_n,
       `Prior 3yr Median (days)` = prior_3yr_median,
@@ -590,6 +594,7 @@ datatable(
     dplyr::arrange(seq.lab, window) |>
     dplyr::rename(
       `Sequencing Lab`      = seq.lab,
+      Region = whoregion,
       Window                  = window,
       `Current Period` = current_period,
       `Prior Period` = prior_period,
