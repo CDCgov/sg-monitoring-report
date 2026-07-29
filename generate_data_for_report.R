@@ -152,6 +152,9 @@ add_seq_lab_who_region <- function(data) {
     dplyr::relocate(whoregion, .after = seq.lab)
 }
 
+# Helper functions: create summary tables
+source_pattern("R", "create_summary_tables")
+
 
 # Create Indicator Results ---------------------------------------------------------------------------------------------
 # Saving the full object list so QMD can access $data and $metadata
@@ -177,7 +180,6 @@ afp_neg_samples$data <- add_risk(afp_neg_samples$data, "country")
 afp_timely_stool$data <- add_risk(afp_timely_stool$data, "country")
 afp_inadequate_cases$data <-add_risk(afp_inadequate_cases$data, "place.admin.0")
 
-
 # ES Indicators ----
 # Generate indicator results
 es_active_sites <- build_number_of_active_ES_sites(raw_data$es, end_date)
@@ -190,7 +192,6 @@ es_active_sites$data <- add_risk(es_active_sites$data, "country")
 es_timely_shipment$data <- add_risk(es_timely_shipment$data, "country")
 es_wpv_vdpv_timeliness$data <- add_risk(es_wpv_vdpv_timeliness$data, "country")
 es_prop_active_sites_collections$data <- add_risk(es_prop_active_sites_collections$data, "country")
-
 
 # Lab Indicators ----
 lab_virus_isolation_timeliness <- build_timeliness_virus_isolation_indicator(lab_data, get_month_end_from_max(max_lab_date))
@@ -206,11 +207,83 @@ lab_sequencing_shipment_timeliness$data <- add_culture_itd_lab_who_region(lab_se
 lab_workload$data <- add_culture_itd_lab_who_region(lab_workload$data)
 lab_sequencing_timeliness$data <- add_seq_lab_who_region(lab_sequencing_timeliness$data)
 
+# Summary Tables ----
+
+#uses the functions from create_summary_tables.R
+afp_cases_summary <- create_summary_tables_monthly(afp_cases_reported$data,"01. AFP Cases Reported","place.admin.0","Below Target","Incomplete Data")
+afp_neg_samples_summary <- create_summary_tables_monthly(afp_neg_samples$data,"06. Negative Sample Timeliness","country","Below Target","Incomplete Data")
+afp_stool_timeliness_summary <- create_summary_tables_monthly(afp_timely_stool$data,"07. Stool Shipment Timeliness","country","Below Target","Incomplete Data")
+afp_inad_cases_summary <- create_summary_tables_monthly(afp_inadequate_cases$data,"08. Inadequate Cases","place.admin.0","Below Target","Incomplete Data")
+
+es_prop_active_sites_summary <- create_summary_tables_monthly(es_prop_active_sites_collections$data,"09. Proportion of Active ES Sites with Monthly Collections","country","Below Target","No Current Active ES")
+es_num_active_sites_summary <- create_summary_tables_monthly(es_active_sites$data,"10. Number of Active ES Sites","country","Below Target","No Current Active ES")
+es_timely_shipment_summary <- create_summary_tables_monthly(es_timely_shipment$data,"11. Timeliness of ES Shipment", "country", "Below Target","Incomplete Data")
+
+afp_prop_60_summary <- create_summary_table_quarterly(afp_prop_60$data, "02. Proportion 60-Day Follow-Up Completed", "ctry", "period", "Off Target", "Incomplete Data")
+afp_timely_wpvvdpv_summary <- create_summary_table_quarterly(afp_wpv_vdpv_timeliness$data, "05. Timely AFP WPV/VDPV Detection", "ctry", "current_period", "Below Target", "Incomplete Data")
+es_wpvvdpv_timeliness_summary <- create_summary_table_quarterly(es_wpv_vdpv_timeliness$data, "12. Timely ES WPV/VDPV Notification", "country", "current_period", "Below Target","Incomplete Data")
+
+afp_prop_inad_unclassified_summary<-create_summary_table(afp_prop_inad_classified$data, "03. Proportion Inadequate Cases Unclassified", "ctry","Off Target","Incomplete Data", "prop_unclassified")
+afp_prop_lab_pending_summary<-create_summary_table(afp_prop_lab_pending$data, "04. Proportion Lab Pending", "ctry", "Off Target", "Incomplete Data", "prop_lab_pending")
+
+#smush them together
+region_table <- dplyr::bind_rows(afp_cases_summary$region_table,
+                               afp_prop_60_summary$region_table,
+                               afp_prop_inad_unclassified_summary$region_table,
+                               afp_prop_lab_pending_summary$region_table,
+                               afp_timely_wpvvdpv_summary$region_table,
+                               afp_neg_samples_summary$region_table,
+                               afp_stool_timeliness_summary$region_table,
+                               afp_inad_cases_summary$region_table,
+                               es_prop_active_sites_summary$region_table,
+                               es_num_active_sites_summary$region_table,
+                               es_timely_shipment_summary$region_table,
+                               es_wpvvdpv_timeliness_summary$region_table) |>
+            dplyr::select(whoregion, flagname, string, period, countries_below, countries_incomplete) |>
+            tidyr::pivot_wider(id_cols=c(whoregion, flagname), values_from=c(string, countries_below, countries_incomplete), names_from=period)
+
+country_table_monthly <- dplyr::bind_rows(afp_cases_summary$country_table,
+                                        afp_neg_samples_summary$country_table,
+                                        afp_stool_timeliness_summary$country_table,
+                                        afp_inad_cases_summary$country_table,
+                                        es_prop_active_sites_summary$country_table,
+                                        es_num_active_sites_summary$country_table,
+                                        es_timely_shipment_summary$country_table)
+
+country_table_quarterly <- dplyr::bind_rows(afp_prop_60_summary$country_table,
+                                          es_wpvvdpv_timeliness_summary$country_table,
+                                          afp_timely_wpvvdpv_summary$country_table)
+
+country_table_noperiod <- dplyr::bind_rows(afp_prop_inad_unclassified_summary$country_table,
+                                         afp_prop_lab_pending_summary$country_table)
+
+#lab tables:
+lab_virus_isolation_timeliness_summary <- create_summary_tables_monthly(lab_virus_isolation_timeliness$data, "13. Timeliness of Virus Isolation", "culture.itd.lab", "Below Target","No current virus isolation data")
+lab_workload_summary <- create_summary_tables_monthly(lab_workload$data, "16. Lab Workload", "culture.itd.lab", "Below Target","Incomplete Data")
+
+lab_itd_timeliness_summary <- create_summary_table_quarterly(lab_virus_ITD_results_timeliness$data, "14. Timeliness of ITD results", "culture.itd.lab", "current_period", "Below Target", c("No prior ITD samples", "No current ITD samples"))
+lab_ship_timeliness_summary <- create_summary_table_quarterly(lab_sequencing_shipment_timeliness$data, "15. Timeliness of Shipment for Sequencing", "culture.itd.lab", "current_period", "Below Target", c("No current shipment for sequencing samples", "No shipment for sequencing samples", "No prior shipment for sequencing samples"))
+lab_seq_timeliness_summary <- create_summary_table_quarterly(lab_sequencing_timeliness$data, "17. Timeliness of Sequencing Results", "seq.lab", "current_period", "Below Target", "No current sequenced samples")
+
+lab_region_table <- dplyr::bind_rows(lab_virus_isolation_timeliness_summary$region_table,
+                                   lab_workload_summary$region_table,
+                                   lab_itd_timeliness_summary$region_table,
+                                   lab_ship_timeliness_summary$region_table,
+                                   lab_seq_timeliness_summary$region_table) |>
+                  dplyr::select(whoregion, flagname, string, period, countries_below, countries_incomplete) |>
+                  tidyr::pivot_wider(id_cols=c(whoregion, flagname), values_from=c(string, countries_below, countries_incomplete),names_from=period)
+
+lab_country_table_monthly <- dplyr::bind_rows(lab_virus_isolation_timeliness_summary$country_table,
+                                            lab_workload_summary$country_table)
+
+lab_country_table_quarterly <- dplyr::bind_rows(lab_itd_timeliness_summary$country_table,
+                                              lab_ship_timeliness_summary$country_table,
+                                              lab_seq_timeliness_summary$country_table)
+
 
 
 # Save -------------------------------------------------------------------------------------------------------
 
-# NEED TO ADD
 # Save tables ----
 if(!dir.exists("datatables")){
   dir.create("datatables")
@@ -221,4 +294,6 @@ save(end_date, max_lab_date, afp_cases_reported, afp_prop_60, afp_prop_inad_clas
      es_prop_active_sites_collections, lab_virus_isolation_timeliness,
      lab_virus_ITD_results_timeliness, lab_sequencing_shipment_timeliness,
      lab_workload, lab_sequencing_timeliness,
+     region_table, country_table_monthly, country_table_quarterly, country_table_noperiod,
+     lab_region_table, lab_country_table_monthly, lab_country_table_quarterly,
      file = "datatables/datatables.rda")

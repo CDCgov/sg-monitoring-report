@@ -97,12 +97,351 @@ End date: **`r format(end_date, "%B %d, %Y")`**
 The objective of the monthly SG Monitoring Report is as an early warning for potential disruption in the surveillance system.  
 Monitoring Flags are presented at the country level across AFP, ES, and Lab. 
 
-### Summary Tables - Region
-
-### Summary Tables- Country
 
 :::
 
+## AFP and ES Summary Tables & Visuals
+
+::: panel-tabset
+
+### Summary Table - Region
+
+The total number of countries in the denominator may change between quarters. See individual flag tabs for definition of incomplete/insufficient data.
+
+
+```{r region-summary-table-alt}
+#| echo: false
+
+region_table_alt <- region_table |>
+    dplyr::select(whoregion, flagname, string_Earlier, string_Current, countries_below_Current, countries_incomplete_Current) |>
+    dplyr::arrange(whoregion, flagname) |>
+    dplyr::rename(
+      Region = whoregion,
+      Flag=flagname,
+      `% of Countries Flagged - Earlier` = string_Earlier,
+      `% of Countries Flagged` = string_Current,
+      `Countries Flagged` = countries_below_Current,
+      `Countries with insufficient data` = countries_incomplete_Current,
+    ) |>
+  #need to create a unique row for dynamic filtering
+  dplyr::mutate(row_key = paste0(Region, "_", Flag)) |>
+  SharedData$new(key = ~row_key)
+
+
+filter_select("region-table", "Region: ", 
+              region_table_alt,
+              ~Region,
+              multiple = FALSE,
+              allLevels = FALSE)
+
+datatable(
+  region_table_alt, 
+  filter = "top",
+  extensions = 'Buttons',
+  rownames=FALSE,
+  options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'csv', 'excel'),
+    pageLength = 12,
+    #need to remove the row_key column we created for dynamic filtering
+    columnDefs = list(
+      list(visible = FALSE, targets = which(names(region_table_alt$data()) == "row_key") - 1)
+    )
+  )
+)
+
+```
+
+### Flagged Countries, Monthly Flags
+
+```{r country-summary-table-m}
+#| echo: false
+
+country_table_m<-country_table_monthly     |>
+    dplyr::select(Flag, whoregion,Country,sg_priority_level,dplyr::matches("[0-9]"),months_below) |>
+    dplyr::rename(
+      Region = whoregion,
+      `SG Priority Level`=sg_priority_level,
+      `Months Below Target` = months_below,
+    )|>
+  #need to create a unique row for dynamic filtering
+  dplyr::mutate(row_key = paste0(Country, "_", Flag)) |>
+  SharedData$new(key = ~row_key)
+
+filter_select("country-table-m-region", "Region: ", 
+              country_table_m,
+              ~Region,
+              multiple = FALSE,
+              allLevels = FALSE)
+
+filter_select("country-table-m-flag", "Flag: ", 
+              country_table_m,
+              ~Flag,
+              multiple = FALSE,
+              allLevels = FALSE)
+
+datatable(
+  country_table_m, 
+  filter = "top",
+  extensions = 'Buttons',
+  rownames=FALSE,
+  options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'csv', 'excel'),
+    pageLength = 20,
+    #need to remove the row_key column we created for dynamic filtering
+    columnDefs = list(
+      list(visible = FALSE, targets = which(names(country_table_m$data()) == "row_key") - 1)
+    )
+  )
+)
+
+
+```
+
+### Flagged Countries, Quarterly Flags
+
+```{r country-summary-table-q}
+#| echo: false
+
+country_table_q<-country_table_quarterly    |>
+    dplyr::select(Flag,whoregion,Country,sg_priority_level,Months) |>
+    dplyr::rename(
+      Region = whoregion,
+      `SG Priority Level`=sg_priority_level    )|>
+  #need to create a unique row for dynamic filtering
+  dplyr::mutate(row_key = paste0(Country, "_", Flag)) |>
+  SharedData$new(key = ~row_key)
+
+filter_select("country-table-q-region", "Region: ", 
+              country_table_q,
+              ~Region,
+              multiple = FALSE,
+              allLevels = FALSE)
+
+filter_select("country-table-q-flag", "Flag: ", 
+              country_table_q,
+              ~Flag,
+              multiple = FALSE,
+              allLevels = FALSE)
+
+datatable(
+  country_table_q, 
+  filter = "top",
+  extensions = 'Buttons',
+  rownames=FALSE,
+  options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'csv', 'excel'),
+    pageLength = 20,
+    #need to remove the row_key column we created for dynamic filtering
+    columnDefs = list(
+      list(visible = FALSE, targets = which(names(country_table_q$data()) == "row_key") - 1)
+    )
+  )
+)
+
+
+```
+
+### Flagged Countries, Flags with other time windows
+
+See individual flag tabs for specific time window.
+
+```{r country-summary-table-n}
+#| echo: false
+
+country_table_n<-country_table_noperiod    |>
+    dplyr::select(Flag, whoregion, Country, sg_priority_level, Pct) |>
+    dplyr::rename(
+      Region = whoregion,
+      `SG Priority Level`=sg_priority_level,
+      `Proportion`=Pct
+    )|>
+  #need to create a unique row for dynamic filtering
+  dplyr::mutate(row_key = paste0(Country, "_", Flag)) |>
+  SharedData$new(key = ~row_key)
+
+filter_select("country-table-n-region", "Region: ", 
+              country_table_n,
+              ~Region,
+              multiple = FALSE,
+              allLevels = FALSE)
+
+filter_select("country-table-n-flag", "Flag: ", 
+              country_table_n,
+              ~Flag,
+              multiple = FALSE,
+              allLevels = FALSE)
+
+datatable(
+  country_table_n, 
+  filter = "top",
+  extensions = 'Buttons',
+  rownames=FALSE,
+  options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'csv', 'excel'),
+    pageLength = 20,
+    #need to remove the row_key column we created for dynamic filtering
+    columnDefs = list(
+      list(visible = FALSE, targets = which(names(country_table_n$data()) == "row_key") - 1)
+    )
+  )
+)
+
+
+```
+
+:::
+
+
+## Lab Summary Tables & Visuals
+
+::: panel-tabset
+
+### Lab Summary Table - Region
+
+The total number of labs in the denominator may change between quarters. See individual flag tabs for definition of incomplete/insufficient data.
+Labs are assigned to WHO regions based on location.
+
+```{r lab-region-summary-table}
+#| echo: false
+
+lab_region_table_wide <- lab_region_table |>
+    dplyr::select(whoregion, flagname, string_Earlier, string_Current, countries_below_Current, countries_incomplete_Current) |>
+    dplyr::arrange(whoregion, flagname) |>
+    dplyr::rename(
+      Region = whoregion,
+      Flag=flagname,
+      `% of Labs Flagged - Earlier` = string_Earlier,
+      `% of Labs Flagged` = string_Current,
+      `Labs Flagged` = countries_below_Current,
+      `Labs with insufficient data` = countries_incomplete_Current,
+    ) |>
+  #need to create a unique row for dynamic filtering
+  dplyr::mutate(row_key = paste0(Region, "_", Flag)) |>
+  SharedData$new(key = ~row_key)
+
+
+filter_select("lab-region-table", "Region: ", 
+              lab_region_table_wide,
+              ~Region,
+              multiple = FALSE,
+              allLevels = FALSE)
+
+datatable(
+  lab_region_table_wide, 
+  filter = "top",
+  extensions = 'Buttons',
+  rownames=FALSE,
+  options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'csv', 'excel'),
+    pageLength = 12,
+    #need to remove the row_key column we created for dynamic filtering
+    columnDefs = list(
+      list(visible = FALSE, targets = which(names(lab_region_table_wide$data()) == "row_key") - 1)
+    )
+  )
+)
+
+```
+
+
+### Flagged Labs, Monthly Flags
+
+```{r lab-country-summary-table-m}
+#| echo: false
+
+lab_country_table_monthly<-lab_country_table_monthly     |>
+    dplyr::select(Flag, whoregion, Country, dplyr::matches("[0-9]"),months_below) |>
+    dplyr::rename(
+      Region = whoregion,
+      Lab = Country,
+      `Months Below Target` = months_below
+    )|>
+  #need to create a unique row for dynamic filtering
+  dplyr::mutate(row_key = paste0(Lab, "_", Flag)) |>
+  SharedData$new(key = ~row_key)
+
+filter_select("lab-country-table-m-region", "Region: ", 
+              lab_country_table_monthly,
+              ~Region,
+              multiple = FALSE,
+              allLevels = FALSE)
+
+filter_select("lab-country-table-m-flag", "Flag: ", 
+              lab_country_table_monthly,
+              ~Flag,
+              multiple = FALSE,
+              allLevels = FALSE)
+
+datatable(
+  lab_country_table_monthly, 
+  filter = "top",
+  extensions = 'Buttons',
+  rownames=FALSE,
+  options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'csv', 'excel'),
+    pageLength = 20,
+    #need to remove the row_key column we created for dynamic filtering
+    columnDefs = list(
+      list(visible = FALSE, targets = which(names(lab_country_table_monthly$data()) == "row_key") - 1)
+    )
+  )
+)
+
+
+```
+
+### Flagged Labs, Quarterly Flags
+
+```{r lab-country-summary-table-q}
+#| echo: false
+
+lab_country_table_quarterly<-lab_country_table_quarterly    |>
+    dplyr::select(Flag, whoregion, Country, Months) |>
+    dplyr::rename(
+      Region = whoregion,
+      Lab=Country)|>
+  #need to create a unique row for dynamic filtering
+  dplyr::mutate(row_key = paste0(Lab, "_", Flag)) |>
+  SharedData$new(key = ~row_key)
+
+filter_select("lab-country-table-q-region", "Region: ", 
+              lab_country_table_quarterly,
+              ~Region,
+              multiple = FALSE,
+              allLevels = FALSE)
+
+filter_select("lab-country-table-q-flag", "Flag: ", 
+              lab_country_table_quarterly,
+              ~Flag,
+              multiple = FALSE,
+              allLevels = FALSE)
+
+datatable(
+  lab_country_table_quarterly, 
+  filter = "top",
+  extensions = 'Buttons',
+  rownames=FALSE,
+  options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'csv', 'excel'),
+    pageLength = 20,
+    #need to remove the row_key column we created for dynamic filtering
+    columnDefs = list(
+      list(visible = FALSE, targets = which(names(lab_country_table_quarterly$data()) == "row_key") - 1)
+    )
+  )
+)
+
+
+```
+
+:::
 
 ## AFP Monitoring Flags
 
@@ -322,7 +661,7 @@ afp_timely_stool$data |>
 
 ### Number of Inadequate Cases
 
-**Definition:**  `r afp_inadequate_cases$metadata$definition`
+**Definition:**  `r afp_inadequate_cases$metadata$definition`  
 **Period of focus:** `r afp_inadequate_cases$metadata$current_period_label`  
 **Comparison periods:** `r afp_inadequate_cases$metadata$prior_period_label`  
 **Threshold for above or below target:** `r afp_inadequate_cases$metadata$threshold_rule`  
@@ -646,3 +985,64 @@ datatable(
 
 :::
 
+```{js enable-js-graphs}
+//| echo: false
+
+function remove_all_option() {
+    document.getElementById("region-table").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("country-table-m-region").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("country-table-m-flag").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("country-table-q-region").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("country-table-q-flag").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("country-table-n-region").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("country-table-n-flag").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    
+    document.getElementById("lab-region-table").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("lab-country-table-m-region").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("lab-country-table-m-flag").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("lab-country-table-q-region").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("lab-country-table-q-flag").getElementsByClassName("selectized")[0].selectize.removeOption("");
+}
+
+function filter_default() {
+    document.getElementById("region-table").getElementsByClassName("selectized")[0].selectize.setValue("AFRO");
+    
+    document.getElementById("country-table-m-region").getElementsByClassName("selectized")[0].selectize.setValue("AFRO");
+    document.getElementById("country-table-m-flag").getElementsByClassName("selectized")[0].selectize.setValue("01. AFP Cases Reported");
+    document.getElementById("country-table-q-region").getElementsByClassName("selectized")[0].selectize.setValue("AFRO");
+    document.getElementById("country-table-q-flag").getElementsByClassName("selectized")[0].selectize.setValue("02. Proportion 60-Day Follow-Up Completed");
+    document.getElementById("country-table-n-region").getElementsByClassName("selectized")[0].selectize.setValue("AFRO");
+    document.getElementById("country-table-n-flag").getElementsByClassName("selectized")[0].selectize.setValue("03. Proportion Inadequate Cases Unclassified");
+    
+        document.getElementById("lab-region-table").getElementsByClassName("selectized")[0].selectize.setValue("AFRO");
+
+    document.getElementById("lab-country-table-m-region").getElementsByClassName("selectized")[0].selectize.setValue("AFRO");
+    document.getElementById("lab-country-table-m-flag").getElementsByClassName("selectized")[0].selectize.setValue("13. Timeliness of Virus Isolation");
+    document.getElementById("lab-country-table-q-region").getElementsByClassName("selectized")[0].selectize.setValue("AFRO");
+    document.getElementById("lab-country-table-q-flag").getElementsByClassName("selectized")[0].selectize.setValue("14. Timeliness of ITD results");
+    
+    
+}
+function waitForSelectize(callback, maxTries = 50) {
+    let tries = 0;
+    const check = setInterval(function() {
+        tries++;
+        const el = document.getElementById("region-table");
+        if (el && el.getElementsByClassName("selectized")[0] && el.getElementsByClassName("selectized")[0].selectize) {
+            clearInterval(check);
+            callback();
+        } else if (tries >= maxTries) {
+            clearInterval(check);
+            console.warn("Selectize widgets not found after waiting.");
+        }
+    }, 100);
+}
+
+window.onload = function() {
+    waitForSelectize(function() {
+        remove_all_option();
+        filter_default();
+    });
+}
+
+```
