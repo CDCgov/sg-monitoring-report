@@ -182,7 +182,9 @@ build_lab_workload_indicator <- function(lab_data, end_date = Sys.Date()) {
     n_current_months = 6,
     n_prior_years = 3,
     threshold_rule = "+/-50% of the same-month median from the prior 3 years",
-    definition = "Number of samples received in the culturing lab. Within Target if the number of samples for the current month is within +/-50% compared with the previous 3-year median of that month.",
+    definition = "Number of samples received in the culturing lab. Within Target if the number of samples received for the month is within +/-50% compared with the prior 3-year median count for that month. Below Target if the number of samples received is more than 50% higher than the prior 3-year median.",
+    above_target_definition = "Above Target if the number of samples received is more than 50% lower than the prior 3-year median.",
+    incomplete_data_definition = "Incomplete Data if there are no prior years with data.",
     possible_statuses = c("Within Target", "Below Target", "Above Target", "Incomplete Data")
   )
 

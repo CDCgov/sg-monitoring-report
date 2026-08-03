@@ -5,7 +5,7 @@
 #' one row per country. There is no time comparator.
 #'
 #' @details
-#' A 90-day lag is applied based on case age calculated from \code{end_date}.
+#' A 90-day waiting period is applied based on case age calculated from \code{end_date}.
 #' Only cases where \code{case_age} falls between 90 and 365 days are
 #' eligible, defined using onset date. This window ensures cases have had
 #' sufficient time to receive a lab result and excludes very old cases.
@@ -59,7 +59,7 @@ build_prop_lab_pending <- function(afp_data, end_date = Sys.Date()) {
     "Eligible cases have onset between ", format(start_date, "%b %d, %Y"),
     " and ", format(eligibility_end, "%b %d, %Y"), " (90 to 365 days before ",
     format(end_date, "%b %d, %Y"), "). ",
-    "The 90-day lag ensures cases have had sufficient time to receive a lab result."
+    "The 90-day waiting period ensures cases have had sufficient time to receive a lab result."
   )
 
   # Prepare eligible data -----
@@ -103,12 +103,14 @@ build_prop_lab_pending <- function(afp_data, end_date = Sys.Date()) {
   meta <- list(
     indicator_code = "prop_lab_pending",
     indicator_label = "Proportion lab pending",
+    unit = "Single value",
     end_date = end_date,
     eligibility_start = start_date,
     eligibility_end = eligibility_end,
     eligibility_note = eligibility_note,
     threshold_rule = "Off Target if 10% or more of AFP samples with onset 90 to 365 days before the end date are lab pending",
-    definition = "Proportion of AFP samples 90 to 365 days old that are lab pending.",
+    definition = "Proportion of AFP samples with onset 90 to 365 days before the report end date that are lab pending. Within Target if less than 10% of eligible samples are lab pending. Off Target if 10% or more of eligible samples are lab pending.",
+    incomplete_data_definition = "Incomplete Data if there are no eligible AFP samples in the time period.",
     possible_statuses = c("Within Target", "Off Target", "Incomplete Data")
   )
 

@@ -177,13 +177,16 @@ build_wpv_vdpv_timeliness_indicator <- function(pos, end_date = Sys.Date()) {
   meta <- list(
     indicator_code = "wpv_vdpv_timeliness",
     indicator_label = "Timely AFP WPV/VDPV Detection",
+    unit = "Quarter",
     end_date = end_date,
     recent_period_label = recent_period_label,
     recent_prior_period_label = recent_prior_period_label,
     earlier_period_label = earlier_period_label,
     earlier_prior_period_label = earlier_prior_period_label,
     threshold_rule = "+/-50% of the median from the same 3-month period one year prior",
-    definition = "",
+    definition = "Median number of days from onset to notification to HQ for WPV/VDPV positive AFP samples. Within Target if the median number of days for the three-month period is within +/-50% compared with the same three-month period of the previous year. Below Target if the median is more than 50% higher than the same period of the previous year.",
+    above_target_definition = "Above Target if the median is more than 50% lower than the same period of the previous year.",
+    incomplete_data_definition = "Incomplete Data if the current or prior median is missing or 0.",
     possible_statuses = c("Within Target", "Below Target", "Above Target", "Incomplete Data")
   )
 

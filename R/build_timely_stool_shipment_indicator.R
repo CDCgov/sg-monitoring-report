@@ -169,7 +169,9 @@ build_timely_stool_shipment_indicator <- function(lab_data, end_date = Sys.Date(
     n_current_months = 6,
     n_prior_years = 1,
     threshold_rule = "+/-50% of the same-month median from the prior year",
-    definition = "Median days from collection to shipment to lab. Within Target if the median timeliness of the most recent completed month is within +/-50% compared with the same month of the previous year.",
+    definition = "Median number of days from stool collection to arrival in lab for AFP samples. Within Target if the median number of days for the month is within +/-50% compared with the same month of the previous year. Below Target if the median is more than 50% higher than the same month of the previous year.",
+    above_target_definition = "Above Target if the median is more than 50% lower than the same month of the previous year.",
+    incomplete_data_definition = "Incomplete Data if the current or prior median is missing or 0.",
     possible_statuses = c("Within Target", "Below Target", "Above Target", "Incomplete Data")
   )
 

@@ -202,12 +202,12 @@ build_timeliness_virus_isolation_indicator <- function(lab_data, end_date = Sys.
     n_current_months = 6,
     n_prior_years = 3,
     threshold_rule = "+/-50% of the pooled same-month median from the prior 3 years",
-    definition = paste0(
-      "Median days between received in lab to virus isolation results. ",
-      "Within target if the median timeliness for the current month is +/-50% ",
-      "compared with the pooled previous 3-year median of that month."),
+    definition = "Median number of days between receipt in lab and virus isolation result. Within Target if the median number of days for the month is within +/-50% compared with the pooled prior 3-year median for that month. Below Target if the median is more than 50% higher than the prior 3-year median.",
+    above_target_definition = "Above Target if the median is more than 50% lower than the prior 3-year median.",
+    other_status_definitions = "No virus isolation data if there are no current or prior virus isolation samples. No current virus isolation data if there are no current samples but prior samples exist. No prior virus isolation data if current samples exist but no prior samples exist.",
+    incomplete_data_definition = "Incomplete Data if the comparison cannot be calculated.",
     possible_statuses = c("Within Target", "Below Target", "Above Target", "No virus isolation data",
-      "No current virus isolation data","No prior virus isolation data", "Incomplete Data", "Review")
+      "No current virus isolation data","No prior virus isolation data", "Incomplete Data")
     )
 
 

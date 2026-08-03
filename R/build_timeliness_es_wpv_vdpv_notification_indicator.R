@@ -203,7 +203,9 @@ build_timeliness_es_wpv_vdpv_notification_indicator <- function(es_data,
     n_current_quarters = 2,
     n_prior_years = 1,
     threshold_rule = "+/-50% of the median from the same 3-month period one year prior",
-    definition = "Median days between collection to notification to HQ for an ES WPV/VDPV sample. Within Target if the median timeliness of samples notified in the most recent completed three-month period is within +/-50% compared with the same three-month period of the previous year.",
+    definition = "Median number of days between collection and notification to HQ for ES WPV/VDPV samples. Within Target if the median number of days for the three-month period is within +/-50% compared with the same three-month period of the previous year. Below Target if the median is more than 50% higher than the same period of the previous year.",
+    above_target_definition = "Above Target if the median is more than 50% lower than the same period of the previous year.",
+    incomplete_data_definition = "Incomplete Data if the current or prior median is missing or 0.",
     possible_statuses = c("Within Target", "Below Target", "Above Target", "Incomplete Data")
   )
 

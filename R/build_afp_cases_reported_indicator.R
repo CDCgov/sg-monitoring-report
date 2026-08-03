@@ -142,14 +142,17 @@ build_afp_cases_reported <- function(afp_data, end_date = Sys.Date()) {
   meta <- list(
     indicator_code = "AFP_cases_reported",
     indicator_label = "AFP cases reported",
+    unit = "Month",
     current_period_start = window_start,
     current_period_end = end_date,
     current_period_label = current_period_label,
     prior_period_label = prior_period_label,
     n_current_months = 6,
     n_prior_years = 3,
-    threshold_rule = "±50% of 3-year median",
-    definition = "On target if the number of AFP cases reported the most recent completed month is within +/-50% of the prior 3 year median for that month.",
+    threshold_rule = "+/-50% of 3-year median",
+    definition = "Number of AFP cases reported. Within Target if the number of AFP cases reported for the month is within +/-50% of the prior 3-year median for that month. Below Target if AFP cases reported are more than 50% lower than the prior 3-year median.",
+    above_target_definition = "Above Target if AFP cases reported are more than 50% higher than the prior 3-year median.",
+    incomplete_data_definition = "Incomplete Data if no prior AFP data are available for all 3 prior years.",
     possible_statuses = c("Within Target", "Below Target", "Above Target", "Incomplete Data")
   )
 

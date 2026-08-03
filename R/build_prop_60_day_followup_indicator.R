@@ -6,7 +6,7 @@
 #'
 #' @details
 #' Unlike other build functions, this function does not take an \code{end_date}
-#' parameter. The eligible window is determined by a 120-day lag from
+#' parameter. The eligible window is determined using a 120-day offset from
 #' \code{Sys.Date()} — cases must have onset >= 120 days ago to have a resolved
 #' follow-up status. The most recent full month where all cases are eligible
 #' becomes the end of the recent window. Results are therefore tied to the
@@ -47,7 +47,7 @@ build_prop_60_day_follow_up_indicator <- function(afp_data) {
 
   # Date Windows -----
 
-  # Eligible window is determined by 120-day lag from today(), not end_date.
+  # Eligible window is determined by a 120-day offset from today(), not end_date.
   # Cases must have onset >= 120 days ago to be eligible to assess follow-up status.
   # This requirement comes from sirfunctions::generate_60_day_table_data() which is a dependency below
   eligibility_cutoff <- Sys.Date() - days(120)
@@ -66,7 +66,7 @@ build_prop_60_day_follow_up_indicator <- function(afp_data) {
   earlier_period_label  <- paste0(format(earlier_start, "%b %Y"), " - ", format(earlier_end, "%b %Y"))
 
   eligibility_note <- paste0(
-    "Eligible window is based on a 120-day follow-up lag. ",
+    "Eligible window is based on a 120-day follow-up offset. ",
     "Cases with onset after ", format(eligibility_cutoff, "%b %d, %Y"),
     " are excluded from analysis as follow-up may not yet be complete.",
     " Analysis dates are then set to the last full month prior to ", format(eligibility_cutoff, "%b %d, %Y"), ".")
@@ -145,17 +145,14 @@ build_prop_60_day_follow_up_indicator <- function(afp_data) {
   meta <- list(
     indicator_code = "prop_60day_followup",
     indicator_label = "Proportion 60-day follow-up done",
+    unit = "Rolling 3-month period",
     eligibility_cutoff = eligibility_cutoff,
     eligibility_note = eligibility_note,
     recent_period_label = recent_period_label,
     earlier_period_label = earlier_period_label,
     threshold_rule = "Off Target if proportion of completed 60-day follow ups is < 50% in a given time period",
-    definition = paste0(
-      "Proportion of 60-day follow-ups completed per period. ",
-      "Within Target if >= 50% of follow-ups are completed. ",
-      "Off Target if < 50%. Each country has one row per period: ",
-      "recent (", recent_period_label, ") and earlier (", earlier_period_label, ")."
-    ),
+    definition = "Proportion of inadequate AFP cases with completed 60-day follow-up. Within Target if the proportion of 60-day follow-ups completed in the period is greater than or equal to 50%. Off Target if the proportion of 60-day follow-ups completed in the period is less than 50%.",
+    incomplete_data_definition = "Incomplete Data if there are no eligible inadequate cases for that period.",
     possible_statuses = c("Within Target", "Off Target", "Incomplete Data")
   )
 

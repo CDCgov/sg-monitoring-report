@@ -5,7 +5,7 @@
 #' There is no time comparator.
 #'
 #' @details
-#' A 90-day lag is applied based on case age calculated from \code{end_date}.
+#' A 90-day waiting period is applied based on case age calculated from \code{end_date}.
 #' Only cases where \code{case_age} falls between 90 and 365 days are
 #' eligible, defined using onset date. This window ensures cases have had
 #' sufficient time to receive a classification and excludes very old cases.
@@ -57,7 +57,7 @@ build_prop_inadequate_classified <- function(afp_data, end_date = Sys.Date()) {
     "Eligible cases have onset between ", format(start_date, "%b %d, %Y"),
     " and ", format(end_date - days(90), "%b %d, %Y"), " (90 to 365 days before ",
     format(end_date, "%b %d, %Y"), "). ",
-    "The 90-day lag ensures cases have had sufficient time to receive a classification."
+    "The 90-day waiting period ensures cases have had sufficient time to receive a classification."
   )
 
   # Prepare data from sirfunctions -----
@@ -108,12 +108,14 @@ build_prop_inadequate_classified <- function(afp_data, end_date = Sys.Date()) {
   meta <- list(
     indicator_code     = "prop_inad_classified",
     indicator_label    = "Proportion of Inadequate Cases Classified",
+    unit               = "Single value",
     end_date           = end_date,
     eligibility_start  = start_date,
     eligibility_end    = end_date - days(90),
     eligibility_note   = eligibility_note,
     threshold_rule     = "Off Target if 10% or more of eligible inadequate cases are unclassified",
-    definition         = "",
+    definition         = "Proportion of inadequate AFP cases with onset 90 to 365 days before the report end date that are unclassified. Within Target if less than 10% of eligible inadequate cases are unclassified. Off Target if 10% or more of eligible inadequate cases are unclassified.",
+    incomplete_data_definition = "Incomplete Data if there are no eligible inadequate cases.",
     possible_statuses  = c("Within Target", "Off Target", "Incomplete Data")
   )
 

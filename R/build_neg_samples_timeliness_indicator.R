@@ -167,6 +167,7 @@ build_negative_samples_timeliness_indicator <- function(lab_data, end_date = Sys
   meta <- list(
     indicator_code = "neg_samples_timeliness",
     indicator_label = "Timely Detection of Negative AFP Samples",
+    unit = "Month",
     lab_end_date = end_date,
     eligibility_note = eligibility_note,
     current_period_start = window_start,
@@ -175,8 +176,10 @@ build_negative_samples_timeliness_indicator <- function(lab_data, end_date = Sys
     prior_period_label = prior_period_label,
     n_current_months = 6,
     n_prior_years = 1,
-    threshold_rule = "±50% of median of prior year",
-    definition = "",
+    threshold_rule = "+/-50% of median of prior year",
+    definition = "Median number of days from stool collection to final culture result for negative AFP samples. Within Target if the median number of days for the month is within +/-50% compared with the same month of the previous year. Below Target if the median is more than 50% higher than the same month of the previous year.",
+    above_target_definition = "Above Target if the median is more than 50% lower than the same month of the previous year.",
+    incomplete_data_definition = "Incomplete Data if the current or prior median is missing or 0.",
     possible_statuses = c("Within Target", "Below Target", "Above Target", "Incomplete Data")
   )
 

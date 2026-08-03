@@ -230,11 +230,10 @@ build_timeliness_of_sequencing_results_indicator <- function(lab_data, end_date 
     n_current_quarters = 2,
     n_prior_years = 1,
     threshold_rule = "+/-50% of the same 3-month period median from the prior year",
-    definition = paste0(
-      "Median days between receipt in sequencing lab to sequencing results. ",
-      "On target if the median timeliness for the current three-month period ",
-      "is +/-50% compared with the previous year median of that three-month period."
-    ),
+    definition = "Median number of days between receipt in sequencing lab and sequencing result. Within Target if the median number of days for the three-month period is within +/-50% compared with the same three-month period of the previous year. Below Target if the median is more than 50% higher than the same period of the previous year.",
+    above_target_definition = "Above Target if the median is more than 50% lower than the same period of the previous year.",
+    other_status_definitions = "No sequenced samples if there are no current or prior sequenced samples. No current sequenced samples if there are no current samples but prior samples exist. No prior sequenced samples if current samples exist but no prior samples exist.",
+    incomplete_data_definition = "Incomplete Data if the comparison cannot be calculated.",
     possible_statuses = c(
       "Within Target",
       "Below Target",
@@ -242,8 +241,7 @@ build_timeliness_of_sequencing_results_indicator <- function(lab_data, end_date 
       "No sequenced samples",
       "No current sequenced samples",
       "No prior sequenced samples",
-      "Incomplete Data",
-      "Review"
+      "Incomplete Data"
     )
   )
 
