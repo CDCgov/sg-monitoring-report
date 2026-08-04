@@ -158,6 +158,7 @@ build_number_of_inadequate_cases <- function(afp_data, end_date = Sys.Date()) {
   meta <- list(
     indicator_code = "number_inadequate_cases",
     indicator_label = "Number of inadequate cases",
+    unit = "Month",
     current_period_start = window_start,
     current_period_end = end_date,
     current_period_label = current_period_label,
@@ -166,6 +167,8 @@ build_number_of_inadequate_cases <- function(afp_data, end_date = Sys.Date()) {
     n_prior_years = 3,
     threshold_rule = "+/-50% of 3-year median",
     definition = "Number of inadequate AFP cases. Within Target if the number of inadequate cases reported in the most recent completed month is within +/-50% of the prior 3-year median for that month. Below Target if inadequate cases are more than 50% higher than the prior 3-year median.",
+    above_target_definition = "Above Target if inadequate cases are more than 50% lower than the prior 3-year median.",
+    incomplete_data_definition = "Incomplete Data if no prior inadequate AFP case data are available for all 3 prior years.",
     possible_statuses = c("Within Target", "Below Target", "Above Target", "Incomplete Data")
   )
 

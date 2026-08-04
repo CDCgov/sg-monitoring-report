@@ -193,6 +193,7 @@ build_number_of_active_ES_sites <- function(es_data, end_date = Sys.Date()) {
   meta <- list(
     indicator_code = "number_active_es_sites",
     indicator_label = "Number of active ES sites",
+    unit = "Month",
     current_period_start = window_start,
     current_period_end = end_date,
     current_period_label = current_period_label,
@@ -200,7 +201,9 @@ build_number_of_active_ES_sites <- function(es_data, end_date = Sys.Date()) {
     n_current_months = 6,
     n_prior_years = 1,
     threshold_rule = "+/-50% of the same-month active-site count from the prior year",
-    definition = "Number of active ES sites defined as sites with at least 5 collections over the past 12-month rolling period.",
+    definition = "Number of active ES sites. Active sites are defined as sites with at least 5 collections in the rolling 12-month period. Within Target if the number of active ES sites for the month is within +/-50% compared with the same month of the previous year. Below Target if the number of active ES sites is more than 50% lower than the same month of the previous year.",
+    above_target_definition = "Above Target if the number of active ES sites is more than 50% higher than the same month of the previous year.",
+    other_status_definitions = "No Current Active ES if current and prior active site counts are both 0.",
     possible_statuses = c("Within Target", "Below Target", "Above Target",
                           "No Current Active ES")
   )

@@ -10,7 +10,7 @@
 #' Timeliness intervals outside 0-365 days are excluded as likely data quality
 #' issues. \code{collection.date} is used to assign samples to months. Lab
 #' location \code{es.lab.type} is retained in the output for context only and is
-#' not used for the target flag. This builder does not apply an additional lag;
+#' not used for the target flag. This builder uses the supplied analysis end date;
 #' callers should pass the desired analysis \code{end_date}.
 #'
 #' @param es_data A data frame containing ES data. Must include
@@ -78,7 +78,6 @@ build_timeliness_of_es_shipment_indicator <- function(es_data,
   )
 
   eligibility_note <- paste0(
-    "No additional lag is applied inside this builder. ",
     "Analysis window ends on the supplied end_date: ",
     format(end_date, "%b %d, %Y"),
     "."
@@ -178,9 +177,10 @@ build_timeliness_of_es_shipment_indicator <- function(es_data,
     prior_period_label = prior_period_label,
     n_current_months = 6,
     n_prior_years = 1,
-    lag = "none",
     threshold_rule = "+/-50% of the same-month median from the prior year",
-    definition = "Median days between collection to arrival in lab for an ES sample. Within Target if the median timeliness of the most recent completed month is within +/-50% compared with the same month of the previous year.",
+    definition = "Median number of days between collection and arrival in lab for ES samples. Within Target if the median number of days for the month is within +/-50% compared with the same month of the previous year. Below Target if the median is more than 50% higher than the same month of the previous year.",
+    above_target_definition = "Above Target if the median is more than 50% lower than the same month of the previous year.",
+    incomplete_data_definition = "Incomplete Data if the current or prior median is missing or the prior median is 0.",
     possible_statuses = c("Within Target", "Below Target", "Above Target", "Incomplete Data")
   )
 

@@ -183,12 +183,14 @@ build_prop_active_es_sites_with_monthly_collections <- function(es_data,
   meta <- list(
     indicator_code = "prop_active_es_sites_monthly_collections",
     indicator_label = "Proportion of active ES sites with monthly collections",
+    unit = "Month",
     current_period_start = window_start,
     current_period_end = end_date,
     current_period_label = current_period_label,
     n_current_months = 6,
     threshold_rule = "Within Target if at least 80% of active ES sites have at least 1 collection in the assessment month",
-    definition = "Proportion of active ES sites with at least one collection per month. Active sites are defined as sites with at least 5 collections over the past 12-month rolling period.",
+    definition = "Proportion of active ES sites with at least one collection per month. Active sites are defined as sites with at least 5 collections in the rolling 12-month period. Within Target if at least 80% of active ES sites have at least 1 collection in the month. Below Target if less than 80% of active ES sites have at least 1 collection in the month.",
+    other_status_definitions = "No Current Active ES if there are no active sites in the period.",
     possible_statuses = c("Within Target", "Below Target", "No Current Active ES")
   )
 
