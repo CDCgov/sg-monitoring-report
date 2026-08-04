@@ -281,6 +281,28 @@ lab_country_table_quarterly <- dplyr::bind_rows(lab_itd_timeliness_summary$count
                                               lab_seq_timeliness_summary$country_table)
 
 
+# Visuals ---
+
+# build each indicator's plot data
+afp_cases_plot <- make_monthly_plot_data(afp_cases_reported$data, "place.admin.0", "current_period_counts", "prior_3yr_median", "01. Number of AFP Cases")
+afp_negdet_plot <- make_monthly_plot_data(afp_neg_samples$data, "country", "current_median_days", "prior_median_days", "06. Negative Sample Timeliness - Median days")
+afp_stoolship_plot <- make_monthly_plot_data(afp_timely_stool$data, "country", "current_median_days", "prior_median_days", "07. Stool Shipment Timeliness - Median days")
+afp_inad_plot <- make_monthly_plot_data(afp_inadequate_cases$data, "place.admin.0", "current_period_counts", "prior_3yr_median", "08. Number of Inadequate Cases")
+es_prop_active_plot <- make_monthly_plot_data(es_prop_active_sites_collections$data, "country", "prop_sites_with_1_collection", flag_label = "09. Proportion of ES sites with active collection", threshold = 80)
+num_es_plot <- make_monthly_plot_data(es_active_sites$data, "country", "current_active_sites", "prior_active_sites", "10. Number of ES sites with active collection")
+es_ship_plot <- make_monthly_plot_data(es_timely_shipment$data, "country", "current_median_days", "prior_median_days", "11. Timeliness of ES Shipment - Median days")
+
+#stack all monthly indicator data into a long data so they can be visualized on the same plot
+plotdata_m <- dplyr::bind_rows(afp_cases_plot, afp_negdet_plot, afp_stoolship_plot, afp_inad_plot, es_prop_active_plot, num_es_plot, es_ship_plot)
+
+# lab monthly data
+lab_isolat_plot<-make_monthly_plot_data(lab_virus_isolation_timeliness$data, "culture.itd.lab", "current_median_days", "prior_3yr_median_days", "13. Timeliness of Virus Isolation")
+lab_workload_plot<-make_monthly_plot_data(lab_workload$data, "culture.itd.lab", "current_n", "prior_3yr_median", "16. Lab Workload")
+
+plotdata_m_lab <- dplyr::bind_rows(lab_isolat_plot, lab_workload_plot) |>
+  dplyr::rename(Lab = Country)
+
+
 
 # Save -------------------------------------------------------------------------------------------------------
 
@@ -296,4 +318,5 @@ save(end_date, max_lab_date, afp_cases_reported, afp_prop_60, afp_prop_inad_clas
      lab_workload, lab_sequencing_timeliness,
      region_table, country_table_monthly, country_table_quarterly, country_table_noperiod,
      lab_region_table, lab_country_table_monthly, lab_country_table_quarterly,
+     plotdata_m, plotdata_m_lab,
      file = "datatables/datatables.rda")
