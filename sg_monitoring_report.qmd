@@ -92,18 +92,18 @@ make_sortable_month_col <- function(data,
 
 ### Summary
 
-AFP/ES End date: **`r format(end_date, "%B %d, %Y")`**
-Lab End date: **`r format(as_date(max_lab_date[1]), "%B %d, %Y")`**
+AFP/ES End date: **`r format(end_date, "%B %d, %Y")`**  
+Maximum Lab date: **`r format(as_date(max_lab_date[1]), "%B %d, %Y")`**
 
 The objective of the monthly SG Monitoring Report is as an early warning for potential disruption in the surveillance system.  
 Monitoring flags across AFP, ES, and Lab may indicate country- or lab-level operational challenges within key processes of detection, reporting, and testing. 
 
 Monitoring Flags are presented at the country level across AFP and ES. Flags are reported at the lab level for Lab. 
 
-The end date of AFP and ES data for the report is the last day of the month two months prior from the date the report is run (e.g., for a report run in August, the end date is June 30).
+The end date of AFP and ES data for the report is the last day of the month two months prior from the date the report is run (e.g., for a report run in August, the end date is June 30).  
 This is to avoid calculating monthly and quarterly flags based on potentially incomplete data from the most recent month.
 
-The end date of Lab data is the last day of the same month of the maximum date from the most recent lab file received from WHO.
+The end date of Lab data is the last day of the same month of the maximum date from the most recent lab file received from WHO.  
 This means that Lab flags may be calculated based on incomplete data for the most recent month.
 
 Most Flags are presented for the most recent 3 months on a rolling basis, with additional 3 months earlier for context.
