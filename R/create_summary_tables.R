@@ -1,4 +1,4 @@
-# these are helpful functions for summarizing the output from the build functions of the indicators
+# these are helper functions for summarizing the output from the build functions of the indicators for summary tables and visuals
 # they do not need to be public functions or referenced outside of the generate_data_for_report.R code
 
 create_summary_tables_monthly <- function(data, label, country_var_name, flag_values, incomplete_values, latest_month){
@@ -167,4 +167,48 @@ create_summary_table <- function(data, label, country_var_name, flag_values, inc
     region_table = summary_table_region
   ))
 }
+
+#gets the monthly indicator data into a format for displaying all monthly indicators on the same chart
+make_monthly_plot_data <- function(data, country_col, current_col, previous_col = NULL, flag_label, threshold = NULL) {
+
+  #compute this dataset's own latest quarter window, rather than relying on a shared external value
+  latest_q_end <- max(lubridate::my(data$month_label))
+  latest_q_start <- lubridate::floor_date(latest_q_end %m-% months(2), unit = "month")
+
+  result <- data |>
+    dplyr::filter(dplyr::between(lubridate::my(month_label), latest_q_start, latest_q_end)) |>
+    dplyr::rename(
+      Region = whoregion,
+      Country = dplyr::all_of(country_col),
+      Current = dplyr::all_of(current_col)
+    ) |>
+    dplyr::mutate(
+      Month = factor(substr(month_label, 1, 3), levels = month.abb, ordered = TRUE),
+      Flag = flag_label
+    )
+
+  #add Previous column if a source column was given
+  if (!is.null(previous_col)) {
+    result <- result |>
+      dplyr::rename(Previous = dplyr::all_of(previous_col))
+  } else {
+    result <- result |>
+      dplyr::mutate(Previous = NA_real_)
+  }
+
+  #add Threshold column if a fixed value was given
+  if (!is.null(threshold)) {
+    result <- result |>
+      dplyr::mutate(Threshold = threshold)
+  } else {
+    result <- result |>
+      dplyr::mutate(Threshold = NA_real_)
+  }
+
+  #keep month_label (e.g. "May 2026") so hover text can disambiguate year, since
+  #Current and Previous can represent different years for the same Month
+  result |>
+    dplyr::select(Region, Country, Month, month_label, Current, Previous, Flag, Threshold)
+}
+
 

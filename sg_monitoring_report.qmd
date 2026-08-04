@@ -30,7 +30,7 @@ library(cowplot)
 end_date <- lubridate::ceiling_date(Sys.Date() %m-% months(2), unit = "month") %m-% days(1)
 
 # Get report data from existing tables or by sourcing generate_data_for_report.R
-use_existing_data <- FALSE  # set TRUE to skip data reload during QMD development
+use_existing_data <- TRUE  # set TRUE to skip data reload during QMD development
 
 if (use_existing_data) {
   load("datatables/datatables.rda")
@@ -92,11 +92,21 @@ make_sortable_month_col <- function(data,
 
 ### Summary
 
-End date: **`r format(end_date, "%B %d, %Y")`**
+AFP/ES End date: **`r format(end_date, "%B %d, %Y")`**
+Lab End date: **`r format(as_date(max_lab_date[1]), "%B %d, %Y")`**
 
 The objective of the monthly SG Monitoring Report is as an early warning for potential disruption in the surveillance system.  
-Monitoring Flags are presented at the country level across AFP, ES, and Lab. 
+Monitoring flags across AFP, ES, and Lab may indicate country- or lab-level operational challenges within key processes of detection, reporting, and testing. 
 
+Monitoring Flags are presented at the country level across AFP and ES. Flags are reported at the lab level for Lab. 
+
+The end date of AFP and ES data for the report is the last day of the month two months prior from the date the report is run (e.g., for a report run in August, the end date is June 30).
+This is to avoid calculating monthly and quarterly flags based on potentially incomplete data from the most recent month.
+
+The end date of Lab data is the last day of the same month of the maximum date from the most recent lab file received from WHO.
+This means that Lab flags may be calculated based on incomplete data for the most recent month.
+
+Most Flags are presented for the most recent 3 months on a rolling basis, with additional 3 months earlier for context.
 
 :::
 
@@ -293,8 +303,84 @@ datatable(
 
 ```
 
-:::
+### Visuals, Monthly AFP and ES Flags
 
+Flags that use a previous 3-year median as the reference period:
+AFP Cases Reported
+Number of Inadequate Cases
+
+Flags that use the prior year as the reference period: 
+Timeliness of Detection of Negative AFP Samples
+Timeliness of Stool Shipment
+Number of Active ES Sites
+Timeliness of ES Shipment
+
+Flags that use a pre-established threshold:
+Proportion of Active ES Sites with Monthly Collections
+
+See flag-specific tabs for full definition.
+
+```{r country-plot-m}
+#| echo: false
+
+
+plotdata_m <- plotdata_m |>
+  #need to create a unique row for dynamic filtering
+  dplyr::mutate(row_key = paste0(Country, "_", Flag)) |>
+  SharedData$new(key = ~row_key)
+
+filter_select("country-plot-m-country", "Country: ",
+              plotdata_m,
+              ~Country,
+              multiple = FALSE,
+              allLevels = FALSE)
+
+filter_select("country-plot-m-flag", "Flag: ",
+              plotdata_m,
+              ~Flag,
+              multiple = FALSE,
+              allLevels = FALSE)
+
+plot_ly(plotdata_m, colors = c("lightsteelblue", "steelblue")) |>
+  add_trace(
+    x = ~Month,
+    y = ~Previous,
+    type = "bar",
+    name = ~paste(substr(Flag, 5, nchar(Flag)), "- Previous"),
+    color = as.factor("Previous"),
+    hovertemplate = ~paste0("<b>", substr(Flag, 5, nchar(Flag)), "</b><br>Month: %{x} <br>Previous: %{y}<extra></extra>")
+  ) |>
+  add_trace(
+    x = ~Month,
+    y = ~Current,
+    type = "bar",
+    name = ~paste(substr(Flag, 5, nchar(Flag)), "- Current"),
+    color = as.factor("Current"),
+    hovertemplate = ~paste0("<b>", substr(Flag, 5, nchar(Flag)), "</b><br>Month: %{x} <br>Current: %{y}<extra></extra>")
+  ) |>
+  add_trace(
+    x = ~Month, y = ~Threshold, type = "scatter", mode = "lines",
+    name = "Threshold",
+    line = list(color = "red", dash = "dash"),
+    hovertemplate = "Threshold: %{y}<extra></extra>"
+  ) |>
+  config(displayModeBar = TRUE) |>
+  layout(title = list(
+    text = paste0("<b>Monthly Flag</b>"),
+    x = 0,
+    xanchor = "left"),
+    yaxis = list(title = "Flag Value"),
+    xaxis = list(title = "Month"),
+    legend = list(orientation = "h",
+                  xanchor = "center",
+                  x = 0.5,
+                  y = -0.2),
+    margin = list(t = 50)
+  )
+
+```
+
+:::
 
 ## Lab Summary Tables & Visuals
 
@@ -441,6 +527,59 @@ datatable(
 
 ```
 
+### Lab Visuals, Monthly Flags
+
+```{r lab-country-plot-m}
+
+plotdata_m_lab <- plotdata_m_lab |>
+  #need to create a unique row for dynamic filtering
+  dplyr::mutate(row_key = paste0(Lab, "_", Flag)) |>
+  SharedData$new(key = ~row_key)
+
+filter_select("lab-country-plot-m-country", "Lab: ",
+              plotdata_m_lab,
+              ~Lab,
+              multiple = FALSE,
+              allLevels = FALSE)
+
+filter_select("lab-country-plot-m-flag", "Flag: ",
+              plotdata_m_lab,
+              ~Flag,
+              multiple = FALSE,
+              allLevels = FALSE)
+
+plot_ly(plotdata_m_lab, colors = c("lightsteelblue", "steelblue")) |>
+  add_trace(
+    x = ~Month,
+    y = ~Previous,
+    type = "bar",
+    name = ~paste(substr(Flag, 5, nchar(Flag)), "- Previous"),
+    color = as.factor("Previous"),
+    hovertemplate = ~paste0("<b>", substr(Flag, 5, nchar(Flag)), "</b><br>Month: %{x}<br>Previous: %{y}<extra></extra>")
+  ) |>add_trace(
+    x = ~Month,
+    y = ~Current,
+    type = "bar",
+    name = ~paste(substr(Flag, 5, nchar(Flag)), "- Current"),
+    color = as.factor("Current"),
+    hovertemplate = ~paste0("<b>", substr(Flag, 5, nchar(Flag)), "</b><br>Month: %{x}<br>Current: %{y}<extra></extra>")
+  ) |>
+  config(displayModeBar = TRUE) |>
+  layout(title = list(
+    text = paste0("<b>Lab Monthly Flag</b>"),
+    x = 0,
+    xanchor = "left"),
+    yaxis = list(title = "Flag Value"),
+    xaxis = list(title = "Month"),
+    legend = list(orientation = "h",
+                  xanchor = "center",
+                  x = 0.5,
+                  y = -0.2),
+    margin = list(t = 50)
+  )
+
+```
+
 :::
 
 ## AFP Monitoring Flags
@@ -449,9 +588,11 @@ datatable(
 
 ### Number of AFP Cases Reported
 
+**Definition:** `r afp_cases_reported$metadata$definition`  
 **Period of focus:** `r afp_cases_reported$metadata$current_period_label`  
 **Comparison periods:** `r afp_cases_reported$metadata$prior_period_label`  
 **Threshold for above or below target:** `r afp_cases_reported$metadata$threshold_rule`  
+**Incomplete Data definition:** `r afp_cases_reported$metadata$incomplete_data_definition`  
 
 ```{r afp-cases-table}
 afp_cases_reported$data |>
@@ -472,10 +613,12 @@ afp_cases_reported$data |>
 
 ### Proportion 60-Day Follow-Up Completed
 
+**Definition:** `r afp_prop_60$metadata$definition`  
 **Period of focus:** `r afp_prop_60$metadata$recent_period_label`  
 **Earlier period (for context):** `r afp_prop_60$metadata$earlier_period_label`  
 **Eligibility:** `r afp_prop_60$metadata$eligibility_note`  
-**Threshold:** `r afp_prop_60$metadata$threshold_rule`
+**Threshold:** `r afp_prop_60$metadata$threshold_rule`  
+**Incomplete Data definition:** `r afp_prop_60$metadata$incomplete_data_definition`  
 
 ```{r prop-60-table}
 datatable(
@@ -505,8 +648,10 @@ datatable(
 
 ### Proportion Inadequate Cases Unclassified
 
+**Definition:** `r afp_prop_inad_classified$metadata$definition`  
 **Eligibility:** `r afp_prop_inad_classified$metadata$eligibility_note`  
-**Threshold:** `r afp_prop_inad_classified$metadata$threshold_rule`
+**Threshold:** `r afp_prop_inad_classified$metadata$threshold_rule`  
+**Incomplete Data definition:** `r afp_prop_inad_classified$metadata$incomplete_data_definition`  
 
 ```{r prop-classified-table}
 datatable(
@@ -535,8 +680,10 @@ datatable(
 
 ### Proportion Lab Pending
 
+**Definition:** `r afp_prop_lab_pending$metadata$definition`  
 **Eligibility:** `r afp_prop_lab_pending$metadata$eligibility_note`  
-**Threshold:** `r afp_prop_lab_pending$metadata$threshold_rule`
+**Threshold:** `r afp_prop_lab_pending$metadata$threshold_rule`  
+**Incomplete Data definition:** `r afp_prop_lab_pending$metadata$incomplete_data_definition`  
 
 ```{r lab-pending-table}
 datatable(
@@ -565,11 +712,13 @@ datatable(
 
 ### Timeliness of AFP WPV/VDPV Detection
 
+**Definition:** `r afp_wpv_vdpv_timeliness$metadata$definition`  
 **Period of focus:** `r afp_wpv_vdpv_timeliness$metadata$recent_period_label`  
 **Comparison period:** `r afp_wpv_vdpv_timeliness$metadata$recent_prior_period_label`  
 **Earlier period of focus (for context):** `r afp_wpv_vdpv_timeliness$metadata$earlier_period_label`  
 **Earlier comparison period (for context):** `r afp_wpv_vdpv_timeliness$metadata$earlier_prior_period_label`  
-**Threshold:** `r afp_wpv_vdpv_timeliness$metadata$threshold_rule`
+**Threshold:** `r afp_wpv_vdpv_timeliness$metadata$threshold_rule`  
+**Incomplete data definition:** `r afp_wpv_vdpv_timeliness$metadata$incomplete_data_definition`
 
 ```{r wpv-vdpv-table}
 datatable(
@@ -603,9 +752,11 @@ datatable(
 
 ### Timeliness of Detection of Negative AFP Samples
 
+**Definition:** `r afp_neg_samples$metadata$definition`  
 **Period of focus:** `r afp_neg_samples$metadata$current_period_label`  
 **Comparison period:** `r afp_neg_samples$metadata$prior_period_label`  
-**Threshold:** `r afp_neg_samples$metadata$threshold_rule`
+**Threshold:** `r afp_neg_samples$metadata$threshold_rule`  
+**Incomplete Data definition:** `r afp_neg_samples$metadata$incomplete_data_definition`
 
 > **Note:** `r afp_neg_samples$metadata$eligibility_note`
 
@@ -631,9 +782,11 @@ datatable(
 
 ### Timeliness of Stool Shipment
 
+**Definition:** `r afp_timely_stool$metadata$definition`  
 **Period of focus:** `r afp_timely_stool$metadata$current_period_label`  
 **Comparison period:** `r afp_timely_stool$metadata$prior_period_label`  
-**Threshold:** `r afp_timely_stool$metadata$threshold_rule`
+**Threshold:** `r afp_timely_stool$metadata$threshold_rule`  
+**Incomplete data definition:** `r afp_timely_stool$metadata$incomplete_data_definition`
 
 > **Note:** `r afp_timely_stool$metadata$eligibility_note`
 
@@ -665,6 +818,7 @@ afp_timely_stool$data |>
 **Period of focus:** `r afp_inadequate_cases$metadata$current_period_label`  
 **Comparison periods:** `r afp_inadequate_cases$metadata$prior_period_label`  
 **Threshold for above or below target:** `r afp_inadequate_cases$metadata$threshold_rule`  
+**Incomplete Data definition:** `r afp_inadequate_cases$metadata$incomplete_data_definition`  
 
 ```{r inadequate-cases-table}
 afp_inadequate_cases$data |>
@@ -694,8 +848,10 @@ afp_inadequate_cases$data |>
 
 ### Proportion of Active ES Sites with Monthly Collections
 
+**Definition:** `r es_prop_active_sites_collections$metadata$definition`  
 **Period of focus:** `r es_prop_active_sites_collections$metadata$current_period_label`  
 **Threshold:** `r es_prop_active_sites_collections$metadata$threshold_rule`
+**Other statuses:** `r es_prop_active_sites_collections$metadata$other_status_definition`  
 
 ```{r es-prop-active-collections-table}
 
@@ -717,9 +873,11 @@ afp_inadequate_cases$data |>
 
 ### Number of Active ES Sites
 
+**Definition:** `r es_active_sites$metadata$definition`  
 **Period of focus:** `r es_active_sites$metadata$current_period_label`  
 **Comparison period:** `r es_active_sites$metadata$prior_period_label`  
-**Threshold:** `r es_active_sites$metadata$threshold_rule`
+**Threshold:** `r es_active_sites$metadata$threshold_rule`  
+**Other statuses definition:** `r es_active_sites$metadata$other_status_definitions`  
 
 ```{r es-active-sites-table}
 
@@ -741,9 +899,11 @@ afp_inadequate_cases$data |>
 
 ### Timeliness of ES Shipment
 
+**Definition:** `r es_timely_shipment$metadata$definition`  
 **Period of focus:** `r es_timely_shipment$metadata$current_period_label`  
 **Comparison period:** `r es_timely_shipment$metadata$prior_period_label`  
-**Threshold:** `r es_timely_shipment$metadata$threshold_rule`
+**Threshold:** `r es_timely_shipment$metadata$threshold_rule`  
+**Incomplete Data definition:** `r es_timely_shipment$metadata$incomplete_data_definition`  
 
 ```{r es-shipment-table}
   es_timely_shipment$data |>
@@ -767,9 +927,11 @@ afp_inadequate_cases$data |>
 
 ### Timeliness of ES WPV/VDPV Notification
 
+**Definition:** `r es_wpv_vdpv_timeliness$metadata$definition`  
 **Period of focus:** `r es_wpv_vdpv_timeliness$metadata$recent_period_label`  
 **Comparison period:** `r es_wpv_vdpv_timeliness$metadata$recent_prior_period_label`  
-**Threshold:** `r es_wpv_vdpv_timeliness$metadata$threshold_rule`
+**Threshold:** `r es_wpv_vdpv_timeliness$metadata$threshold_rule`  
+**Incomplete Data definition:** `r es_wpv_vdpv_timeliness$metadata$incomplete_data_definition`  
 
 ```{r es-wpv-vdpv-table}
 datatable(
@@ -810,9 +972,12 @@ datatable(
 
 ### Timeliness of Virus Isolation
 
+**Definition:** `r lab_virus_isolation_timeliness$metadata$definition`  
 **Period of focus:** `r lab_virus_isolation_timeliness$metadata$current_period_label`  
 **Comparison period:** `r lab_virus_isolation_timeliness$metadata$prior_period_label`  
-**Threshold:** `r lab_virus_isolation_timeliness$metadata$threshold_rule`
+**Threshold:** `r lab_virus_isolation_timeliness$metadata$threshold_rule`  
+**Other statuses:** `r lab_virus_isolation_timeliness$metadata$other_status_definition`  
+**Incomplete data definition:** `r lab_virus_isolation_timeliness$metadata$incomplete_data_definition`  
 
 > **Note:** `r lab_virus_isolation_timeliness$metadata$eligibility_note`
 
@@ -838,11 +1003,14 @@ datatable(
 
 ### Timeliness of ITD results
 
+**Definition:** `r lab_virus_ITD_results_timeliness$metadata$definition`  
 **Period of focus:** `r lab_virus_ITD_results_timeliness$metadata$recent_period_label`  
 **Comparison period:** `r lab_virus_ITD_results_timeliness$metadata$recent_prior_period_label`  
 **Earlier period of focus (for context):** `r lab_virus_ITD_results_timeliness$metadata$earlier_period_label`  
 **Earlier comparison period (for context):** `r lab_virus_ITD_results_timeliness$metadata$earlier_prior_period_label`  
-**Threshold:** `r lab_virus_ITD_results_timeliness$metadata$threshold_rule`
+**Threshold:** `r lab_virus_ITD_results_timeliness$metadata$threshold_rule`  
+**Incomplete Data definition:** `r lab_virus_ITD_results_timeliness$metadata$incomplete_data_definition`  
+**Other statues definition:** `r lab_virus_ITD_results_timeliness$metadata$other_status_definition`  
 
 > **Note:** `r lab_virus_ITD_results_timeliness$metadata$eligibility_note`
 
@@ -878,11 +1046,14 @@ datatable(
 
 ### Timeliness of Shipment for Sequencing
 
+**Definition:** `r lab_sequencing_shipment_timeliness$metadata$definition`  
 **Period of focus:** `r lab_sequencing_shipment_timeliness$metadata$recent_period_label`  
 **Comparison period:** `r lab_sequencing_shipment_timeliness$metadata$recent_prior_period_label`  
 **Earlier period of focus (for context):** `r lab_sequencing_shipment_timeliness$metadata$earlier_period_label`  
 **Earlier comparison period (for context):** `r lab_sequencing_shipment_timeliness$metadata$earlier_prior_period_label`  
-**Threshold:** `r lab_sequencing_shipment_timeliness$metadata$threshold_rule`
+**Threshold:** `r lab_sequencing_shipment_timeliness$metadata$threshold_rule`  
+**Other statuses definition:** `r lab_sequencing_shipment_timeliness$metadata$other_status_definitions`  
+**Incomplete Data definition:** `r lab_sequencing_shipment_timeliness$metadata$incomplete_data_definition`  
 
 > **Note:** `r lab_sequencing_shipment_timeliness$metadata$eligibility_note`
 
@@ -917,11 +1088,13 @@ datatable(
 
 ### Lab Workload
 
+**Definition:** `r lab_workload$metadata$definition`  
 **Period of focus:** `r lab_workload$metadata$current_period_label`  
 **Comparison period:** `r lab_workload$metadata$prior_period_label`  
-**Threshold:** `r lab_workload$metadata$threshold_rule`
+**Threshold:** `r lab_workload$metadata$threshold_rule`  
+**Incomplete Data definition:** `r lab_workload$metadata$incomplete_data_definition`  
 
-> **Note:** `r lab_workload$metadata$eligibility_note`
+> **Note:** `r lab_workload$metadata$eligibility_note`  
 
 ```{r lab-workload-table}
 
@@ -944,11 +1117,14 @@ datatable(
 
 ### Timeliness of Sequencing Results
 
+**Definition:** `r lab_sequencing_timeliness$metadata$definition`  
 **Period of focus:** `r lab_sequencing_timeliness$metadata$recent_period_label`  
 **Comparison period:** `r lab_sequencing_timeliness$metadata$recent_prior_period_label`  
 **Earlier period of focus (for context):** `r lab_sequencing_timeliness$metadata$earlier_period_label`  
 **Earlier comparison period (for context):** `r lab_sequencing_timeliness$metadata$earlier_prior_period_label`  
-**Threshold:** `r lab_sequencing_timeliness$metadata$threshold_rule`
+**Threshold:** `r lab_sequencing_timeliness$metadata$threshold_rule`  
+**Other statuses definition:** `r lab_sequencing_timeliness$metadata$other_status_definitions`  
+**Incomplete Data definition:** `r lab_sequencing_timeliness$metadata$incomplete_data_definition`  
 
 > **Note:** `r lab_sequencing_timeliness$metadata$eligibility_note`
 
@@ -990,6 +1166,7 @@ datatable(
 
 function remove_all_option() {
     document.getElementById("region-table").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    
     document.getElementById("country-table-m-region").getElementsByClassName("selectized")[0].selectize.removeOption("");
     document.getElementById("country-table-m-flag").getElementsByClassName("selectized")[0].selectize.removeOption("");
     document.getElementById("country-table-q-region").getElementsByClassName("selectized")[0].selectize.removeOption("");
@@ -997,11 +1174,17 @@ function remove_all_option() {
     document.getElementById("country-table-n-region").getElementsByClassName("selectized")[0].selectize.removeOption("");
     document.getElementById("country-table-n-flag").getElementsByClassName("selectized")[0].selectize.removeOption("");
     
+    document.getElementById("country-plot-m-country").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("country-plot-m-flag").getElementsByClassName("selectized")[0].selectize.removeOption("");
+
     document.getElementById("lab-region-table").getElementsByClassName("selectized")[0].selectize.removeOption("");
     document.getElementById("lab-country-table-m-region").getElementsByClassName("selectized")[0].selectize.removeOption("");
     document.getElementById("lab-country-table-m-flag").getElementsByClassName("selectized")[0].selectize.removeOption("");
     document.getElementById("lab-country-table-q-region").getElementsByClassName("selectized")[0].selectize.removeOption("");
     document.getElementById("lab-country-table-q-flag").getElementsByClassName("selectized")[0].selectize.removeOption("");
+
+    document.getElementById("lab-country-plot-m-country").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("lab-country-plot-m-flag").getElementsByClassName("selectized")[0].selectize.removeOption("");
 }
 
 function filter_default() {
@@ -1014,13 +1197,18 @@ function filter_default() {
     document.getElementById("country-table-n-region").getElementsByClassName("selectized")[0].selectize.setValue("AFRO");
     document.getElementById("country-table-n-flag").getElementsByClassName("selectized")[0].selectize.setValue("03. Proportion Inadequate Cases Unclassified");
     
-        document.getElementById("lab-region-table").getElementsByClassName("selectized")[0].selectize.setValue("AFRO");
+    document.getElementById("country-plot-m-country").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN");
+    document.getElementById("country-plot-m-flag").getElementsByClassName("selectized")[0].selectize.setValue("01. Number of AFP Cases");
 
+    document.getElementById("lab-region-table").getElementsByClassName("selectized")[0].selectize.setValue("AFRO");
+    
     document.getElementById("lab-country-table-m-region").getElementsByClassName("selectized")[0].selectize.setValue("AFRO");
     document.getElementById("lab-country-table-m-flag").getElementsByClassName("selectized")[0].selectize.setValue("13. Timeliness of Virus Isolation");
     document.getElementById("lab-country-table-q-region").getElementsByClassName("selectized")[0].selectize.setValue("AFRO");
     document.getElementById("lab-country-table-q-flag").getElementsByClassName("selectized")[0].selectize.setValue("14. Timeliness of ITD results");
     
+    document.getElementById("lab-country-plot-m-country").getElementsByClassName("selectized")[0].selectize.setValue("NICD-South Africa");
+    document.getElementById("lab-country-plot-m-flag").getElementsByClassName("selectized")[0].selectize.setValue("13. Timeliness of Virus Isolation");
     
 }
 function waitForSelectize(callback, maxTries = 50) {
