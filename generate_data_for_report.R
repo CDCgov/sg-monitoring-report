@@ -296,8 +296,8 @@ es_ship_plot <- make_monthly_plot_data(es_timely_shipment$data, "country", "curr
 plotdata_m <- dplyr::bind_rows(afp_cases_plot, afp_negdet_plot, afp_stoolship_plot, afp_inad_plot, es_prop_active_plot, num_es_plot, es_ship_plot)
 
 # lab monthly data
-lab_isolat_plot<-make_monthly_plot_data(lab_virus_isolation_timeliness$data, "culture.itd.lab", "current_median_days", "prior_3yr_median_days", "13. Timeliness of Virus Isolation")
-lab_workload_plot<-make_monthly_plot_data(lab_workload$data, "culture.itd.lab", "current_n", "prior_3yr_median", "16. Lab Workload")
+lab_isolat_plot<-make_monthly_plot_data(lab_virus_isolation_timeliness$data, "culture.itd.lab", "current_median_days", "prior_3yr_median_days", "13. Timeliness of Virus Isolation - Median days")
+lab_workload_plot<-make_monthly_plot_data(lab_workload$data, "culture.itd.lab", "current_n", "prior_3yr_median", "16. Lab Workload - number of samples")
 
 plotdata_m_lab <- dplyr::bind_rows(lab_isolat_plot, lab_workload_plot) |>
   dplyr::rename(Lab = Country)

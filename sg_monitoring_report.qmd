@@ -116,8 +116,12 @@ Most Flags are presented for the most recent 3 months on a rolling basis, with a
 
 ### Summary Table - Region
 
-The total number of countries in the denominator may change between quarters. See individual flag tabs for definition of incomplete/insufficient data.
+The total number of countries in the denominator may change between quarters. 
 
+For flags calculated on a monthly basis, insufficient data for inclusion in the denominator was considered having 2 or more months with "Incomplete Data" (or "No Active ES Sites") during the quarter. 
+For flags calculated on a quarterly basis, insufficient data for inclusion in the denominator was considered having a value of "Incomplete Data" during the quarter.
+
+See individual flag tabs for definition of incomplete data.
 
 ```{r region-summary-table-alt}
 #| echo: false
@@ -169,6 +173,8 @@ datatable(
 
 country_table_m<-country_table_monthly     |>
     dplyr::select(Flag, whoregion,Country,sg_priority_level,dplyr::matches("[0-9]"),months_below) |>
+    dplyr::mutate(sg_priority_level = factor(sg_priority_level, levels = c("HIGH", "MEDIUM", "LOW (WATCHLIST)", "LOW"), ordered = TRUE)) |>
+    dplyr::arrange(whoregion, Flag, sg_priority_level) |>
     dplyr::rename(
       Region = whoregion,
       `SG Priority Level`=sg_priority_level,
@@ -215,10 +221,11 @@ datatable(
 #| echo: false
 
 country_table_q<-country_table_quarterly    |>
-    dplyr::select(Flag,whoregion,Country,sg_priority_level,Months) |>
-    dplyr::rename(
-      Region = whoregion,
-      `SG Priority Level`=sg_priority_level    )|>
+    dplyr::select(Flag, whoregion, Country, sg_priority_level,Months) |>
+    dplyr::mutate(sg_priority_level = factor(sg_priority_level, levels = c("HIGH", "MEDIUM", "LOW (WATCHLIST)", "LOW"), ordered = TRUE)) |>
+    dplyr::arrange(whoregion, Flag, sg_priority_level) |>
+    dplyr::rename(Region = whoregion,
+                  `SG Priority Level`=sg_priority_level)|>
   #need to create a unique row for dynamic filtering
   dplyr::mutate(row_key = paste0(Country, "_", Flag)) |>
   SharedData$new(key = ~row_key)
@@ -263,11 +270,11 @@ See individual flag tabs for specific time window.
 
 country_table_n<-country_table_noperiod    |>
     dplyr::select(Flag, whoregion, Country, sg_priority_level, Pct) |>
-    dplyr::rename(
-      Region = whoregion,
-      `SG Priority Level`=sg_priority_level,
-      `Proportion`=Pct
-    )|>
+    dplyr::mutate(sg_priority_level = factor(sg_priority_level, levels = c("HIGH", "MEDIUM", "LOW (WATCHLIST)", "LOW"), ordered = TRUE)) |>
+    dplyr::arrange(whoregion, Flag, sg_priority_level) |>
+    dplyr::rename(Region = whoregion,
+                  `SG Priority Level`=sg_priority_level,
+                  `Proportion`=Pct) |>
   #need to create a unique row for dynamic filtering
   dplyr::mutate(row_key = paste0(Country, "_", Flag)) |>
   SharedData$new(key = ~row_key)
@@ -305,20 +312,20 @@ datatable(
 
 ### Visuals, Monthly AFP and ES Flags
 
-Flags that use a previous 3-year median as the reference period:
-AFP Cases Reported
-Number of Inadequate Cases
+Flags that use a previous 3-year median as the reference period:  
+AFP Cases Reported  
+Number of Inadequate Cases  
 
 Flags that use the prior year as the reference period: 
-Timeliness of Detection of Negative AFP Samples
-Timeliness of Stool Shipment
-Number of Active ES Sites
-Timeliness of ES Shipment
+Timeliness of Detection of Negative AFP Samples  
+Timeliness of Stool Shipment  
+Number of Active ES Sites  
+Timeliness of ES Shipment  
 
-Flags that use a pre-established threshold:
-Proportion of Active ES Sites with Monthly Collections
+Flags that use a pre-established threshold:  
+Proportion of Active ES Sites with Monthly Collections  
 
-See flag-specific tabs for full definition.
+See flag-specific tabs for full definitions.
 
 ```{r country-plot-m}
 #| echo: false
@@ -388,7 +395,12 @@ plot_ly(plotdata_m, colors = c("lightsteelblue", "steelblue")) |>
 
 ### Lab Summary Table - Region
 
-The total number of labs in the denominator may change between quarters. See individual flag tabs for definition of incomplete/insufficient data.
+The total number of labs in the denominator may change between quarters.
+For flags calculated on a monthly basis, insufficient data for inclusion in the denominator was considered having 2 or more months with "Incomplete Data" during the quarter. 
+For flags calculated on a quarterly basis, insufficient data for inclusion in the denominator was considered having a value of "Incomplete Data" during the quarter.
+
+See individual flag tabs for definition of incomplete data.
+
 Labs are assigned to WHO regions based on location.
 
 ```{r lab-region-summary-table}
@@ -528,6 +540,13 @@ datatable(
 ```
 
 ### Lab Visuals, Monthly Flags
+
+Flags that use a previous 3-year median as the reference period:  
+Timeliness of Virus Isolation  
+Lab Workload  
+
+See flag-specific tabs for full definitions.
+
 
 ```{r lab-country-plot-m}
 
@@ -850,7 +869,7 @@ afp_inadequate_cases$data |>
 
 **Definition:** `r es_prop_active_sites_collections$metadata$definition`  
 **Period of focus:** `r es_prop_active_sites_collections$metadata$current_period_label`  
-**Threshold:** `r es_prop_active_sites_collections$metadata$threshold_rule`
+**Threshold:** `r es_prop_active_sites_collections$metadata$threshold_rule`  
 **Other statuses:** `r es_prop_active_sites_collections$metadata$other_status_definition`  
 
 ```{r es-prop-active-collections-table}
@@ -1208,7 +1227,7 @@ function filter_default() {
     document.getElementById("lab-country-table-q-flag").getElementsByClassName("selectized")[0].selectize.setValue("14. Timeliness of ITD results");
     
     document.getElementById("lab-country-plot-m-country").getElementsByClassName("selectized")[0].selectize.setValue("NICD-South Africa");
-    document.getElementById("lab-country-plot-m-flag").getElementsByClassName("selectized")[0].selectize.setValue("13. Timeliness of Virus Isolation");
+    document.getElementById("lab-country-plot-m-flag").getElementsByClassName("selectized")[0].selectize.setValue("13. Timeliness of Virus Isolation - Median days");
     
 }
 function waitForSelectize(callback, maxTries = 50) {
