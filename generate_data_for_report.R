@@ -220,8 +220,8 @@ es_num_active_sites_summary <- create_summary_tables_monthly(es_active_sites$dat
 es_timely_shipment_summary <- create_summary_tables_monthly(es_timely_shipment$data,"11. Timeliness of ES Shipment", "country", "Below Target","Incomplete Data")
 
 afp_prop_60_summary <- create_summary_table_quarterly(afp_prop_60$data, "02. Proportion 60-Day Follow-Up Completed", "ctry", "period", "Off Target", "Incomplete Data")
-afp_timely_wpvvdpv_summary <- create_summary_table_quarterly(afp_wpv_vdpv_timeliness$data, "05. Timely AFP WPV/VDPV Detection", "ctry", "current_period", "Below Target", "Incomplete Data")
-es_wpvvdpv_timeliness_summary <- create_summary_table_quarterly(es_wpv_vdpv_timeliness$data, "12. Timely ES WPV/VDPV Notification", "country", "current_period", "Below Target","Incomplete Data")
+afp_timely_wpvvdpv_summary <- create_summary_table_quarterly(afp_wpv_vdpv_timeliness$data, "05. Timeliness of AFP WPV/VDPV Detection", "ctry", "current_period", "Below Target", "Incomplete Data")
+es_wpvvdpv_timeliness_summary <- create_summary_table_quarterly(es_wpv_vdpv_timeliness$data, "12. Timeliness of ES WPV/VDPV Notification", "country", "current_period", "Below Target","Incomplete Data")
 
 afp_prop_inad_unclassified_summary<-create_summary_table(afp_prop_inad_classified$data, "03. Proportion Inadequate Cases Unclassified", "ctry","Off Target","Incomplete Data", "prop_unclassified")
 afp_prop_lab_pending_summary<-create_summary_table(afp_prop_lab_pending$data, "04. Proportion Lab Pending", "ctry", "Off Target", "Incomplete Data", "prop_lab_pending")
