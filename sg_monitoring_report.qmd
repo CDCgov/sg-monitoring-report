@@ -310,7 +310,9 @@ datatable(
 
 ```
 
-### Visuals, Monthly AFP and ES Flags
+### Visuals, AFP and ES Flags
+
+<b>Monthly Flags</b>
 
 Flags that use a previous 3-year median as the reference period:  
 AFP Cases Reported  
@@ -382,6 +384,120 @@ plot_ly(plotdata_m, colors = c("lightsteelblue", "steelblue")) |>
                   xanchor = "center",
                   x = 0.5,
                   y = -0.2),
+    margin = list(t = 50)
+  )
+
+```
+
+<b>Other AFP/ES Flags</b>
+
+```{r country-plot-q}
+#| echo: false
+
+# get the correct order of time periods for displaying on the chart
+period_order <- plotdata_q1 |>
+  dplyr::mutate(period_end_date = lubridate::my(sub(".*- ", "", period))) |>
+  dplyr::arrange(period_end_date) |>
+  dplyr::distinct(period) |>
+  dplyr::pull(period)
+
+plotdata_q1 <- plotdata_q1 |>
+  dplyr::mutate(row_key = paste0(Country, "_", Flag, "_", period)) |>
+  SharedData$new(key = ~row_key) 
+
+plotdata_q <- plotdata_q |>
+    dplyr::mutate(
+     #flag genuinely missing values before replacing them, so hover text can distinguish them
+    current_is_missing = is.na(current_median_days),
+    prior_is_missing = is.na(prior_median_days),
+    current_median_days = dplyr::if_else(current_is_missing, 0, current_median_days),
+    prior_median_days = dplyr::if_else(prior_is_missing, 0, prior_median_days),
+    ) |> 
+  dplyr::mutate(row_key = paste0(Country, "_", Flag, "_", window)) |>
+  SharedData$new(key = ~row_key)
+
+filter_select("country-plot-q-country-1", "Country: ",
+              plotdata_q1,
+              ~Country,
+              multiple = FALSE,
+              allLevels = FALSE)
+
+filter_select("country-plot-q-flag-1", "Flag: ",
+              plotdata_q1,
+              ~Flag,
+              multiple = FALSE,
+              allLevels = FALSE)
+
+plot_ly(plotdata_q1, colors = c("lightsteelblue","steelblue")) |>
+  add_trace(
+    x = ~period,
+    y = ~value,
+    type = "bar",
+    name = ~Flag,
+    hovertemplate = ~paste0("<b>", period, "</b><br>Value: %{y}<extra></extra>")
+  ) |> 
+  add_trace(
+    x = ~period, y = ~Threshold, type = "scatter", mode = "lines+markers",
+    name = "Threshold",
+    line = list(color = "red", dash = "solid"),
+    #this line allows the threshold to appear as a line instead of a dot in the single-value plots (pct inad cases classified, pct lab pending)
+    marker = list(color = "red", size = 50, symbol = "line-ew", line = list(width = 2, color = "red")),
+    hovertemplate = ~ifelse(
+      is_missing,
+      paste0("<b>", period, "</b><br>No data<extra></extra>"),
+      "Threshold: %{y}<extra></extra>")
+  ) |>
+  config(displayModeBar = TRUE) |>
+  layout(
+    title = list(text = "<b>Non-Monthly Flags with Thresholds</b>", x = 0, xanchor = "left"),
+    yaxis = list(title = "Percent"),
+    xaxis = list(title = "Time Period", 
+                 type = "category",
+                categoryorder = "array",
+                categoryarray = period_order),
+    legend = list(orientation = "h", xanchor = "center", x = 0.5, y = -0.2),
+    margin = list(t = 50)
+  )
+
+filter_select("country-plot-q-country-2", "Country: ",
+              plotdata_q,
+              ~Country,
+              multiple = FALSE,
+              allLevels = FALSE)
+
+filter_select("country-plot-q-flag-2", "Flag: ",
+              plotdata_q,
+              ~Flag,
+              multiple = FALSE,
+              allLevels = FALSE)
+
+plot_ly(plotdata_q, colors = c("lightsteelblue","steelblue")) |>
+  add_trace(
+    x = ~window,
+    y = ~prior_median_days,
+    type = "bar",
+    name = "Prior",
+    hovertemplate = ~ifelse(
+      prior_is_missing,
+      paste0("<b>", prior_period, "</b><br>No data<extra></extra>"),
+      paste0("<b>", prior_period, "</b><br>Value: %{y}<extra></extra>"))
+  ) |> 
+  add_trace(
+    x = ~window,
+    y = ~current_median_days,
+    type = "bar",
+    name = "Current",
+    hovertemplate = ~ifelse(
+      current_is_missing,
+      paste0("<b>", current_period, "</b><br>No data<extra></extra>"),
+      paste0("<b>", current_period, "</b><br>Value: %{y}<extra></extra>"))
+  ) |> 
+  config(displayModeBar = TRUE) |>
+  layout(
+    title = list(text = "<b>Timeliness of WPV/VDPV Detection</b>", x = 0, xanchor = "left"),
+    yaxis = list(title = "Median Days"),
+    xaxis = list(title = "Time Period", type = "category"),
+    legend = list(orientation = "h", xanchor = "center", x = 0.5, y = -0.2),
     margin = list(t = 50)
   )
 
@@ -539,7 +655,9 @@ datatable(
 
 ```
 
-### Lab Visuals, Monthly Flags
+### Lab Visuals
+
+<b>Monthly Flags</b>
 
 Flags that use a previous 3-year median as the reference period:  
 Timeliness of Virus Isolation  
@@ -596,6 +714,69 @@ plot_ly(plotdata_m_lab, colors = c("lightsteelblue", "steelblue")) |>
                   y = -0.2),
     margin = list(t = 50)
   )
+
+```
+
+<b>Quarterly Flags</b>
+
+Indicators that use a quarterly summary for comparison with prior-year 
+
+```{r lab-country-plot-q}
+
+plotdata_lab_q <- plotdata_lab_q |>     
+    dplyr::mutate(
+  #flag genuinely missing values before replacing them, so hover text can distinguish them
+    current_is_missing = is.na(current_median_days),
+    prior_is_missing = is.na(prior_median_days),
+    current_median_days = dplyr::if_else(current_is_missing, 0, current_median_days),
+    prior_median_days = dplyr::if_else(prior_is_missing, 0, prior_median_days),
+    ) |> 
+  dplyr::mutate(row_key = paste0(Lab, "_", Flag, "_", window)) |>
+  SharedData$new(key = ~row_key)
+
+
+filter_select("lab-country-plot-q-country", "Lab: ",
+              plotdata_lab_q,
+              ~Lab,
+              multiple = FALSE,
+              allLevels = FALSE)
+
+filter_select("lab-country-plot-q-flag", "Flag: ",
+              plotdata_lab_q,
+              ~Flag,
+              multiple = FALSE,
+              allLevels = FALSE)
+
+plot_ly(plotdata_lab_q, colors = c("lightsteelblue","steelblue")) |>
+  add_trace(
+    x = ~window,
+    y = ~prior_median_days,
+    type = "bar",
+    name = "Prior",
+    hovertemplate = ~ifelse(
+      prior_is_missing,
+      paste0("<b>", prior_period, "</b><br>No data<extra></extra>"),
+      paste0("<b>", prior_period, "</b><br>Value: %{y}<extra></extra>"))
+  ) |>   
+  add_trace(
+    x = ~window,
+    y = ~current_median_days,
+    type = "bar",
+    name = "Current",
+    hovertemplate = ~ifelse(
+      current_is_missing,
+      paste0("<b>", current_period, "</b><br>No data<extra></extra>"),
+      paste0("<b>", current_period, "</b><br>Value: %{y}<extra></extra>"))
+  ) |> 
+  config(displayModeBar = TRUE) |>
+  layout(
+    title = list(text = "<b>Lab Quarterly Flag</b>", x = 0, xanchor = "left"),
+    yaxis = list(title = "Median Days"),
+    xaxis = list(title = "Time Period", type = "category"),
+    legend = list(orientation = "h", xanchor = "center", x = 0.5, y = -0.2),
+    margin = list(t = 50)
+  )
+
 
 ```
 
@@ -1196,6 +1377,12 @@ function remove_all_option() {
     document.getElementById("country-plot-m-country").getElementsByClassName("selectized")[0].selectize.removeOption("");
     document.getElementById("country-plot-m-flag").getElementsByClassName("selectized")[0].selectize.removeOption("");
 
+    document.getElementById("country-plot-q-country-1").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("country-plot-q-flag-1").getElementsByClassName("selectized")[0].selectize.removeOption("");
+
+    document.getElementById("country-plot-q-country-2").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("country-plot-q-flag-2").getElementsByClassName("selectized")[0].selectize.removeOption("");
+
     document.getElementById("lab-region-table").getElementsByClassName("selectized")[0].selectize.removeOption("");
     document.getElementById("lab-country-table-m-region").getElementsByClassName("selectized")[0].selectize.removeOption("");
     document.getElementById("lab-country-table-m-flag").getElementsByClassName("selectized")[0].selectize.removeOption("");
@@ -1204,6 +1391,11 @@ function remove_all_option() {
 
     document.getElementById("lab-country-plot-m-country").getElementsByClassName("selectized")[0].selectize.removeOption("");
     document.getElementById("lab-country-plot-m-flag").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    
+    document.getElementById("lab-country-plot-q-country").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("lab-country-plot-q-flag").getElementsByClassName("selectized")[0].selectize.removeOption("");
+
+
 }
 
 function filter_default() {
@@ -1219,6 +1411,12 @@ function filter_default() {
     document.getElementById("country-plot-m-country").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN");
     document.getElementById("country-plot-m-flag").getElementsByClassName("selectized")[0].selectize.setValue("01. Number of AFP Cases");
 
+  document.getElementById("country-plot-q-country-1").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN");
+  document.getElementById("country-plot-q-flag-1").getElementsByClassName("selectized")[0].selectize.setValue("02. Proportion 60-Day Follow Up Completed");
+  
+  document.getElementById("country-plot-q-country-2").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN");
+  document.getElementById("country-plot-q-flag-2").getElementsByClassName("selectized")[0].selectize.setValue("05. Timeliness of AFP WPV/VDPV Detection");
+  
     document.getElementById("lab-region-table").getElementsByClassName("selectized")[0].selectize.setValue("AFRO");
     
     document.getElementById("lab-country-table-m-region").getElementsByClassName("selectized")[0].selectize.setValue("AFRO");
@@ -1228,6 +1426,9 @@ function filter_default() {
     
     document.getElementById("lab-country-plot-m-country").getElementsByClassName("selectized")[0].selectize.setValue("NICD-South Africa");
     document.getElementById("lab-country-plot-m-flag").getElementsByClassName("selectized")[0].selectize.setValue("13. Timeliness of Virus Isolation - Median days");
+    
+  document.getElementById("lab-country-plot-q-country").getElementsByClassName("selectized")[0].selectize.setValue("NICD-South Africa");
+  document.getElementById("lab-country-plot-q-flag").getElementsByClassName("selectized")[0].selectize.setValue("14. Timeliness of ITD results");
     
 }
 function waitForSelectize(callback, maxTries = 50) {
