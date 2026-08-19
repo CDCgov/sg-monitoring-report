@@ -220,8 +220,8 @@ es_num_active_sites_summary <- create_summary_tables_monthly(es_active_sites$dat
 es_timely_shipment_summary <- create_summary_tables_monthly(es_timely_shipment$data,"11. Timeliness of ES Shipment", "country", "Below Target","Incomplete Data")
 
 afp_prop_60_summary <- create_summary_table_quarterly(afp_prop_60$data, "02. Proportion 60-Day Follow-Up Completed", "ctry", "period", "Off Target", "Incomplete Data")
-afp_timely_wpvvdpv_summary <- create_summary_table_quarterly(afp_wpv_vdpv_timeliness$data, "05. Timely AFP WPV/VDPV Detection", "ctry", "current_period", "Below Target", "Incomplete Data")
-es_wpvvdpv_timeliness_summary <- create_summary_table_quarterly(es_wpv_vdpv_timeliness$data, "12. Timely ES WPV/VDPV Notification", "country", "current_period", "Below Target","Incomplete Data")
+afp_timely_wpvvdpv_summary <- create_summary_table_quarterly(afp_wpv_vdpv_timeliness$data, "05. Timeliness of AFP WPV/VDPV Detection", "ctry", "current_period", "Below Target", "Incomplete Data")
+es_wpvvdpv_timeliness_summary <- create_summary_table_quarterly(es_wpv_vdpv_timeliness$data, "12. Timeliness of ES WPV/VDPV Notification", "country", "current_period", "Below Target","Incomplete Data")
 
 afp_prop_inad_unclassified_summary<-create_summary_table(afp_prop_inad_classified$data, "03. Proportion Inadequate Cases Unclassified", "ctry","Off Target","Incomplete Data", "prop_unclassified")
 afp_prop_lab_pending_summary<-create_summary_table(afp_prop_lab_pending$data, "04. Proportion Lab Pending", "ctry", "Off Target", "Incomplete Data", "prop_lab_pending")
@@ -296,13 +296,66 @@ es_ship_plot <- make_monthly_plot_data(es_timely_shipment$data, "country", "curr
 plotdata_m <- dplyr::bind_rows(afp_cases_plot, afp_negdet_plot, afp_stoolship_plot, afp_inad_plot, es_prop_active_plot, num_es_plot, es_ship_plot)
 
 # lab monthly data
-lab_isolat_plot<-make_monthly_plot_data(lab_virus_isolation_timeliness$data, "culture.itd.lab", "current_median_days", "prior_3yr_median_days", "13. Timeliness of Virus Isolation")
-lab_workload_plot<-make_monthly_plot_data(lab_workload$data, "culture.itd.lab", "current_n", "prior_3yr_median", "16. Lab Workload")
+lab_isolat_plot<-make_monthly_plot_data(lab_virus_isolation_timeliness$data, "culture.itd.lab", "current_median_days", "prior_3yr_median_days", "13. Timeliness of Virus Isolation - Median days")
+lab_workload_plot<-make_monthly_plot_data(lab_workload$data, "culture.itd.lab", "current_n", "prior_3yr_median", "16. Lab Workload - number of samples")
 
 plotdata_m_lab <- dplyr::bind_rows(lab_isolat_plot, lab_workload_plot) |>
   dplyr::rename(Lab = Country)
 
+# afp/es indicators that have a "window" comparison (e.g., current quarter v previous quarter)
+afp_wpv_vdpv_timeliness_plot <- make_window_plot_data(afp_wpv_vdpv_timeliness$data, "ctry", "Country", "05. Timeliness of AFP WPV/VDPV Detection")
+es_wpv_vdpv_timeliness_plot <- make_window_plot_data(es_wpv_vdpv_timeliness$data, "country", "Country", "12. Timeliness of ES WPV/VDPV Detection")
+plotdata_q <- dplyr::bind_rows(afp_wpv_vdpv_timeliness_plot,es_wpv_vdpv_timeliness_plot)
 
+
+# lab indicators that have a "window" comparison (e.g., current quarter v previous quarter)
+lab_ITD_timeliness_plot <- make_window_plot_data(lab_virus_ITD_results_timeliness$data, "culture.itd.lab", "Lab", "14. Timeliness of ITD results")
+lab_seq_ship_plot <- make_window_plot_data(lab_sequencing_shipment_timeliness$data, "culture.itd.lab", "Lab", "15. Timeliness of Shipment for Sequencing")
+lab_seq_plot <- make_window_plot_data(lab_sequencing_timeliness$data, "seq.lab", "Lab", "17. Timeliness of Sequencing Results")
+
+plotdata_lab_q <- bind_rows(lab_ITD_timeliness_plot, lab_seq_ship_plot, lab_seq_plot)
+
+# these last 3 indicators use a "threshold" for comparison and can be plotted on the same chart with a little manipulation - not worth it to functionalize
+
+afp_prop_60_plot <- afp_prop_60$data |>
+  dplyr::select(period, ctry, prop_60day) |>
+  dplyr::rename(Country = ctry) |>
+  dplyr::mutate(Flag = "02. Proportion 60-Day Follow Up Completed",
+                Threshold = 50,
+                is_missing = is.na(prop_60day),
+                value = dplyr::if_else(is_missing, 0, prop_60day)) |>
+  dplyr::select(Country, period, value, is_missing, Flag, Threshold) |>
+  dplyr::mutate(row_key = paste0(Country, "_", Flag, "_", period))
+
+afp_prop_inad_plot <- afp_prop_inad_classified$data |>
+  dplyr::select(ctry, prop_unclassified) |>
+  dplyr::rename(Country = ctry) |>
+  dplyr::mutate(Flag = "03. Proportion Inadequate Cases Unclassified",
+                Threshold = 30,
+                is_missing = is.na(prop_unclassified),
+                value = dplyr::if_else(is_missing, 0, prop_unclassified),
+                period = paste0(
+                  format(lubridate::ymd(afp_prop_inad_classified$metadata$eligibility_start), "%b %Y"),
+                  " - ",
+                  format(lubridate::ymd(afp_prop_inad_classified$metadata$eligibility_end), "%b %Y"))
+  ) |>
+  dplyr::select(Country, period, value, is_missing, Flag, Threshold)
+
+afp_prop_lab_plot <- afp_prop_lab_pending$data |>
+  dplyr::select(ctry, prop_lab_pending) |>
+  dplyr::rename(Country = ctry) |>
+  dplyr::mutate(Flag = "04. Proportion Lab Pending",
+                Threshold = 10,
+                is_missing = is.na(prop_lab_pending),
+                value = dplyr::if_else(is_missing, 0, prop_lab_pending),
+                period = paste0(
+                  format(lubridate::ymd(afp_prop_lab_pending$metadata$eligibility_start), "%b %Y"),
+                  " - ",
+                  format(lubridate::ymd(afp_prop_lab_pending$metadata$eligibility_end), "%b %Y"))
+  ) |>
+  dplyr::select(Country, period, value, is_missing, Flag, Threshold)
+
+plotdata_q1 <- dplyr::bind_rows(afp_prop_60_plot, afp_prop_inad_plot, afp_prop_lab_plot)
 
 # Save -------------------------------------------------------------------------------------------------------
 
@@ -319,4 +372,5 @@ save(end_date, max_lab_date, afp_cases_reported, afp_prop_60, afp_prop_inad_clas
      region_table, country_table_monthly, country_table_quarterly, country_table_noperiod,
      lab_region_table, lab_country_table_monthly, lab_country_table_quarterly,
      plotdata_m, plotdata_m_lab,
+     plotdata_q, plotdata_lab_q, plotdata_q1,
      file = "datatables/datatables.rda")
