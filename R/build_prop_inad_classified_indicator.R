@@ -97,8 +97,8 @@ build_prop_inadequate_classified <- function(afp_data, end_date = Sys.Date()) {
     dplyr::mutate(
       flag = case_when(
         is.na(prop_unclassified) ~ "Incomplete Data", # handles when all data is missing
-        prop_unclassified < 10 ~ "Within Target",
-        prop_unclassified >= 10 ~ "Off Target",
+        prop_unclassified < 30 ~ "Within Target",
+        prop_unclassified >= 30 ~ "Off Target",
         TRUE ~ "Review")) |>
     dplyr::select(ctry, whoregion, inad_cases, n_classified, n_unclassified,
                   prop_unclassified, flag)
@@ -113,8 +113,8 @@ build_prop_inadequate_classified <- function(afp_data, end_date = Sys.Date()) {
     eligibility_start  = start_date,
     eligibility_end    = end_date - days(90),
     eligibility_note   = eligibility_note,
-    threshold_rule     = "Off Target if 10% or more of eligible inadequate cases are unclassified",
-    definition         = "Proportion of inadequate AFP cases with onset 90 to 365 days before the report end date that are unclassified. Within Target if less than 10% of eligible inadequate cases are unclassified. Off Target if 10% or more of eligible inadequate cases are unclassified.",
+    threshold_rule     = "Off Target if 30% or more of eligible inadequate cases are unclassified",
+    definition         = "Proportion of inadequate AFP cases with onset 90 to 365 days before the report end date that are unclassified. Within Target if less than 30% of eligible inadequate cases are unclassified. Off Target if 30% or more of eligible inadequate cases are unclassified.",
     incomplete_data_definition = "Incomplete Data if there are no eligible inadequate cases.",
     possible_statuses  = c("Within Target", "Off Target", "Incomplete Data")
   )
