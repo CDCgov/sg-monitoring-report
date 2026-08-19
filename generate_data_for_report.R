@@ -331,7 +331,7 @@ afp_prop_inad_plot <- afp_prop_inad_classified$data |>
   dplyr::select(ctry, prop_unclassified) |>
   dplyr::rename(Country = ctry) |>
   dplyr::mutate(Flag = "03. Proportion Inadequate Cases Unclassified",
-                Threshold = 10,
+                Threshold = 30,
                 is_missing = is.na(prop_unclassified),
                 value = dplyr::if_else(is_missing, 0, prop_unclassified),
                 period = paste0(
