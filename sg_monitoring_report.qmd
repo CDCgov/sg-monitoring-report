@@ -1,0 +1,1456 @@
+---
+title: "GPEI Surveillance Group Monitoring Report"
+date: today
+date-format: "MMMM D, YYYY"
+format:
+  html:
+    embed-resources: true
+    page-layout: full
+    theme: default
+execute:
+  echo: false
+  message: false
+  warning: false
+---
+
+
+```{r setup}
+#| echo: false
+#| include: false
+#| warning: false
+
+library(sirfunctions)
+library(DT)
+library(tidyverse)
+library(plotly)
+library(crosstalk)
+library(cowplot)
+
+# Set end date for report
+end_date <- lubridate::ceiling_date(Sys.Date() %m-% months(2), unit = "month") %m-% days(1)
+
+# Get report data from existing tables or by sourcing generate_data_for_report.R
+use_existing_data <- FALSE  # set TRUE to skip data reload during QMD development
+
+if (use_existing_data) {
+  load("datatables/datatables.rda")
+} else {
+  source("generate_data_for_report.R")
+}
+# Note: build_ and create_ functions are sourced inside generate_data_for_report.R
+
+#function for making month column sortable chronologically instead of alphabetically (should eventually be moved to a helper function )
+make_sortable_month_col <- function(data, 
+                                       month_col_name = "Month",
+                                       filter = "top",
+                                       buttons = c("copy", "csv", "excel"),
+                                       pageLength = 15,
+                                       scrollX = TRUE) {
+  
+  month_col <- which(names(data) == month_col_name) - 1
+  
+  if (length(month_col) == 0) {
+    warning(paste0("Column '", month_col_name, "' not found — sorting fix not applied."))
+  }
+  
+  datatable(
+    data,
+    rownames = FALSE,
+    filter = filter,
+    extensions = "Buttons",
+    options = list(
+      dom = "Bfrtip",
+      buttons = buttons,
+      pageLength = pageLength,
+      scrollX = scrollX,
+      columnDefs = list(
+        list(
+          targets = month_col,
+          type = "num",
+          render = DT::JS(
+            "function(data, type, row) {",
+            "  if (type === 'sort' || type === 'type') {",
+            "    var d = new Date('01 ' + data);",
+            "    return d.getTime();",
+            "  }",
+            "  return data;",
+            "}"
+          )
+        )
+      )
+    )
+  )
+}
+
+```
+
+::: panel-tabset
+
+## Overview
+
+::: panel-tabset
+
+### Summary
+
+AFP/ES End date: **`r format(end_date, "%B %d, %Y")`**  
+Maximum Lab date: **`r format(as_date(max_lab_date[1]), "%B %d, %Y")`**
+
+The objective of the monthly SG Monitoring Report is as an early warning for potential disruption in the surveillance system.  
+Monitoring flags across AFP, ES, and Lab may indicate country- or lab-level operational challenges within key processes of detection, reporting, and testing. 
+
+Monitoring Flags are presented at the country level across AFP and ES. Flags are reported at the lab level for Lab. 
+
+The end date of AFP and ES data for the report is the last day of the month two months prior from the date the report is run (e.g., for a report run in August, the end date is June 30).  
+This is to avoid calculating monthly and quarterly flags based on potentially incomplete data from the most recent month.
+
+The end date of Lab data is the last day of the same month of the maximum date from the most recent lab file received from WHO.  
+This means that Lab flags may be calculated based on incomplete data for the most recent month.
+
+Most Flags are presented for the most recent 3 months on a rolling basis, with additional 3 months earlier for context.
+
+:::
+
+## AFP and ES Summary Tables & Visuals
+
+::: panel-tabset
+
+### Summary Table - Region
+
+The total number of countries in the denominator may change between quarters. 
+
+For flags calculated on a monthly basis, insufficient data for inclusion in the denominator was considered having 2 or more months with "Incomplete Data" (or "No Active ES Sites") during the quarter. 
+For flags calculated on a quarterly basis, insufficient data for inclusion in the denominator was considered having a value of "Incomplete Data" during the quarter.
+
+See individual flag tabs for definition of incomplete data.
+
+```{r region-summary-table-alt}
+#| echo: false
+
+region_table_alt <- region_table |>
+    dplyr::select(whoregion, flagname, string_Earlier, string_Current, countries_below_Current, countries_incomplete_Current) |>
+    dplyr::arrange(whoregion, flagname) |>
+    dplyr::rename(
+      Region = whoregion,
+      Flag=flagname,
+      `% of Countries Flagged - Earlier` = string_Earlier,
+      `% of Countries Flagged` = string_Current,
+      `Countries Flagged` = countries_below_Current,
+      `Countries with insufficient data` = countries_incomplete_Current,
+    ) |>
+  #need to create a unique row for dynamic filtering
+  dplyr::mutate(row_key = paste0(Region, "_", Flag)) |>
+  SharedData$new(key = ~row_key)
+
+
+filter_select("region-table", "Region: ", 
+              region_table_alt,
+              ~Region,
+              multiple = FALSE,
+              allLevels = FALSE)
+
+datatable(
+  region_table_alt, 
+  filter = "top",
+  extensions = 'Buttons',
+  rownames=FALSE,
+  options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'csv', 'excel'),
+    pageLength = 12,
+    #need to remove the row_key column we created for dynamic filtering
+    columnDefs = list(
+      list(visible = FALSE, targets = which(names(region_table_alt$data()) == "row_key") - 1)
+    )
+  )
+)
+
+```
+
+### Flagged Countries, Monthly Flags
+
+```{r country-summary-table-m}
+#| echo: false
+
+country_table_m<-country_table_monthly     |>
+    dplyr::select(Flag, whoregion,Country,sg_priority_level,dplyr::matches("[0-9]"),months_below) |>
+    dplyr::mutate(sg_priority_level = factor(sg_priority_level, levels = c("HIGH", "MEDIUM", "LOW (WATCHLIST)", "LOW"), ordered = TRUE)) |>
+    dplyr::arrange(whoregion, Flag, sg_priority_level) |>
+    dplyr::rename(
+      Region = whoregion,
+      `SG Priority Level`=sg_priority_level,
+      `Months Below Target` = months_below,
+    )|>
+  #need to create a unique row for dynamic filtering
+  dplyr::mutate(row_key = paste0(Country, "_", Flag)) |>
+  SharedData$new(key = ~row_key)
+
+filter_select("country-table-m-region", "Region: ", 
+              country_table_m,
+              ~Region,
+              multiple = FALSE,
+              allLevels = FALSE)
+
+filter_select("country-table-m-flag", "Flag: ", 
+              country_table_m,
+              ~Flag,
+              multiple = FALSE,
+              allLevels = FALSE)
+
+datatable(
+  country_table_m, 
+  filter = "top",
+  extensions = 'Buttons',
+  rownames=FALSE,
+  options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'csv', 'excel'),
+    pageLength = 20,
+    #need to remove the row_key column we created for dynamic filtering
+    columnDefs = list(
+      list(visible = FALSE, targets = which(names(country_table_m$data()) == "row_key") - 1)
+    )
+  )
+)
+
+
+```
+
+### Flagged Countries, Quarterly Flags
+
+```{r country-summary-table-q}
+#| echo: false
+
+country_table_q<-country_table_quarterly    |>
+    dplyr::select(Flag, whoregion, Country, sg_priority_level,Months) |>
+    dplyr::mutate(sg_priority_level = factor(sg_priority_level, levels = c("HIGH", "MEDIUM", "LOW (WATCHLIST)", "LOW"), ordered = TRUE)) |>
+    dplyr::arrange(whoregion, Flag, sg_priority_level) |>
+    dplyr::rename(Region = whoregion,
+                  `SG Priority Level`=sg_priority_level)|>
+  #need to create a unique row for dynamic filtering
+  dplyr::mutate(row_key = paste0(Country, "_", Flag)) |>
+  SharedData$new(key = ~row_key)
+
+filter_select("country-table-q-region", "Region: ", 
+              country_table_q,
+              ~Region,
+              multiple = FALSE,
+              allLevels = FALSE)
+
+filter_select("country-table-q-flag", "Flag: ", 
+              country_table_q,
+              ~Flag,
+              multiple = FALSE,
+              allLevels = FALSE)
+
+datatable(
+  country_table_q, 
+  filter = "top",
+  extensions = 'Buttons',
+  rownames=FALSE,
+  options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'csv', 'excel'),
+    pageLength = 20,
+    #need to remove the row_key column we created for dynamic filtering
+    columnDefs = list(
+      list(visible = FALSE, targets = which(names(country_table_q$data()) == "row_key") - 1)
+    )
+  )
+)
+
+
+```
+
+### Flagged Countries, Flags with other time windows
+
+See individual flag tabs for specific time window.
+
+```{r country-summary-table-n}
+#| echo: false
+
+country_table_n<-country_table_noperiod    |>
+    dplyr::select(Flag, whoregion, Country, sg_priority_level, Pct) |>
+    dplyr::mutate(sg_priority_level = factor(sg_priority_level, levels = c("HIGH", "MEDIUM", "LOW (WATCHLIST)", "LOW"), ordered = TRUE)) |>
+    dplyr::arrange(whoregion, Flag, sg_priority_level) |>
+    dplyr::rename(Region = whoregion,
+                  `SG Priority Level`=sg_priority_level,
+                  `Proportion`=Pct) |>
+  #need to create a unique row for dynamic filtering
+  dplyr::mutate(row_key = paste0(Country, "_", Flag)) |>
+  SharedData$new(key = ~row_key)
+
+filter_select("country-table-n-region", "Region: ", 
+              country_table_n,
+              ~Region,
+              multiple = FALSE,
+              allLevels = FALSE)
+
+filter_select("country-table-n-flag", "Flag: ", 
+              country_table_n,
+              ~Flag,
+              multiple = FALSE,
+              allLevels = FALSE)
+
+datatable(
+  country_table_n, 
+  filter = "top",
+  extensions = 'Buttons',
+  rownames=FALSE,
+  options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'csv', 'excel'),
+    pageLength = 20,
+    #need to remove the row_key column we created for dynamic filtering
+    columnDefs = list(
+      list(visible = FALSE, targets = which(names(country_table_n$data()) == "row_key") - 1)
+    )
+  )
+)
+
+
+```
+
+### Visuals, AFP and ES Flags
+
+<b>Monthly Flags</b>
+
+Flags that use a previous 3-year median as the reference period:  
+AFP Cases Reported  
+Number of Inadequate Cases  
+
+Flags that use the prior year as the reference period: 
+Timeliness of Detection of Negative AFP Samples  
+Timeliness of Stool Shipment  
+Number of Active ES Sites  
+Timeliness of ES Shipment  
+
+Flags that use a pre-established threshold:  
+Proportion of Active ES Sites with Monthly Collections  
+
+See flag-specific tabs for full definitions.
+
+```{r country-plot-m}
+#| echo: false
+
+
+plotdata_m <- plotdata_m |>
+  #need to create a unique row for dynamic filtering
+  dplyr::mutate(row_key = paste0(Country, "_", Flag)) |>
+  SharedData$new(key = ~row_key)
+
+filter_select("country-plot-m-country", "Country: ",
+              plotdata_m,
+              ~Country,
+              multiple = FALSE,
+              allLevels = FALSE)
+
+filter_select("country-plot-m-flag", "Flag: ",
+              plotdata_m,
+              ~Flag,
+              multiple = FALSE,
+              allLevels = FALSE)
+
+plot_ly(plotdata_m, colors = c("lightsteelblue", "steelblue")) |>
+  add_trace(
+    x = ~Month,
+    y = ~Previous,
+    type = "bar",
+    name = ~paste(substr(Flag, 5, nchar(Flag)), "- Previous"),
+    color = as.factor("Previous"),
+    hovertemplate = ~paste0("<b>", substr(Flag, 5, nchar(Flag)), "</b><br>Month: %{x} <br>Previous: %{y}<extra></extra>")
+  ) |>
+  add_trace(
+    x = ~Month,
+    y = ~Current,
+    type = "bar",
+    name = ~paste(substr(Flag, 5, nchar(Flag)), "- Current"),
+    color = as.factor("Current"),
+    hovertemplate = ~paste0("<b>", substr(Flag, 5, nchar(Flag)), "</b><br>Month: %{x} <br>Current: %{y}<extra></extra>")
+  ) |>
+  add_trace(
+    x = ~Month, y = ~Threshold, type = "scatter", mode = "lines",
+    name = "Threshold",
+    line = list(color = "red", dash = "dash"),
+    hovertemplate = "Threshold: %{y}<extra></extra>"
+  ) |>
+  config(displayModeBar = TRUE) |>
+  layout(title = list(
+    text = paste0("<b>Monthly Flag</b>"),
+    x = 0,
+    xanchor = "left"),
+    yaxis = list(title = "Flag Value"),
+    xaxis = list(title = "Month"),
+    legend = list(orientation = "h",
+                  xanchor = "center",
+                  x = 0.5,
+                  y = -0.2),
+    margin = list(t = 50)
+  )
+
+```
+
+<b>Other AFP/ES Flags</b>
+
+```{r country-plot-q}
+#| echo: false
+
+# get the correct order of time periods for displaying on the chart
+period_order <- plotdata_q1 |>
+  dplyr::mutate(period_end_date = lubridate::my(sub(".*- ", "", period))) |>
+  dplyr::arrange(period_end_date) |>
+  dplyr::distinct(period) |>
+  dplyr::pull(period)
+
+plotdata_q1 <- plotdata_q1 |>
+  dplyr::mutate(row_key = paste0(Country, "_", Flag, "_", period)) |>
+  SharedData$new(key = ~row_key) 
+
+plotdata_q <- plotdata_q |>
+    dplyr::mutate(
+     #flag genuinely missing values before replacing them, so hover text can distinguish them
+    current_is_missing = is.na(current_median_days),
+    prior_is_missing = is.na(prior_median_days),
+    current_median_days = dplyr::if_else(current_is_missing, 0, current_median_days),
+    prior_median_days = dplyr::if_else(prior_is_missing, 0, prior_median_days),
+    ) |> 
+  dplyr::mutate(row_key = paste0(Country, "_", Flag, "_", window)) |>
+  SharedData$new(key = ~row_key)
+
+filter_select("country-plot-q-country-1", "Country: ",
+              plotdata_q1,
+              ~Country,
+              multiple = FALSE,
+              allLevels = FALSE)
+
+filter_select("country-plot-q-flag-1", "Flag: ",
+              plotdata_q1,
+              ~Flag,
+              multiple = FALSE,
+              allLevels = FALSE)
+
+plot_ly(plotdata_q1, colors = c("lightsteelblue","steelblue")) |>
+  add_trace(
+    x = ~period,
+    y = ~value,
+    type = "bar",
+    name = ~Flag,
+    hovertemplate = ~paste0("<b>", period, "</b><br>Value: %{y}<extra></extra>")
+  ) |> 
+  add_trace(
+    x = ~period, y = ~Threshold, type = "scatter", mode = "lines+markers",
+    name = "Threshold",
+    line = list(color = "red", dash = "solid"),
+    #this line allows the threshold to appear as a line instead of a dot in the single-value plots (pct inad cases classified, pct lab pending)
+    marker = list(color = "red", size = 50, symbol = "line-ew", line = list(width = 2, color = "red")),
+    hovertemplate = ~ifelse(
+      is_missing,
+      paste0("<b>", period, "</b><br>No data<extra></extra>"),
+      "Threshold: %{y}<extra></extra>")
+  ) |>
+  config(displayModeBar = TRUE) |>
+  layout(
+    title = list(text = "<b>Non-Monthly Flags with Thresholds</b>", x = 0, xanchor = "left"),
+    yaxis = list(title = "Percent"),
+    xaxis = list(title = "Time Period", 
+                 type = "category",
+                categoryorder = "array",
+                categoryarray = period_order),
+    legend = list(orientation = "h", xanchor = "center", x = 0.5, y = -0.2),
+    margin = list(t = 50)
+  )
+
+filter_select("country-plot-q-country-2", "Country: ",
+              plotdata_q,
+              ~Country,
+              multiple = FALSE,
+              allLevels = FALSE)
+
+filter_select("country-plot-q-flag-2", "Flag: ",
+              plotdata_q,
+              ~Flag,
+              multiple = FALSE,
+              allLevels = FALSE)
+
+plot_ly(plotdata_q, colors = c("lightsteelblue","steelblue")) |>
+  add_trace(
+    x = ~window,
+    y = ~prior_median_days,
+    type = "bar",
+    name = "Prior",
+    hovertemplate = ~ifelse(
+      prior_is_missing,
+      paste0("<b>", prior_period, "</b><br>No data<extra></extra>"),
+      paste0("<b>", prior_period, "</b><br>Value: %{y}<extra></extra>"))
+  ) |> 
+  add_trace(
+    x = ~window,
+    y = ~current_median_days,
+    type = "bar",
+    name = "Current",
+    hovertemplate = ~ifelse(
+      current_is_missing,
+      paste0("<b>", current_period, "</b><br>No data<extra></extra>"),
+      paste0("<b>", current_period, "</b><br>Value: %{y}<extra></extra>"))
+  ) |> 
+  config(displayModeBar = TRUE) |>
+  layout(
+    title = list(text = "<b>Timeliness of WPV/VDPV Detection</b>", x = 0, xanchor = "left"),
+    yaxis = list(title = "Median Days"),
+    xaxis = list(title = "Time Period", type = "category"),
+    legend = list(orientation = "h", xanchor = "center", x = 0.5, y = -0.2),
+    margin = list(t = 50)
+  )
+
+```
+
+:::
+
+## Lab Summary Tables & Visuals
+
+::: panel-tabset
+
+### Lab Summary Table - Region
+
+The total number of labs in the denominator may change between quarters.
+For flags calculated on a monthly basis, insufficient data for inclusion in the denominator was considered having 2 or more months with "Incomplete Data" during the quarter. 
+For flags calculated on a quarterly basis, insufficient data for inclusion in the denominator was considered having a value of "Incomplete Data" during the quarter.
+
+See individual flag tabs for definition of incomplete data.
+
+Labs are assigned to WHO regions based on location.
+
+```{r lab-region-summary-table}
+#| echo: false
+
+lab_region_table_wide <- lab_region_table |>
+    dplyr::select(whoregion, flagname, string_Earlier, string_Current, countries_below_Current, countries_incomplete_Current) |>
+    dplyr::arrange(whoregion, flagname) |>
+    dplyr::rename(
+      Region = whoregion,
+      Flag=flagname,
+      `% of Labs Flagged - Earlier` = string_Earlier,
+      `% of Labs Flagged` = string_Current,
+      `Labs Flagged` = countries_below_Current,
+      `Labs with insufficient data` = countries_incomplete_Current,
+    ) |>
+  #need to create a unique row for dynamic filtering
+  dplyr::mutate(row_key = paste0(Region, "_", Flag)) |>
+  SharedData$new(key = ~row_key)
+
+
+filter_select("lab-region-table", "Region: ", 
+              lab_region_table_wide,
+              ~Region,
+              multiple = FALSE,
+              allLevels = FALSE)
+
+datatable(
+  lab_region_table_wide, 
+  filter = "top",
+  extensions = 'Buttons',
+  rownames=FALSE,
+  options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'csv', 'excel'),
+    pageLength = 12,
+    #need to remove the row_key column we created for dynamic filtering
+    columnDefs = list(
+      list(visible = FALSE, targets = which(names(lab_region_table_wide$data()) == "row_key") - 1)
+    )
+  )
+)
+
+```
+
+
+### Flagged Labs, Monthly Flags
+
+```{r lab-country-summary-table-m}
+#| echo: false
+
+lab_country_table_monthly<-lab_country_table_monthly     |>
+    dplyr::select(Flag, whoregion, Country, dplyr::matches("[0-9]"),months_below) |>
+    dplyr::rename(
+      Region = whoregion,
+      Lab = Country,
+      `Months Below Target` = months_below
+    )|>
+  #need to create a unique row for dynamic filtering
+  dplyr::mutate(row_key = paste0(Lab, "_", Flag)) |>
+  SharedData$new(key = ~row_key)
+
+filter_select("lab-country-table-m-region", "Region: ", 
+              lab_country_table_monthly,
+              ~Region,
+              multiple = FALSE,
+              allLevels = FALSE)
+
+filter_select("lab-country-table-m-flag", "Flag: ", 
+              lab_country_table_monthly,
+              ~Flag,
+              multiple = FALSE,
+              allLevels = FALSE)
+
+datatable(
+  lab_country_table_monthly, 
+  filter = "top",
+  extensions = 'Buttons',
+  rownames=FALSE,
+  options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'csv', 'excel'),
+    pageLength = 20,
+    #need to remove the row_key column we created for dynamic filtering
+    columnDefs = list(
+      list(visible = FALSE, targets = which(names(lab_country_table_monthly$data()) == "row_key") - 1)
+    )
+  )
+)
+
+
+```
+
+### Flagged Labs, Quarterly Flags
+
+```{r lab-country-summary-table-q}
+#| echo: false
+
+lab_country_table_quarterly<-lab_country_table_quarterly    |>
+    dplyr::select(Flag, whoregion, Country, Months) |>
+    dplyr::rename(
+      Region = whoregion,
+      Lab=Country)|>
+  #need to create a unique row for dynamic filtering
+  dplyr::mutate(row_key = paste0(Lab, "_", Flag)) |>
+  SharedData$new(key = ~row_key)
+
+filter_select("lab-country-table-q-region", "Region: ", 
+              lab_country_table_quarterly,
+              ~Region,
+              multiple = FALSE,
+              allLevels = FALSE)
+
+filter_select("lab-country-table-q-flag", "Flag: ", 
+              lab_country_table_quarterly,
+              ~Flag,
+              multiple = FALSE,
+              allLevels = FALSE)
+
+datatable(
+  lab_country_table_quarterly, 
+  filter = "top",
+  extensions = 'Buttons',
+  rownames=FALSE,
+  options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'csv', 'excel'),
+    pageLength = 20,
+    #need to remove the row_key column we created for dynamic filtering
+    columnDefs = list(
+      list(visible = FALSE, targets = which(names(lab_country_table_quarterly$data()) == "row_key") - 1)
+    )
+  )
+)
+
+
+```
+
+### Lab Visuals
+
+<b>Monthly Flags</b>
+
+Flags that use a previous 3-year median as the reference period:  
+Timeliness of Virus Isolation  
+Lab Workload  
+
+See flag-specific tabs for full definitions.
+
+
+```{r lab-country-plot-m}
+
+plotdata_m_lab <- plotdata_m_lab |>
+  #need to create a unique row for dynamic filtering
+  dplyr::mutate(row_key = paste0(Lab, "_", Flag)) |>
+  SharedData$new(key = ~row_key)
+
+filter_select("lab-country-plot-m-country", "Lab: ",
+              plotdata_m_lab,
+              ~Lab,
+              multiple = FALSE,
+              allLevels = FALSE)
+
+filter_select("lab-country-plot-m-flag", "Flag: ",
+              plotdata_m_lab,
+              ~Flag,
+              multiple = FALSE,
+              allLevels = FALSE)
+
+plot_ly(plotdata_m_lab, colors = c("lightsteelblue", "steelblue")) |>
+  add_trace(
+    x = ~Month,
+    y = ~Previous,
+    type = "bar",
+    name = ~paste(substr(Flag, 5, nchar(Flag)), "- Previous"),
+    color = as.factor("Previous"),
+    hovertemplate = ~paste0("<b>", substr(Flag, 5, nchar(Flag)), "</b><br>Month: %{x}<br>Previous: %{y}<extra></extra>")
+  ) |>add_trace(
+    x = ~Month,
+    y = ~Current,
+    type = "bar",
+    name = ~paste(substr(Flag, 5, nchar(Flag)), "- Current"),
+    color = as.factor("Current"),
+    hovertemplate = ~paste0("<b>", substr(Flag, 5, nchar(Flag)), "</b><br>Month: %{x}<br>Current: %{y}<extra></extra>")
+  ) |>
+  config(displayModeBar = TRUE) |>
+  layout(title = list(
+    text = paste0("<b>Lab Monthly Flag</b>"),
+    x = 0,
+    xanchor = "left"),
+    yaxis = list(title = "Flag Value"),
+    xaxis = list(title = "Month"),
+    legend = list(orientation = "h",
+                  xanchor = "center",
+                  x = 0.5,
+                  y = -0.2),
+    margin = list(t = 50)
+  )
+
+```
+
+<b>Quarterly Flags</b>
+
+Indicators that use a quarterly summary for comparison with prior-year 
+
+```{r lab-country-plot-q}
+
+plotdata_lab_q <- plotdata_lab_q |>     
+    dplyr::mutate(
+  #flag genuinely missing values before replacing them, so hover text can distinguish them
+    current_is_missing = is.na(current_median_days),
+    prior_is_missing = is.na(prior_median_days),
+    current_median_days = dplyr::if_else(current_is_missing, 0, current_median_days),
+    prior_median_days = dplyr::if_else(prior_is_missing, 0, prior_median_days),
+    ) |> 
+  dplyr::mutate(row_key = paste0(Lab, "_", Flag, "_", window)) |>
+  SharedData$new(key = ~row_key)
+
+
+filter_select("lab-country-plot-q-country", "Lab: ",
+              plotdata_lab_q,
+              ~Lab,
+              multiple = FALSE,
+              allLevels = FALSE)
+
+filter_select("lab-country-plot-q-flag", "Flag: ",
+              plotdata_lab_q,
+              ~Flag,
+              multiple = FALSE,
+              allLevels = FALSE)
+
+plot_ly(plotdata_lab_q, colors = c("lightsteelblue","steelblue")) |>
+  add_trace(
+    x = ~window,
+    y = ~prior_median_days,
+    type = "bar",
+    name = "Prior",
+    hovertemplate = ~ifelse(
+      prior_is_missing,
+      paste0("<b>", prior_period, "</b><br>No data<extra></extra>"),
+      paste0("<b>", prior_period, "</b><br>Value: %{y}<extra></extra>"))
+  ) |>   
+  add_trace(
+    x = ~window,
+    y = ~current_median_days,
+    type = "bar",
+    name = "Current",
+    hovertemplate = ~ifelse(
+      current_is_missing,
+      paste0("<b>", current_period, "</b><br>No data<extra></extra>"),
+      paste0("<b>", current_period, "</b><br>Value: %{y}<extra></extra>"))
+  ) |> 
+  config(displayModeBar = TRUE) |>
+  layout(
+    title = list(text = "<b>Lab Quarterly Flag</b>", x = 0, xanchor = "left"),
+    yaxis = list(title = "Median Days"),
+    xaxis = list(title = "Time Period", type = "category"),
+    legend = list(orientation = "h", xanchor = "center", x = 0.5, y = -0.2),
+    margin = list(t = 50)
+  )
+
+
+```
+
+:::
+
+## AFP Monitoring Flags
+
+::: panel-tabset
+
+### Number of AFP Cases Reported
+
+**Definition:** `r afp_cases_reported$metadata$definition`  
+**Period of focus:** `r afp_cases_reported$metadata$current_period_label`  
+**Comparison periods:** `r afp_cases_reported$metadata$prior_period_label`  
+**Threshold for above or below target:** `r afp_cases_reported$metadata$threshold_rule`  
+**Incomplete Data definition:** `r afp_cases_reported$metadata$incomplete_data_definition`  
+
+```{r afp-cases-table}
+afp_cases_reported$data |>
+    dplyr::arrange(place.admin.0, lubridate::my(month_label)) |>
+    dplyr::rename(
+      Country = place.admin.0,
+      Region = whoregion,
+      `SG Priority Level` = sg_priority_level,
+      Month = month_label,
+      Cases = current_period_counts,
+      `3yr Median` = prior_3yr_median,
+      `Yrs w/ Data` = prior_yrs_w_data,
+      `Percent Change` = perc_change,
+      Flag = flag
+    ) |>
+  make_sortable_month_col()
+```
+
+### Proportion 60-Day Follow-Up Completed
+
+**Definition:** `r afp_prop_60$metadata$definition`  
+**Period of focus:** `r afp_prop_60$metadata$recent_period_label`  
+**Earlier period (for context):** `r afp_prop_60$metadata$earlier_period_label`  
+**Eligibility:** `r afp_prop_60$metadata$eligibility_note`  
+**Threshold:** `r afp_prop_60$metadata$threshold_rule`  
+**Incomplete Data definition:** `r afp_prop_60$metadata$incomplete_data_definition`  
+
+```{r prop-60-table}
+datatable(
+  afp_prop_60$data |>
+    dplyr::arrange(ctry, period) |>
+    dplyr::rename(
+      Country = ctry,
+      Region = whoregion,
+      `SG Priority Level` = sg_priority_level,
+      Period = period,
+      `Inadequate Cases` = inad_cases,
+      `Got 60d` = got_60day,
+      `% Got 60d` = prop_60day,
+      Flag = flag
+    ),
+  rownames=FALSE,
+  filter = "top", 
+  extensions = "Buttons",
+  options = list(
+    dom = "Bfrtip", 
+    buttons = c("copy", "csv", "excel"),
+    pageLength = 15, 
+    scrollX = TRUE
+    )
+)
+```
+
+### Proportion Inadequate Cases Unclassified
+
+**Definition:** `r afp_prop_inad_classified$metadata$definition`  
+**Eligibility:** `r afp_prop_inad_classified$metadata$eligibility_note`  
+**Threshold:** `r afp_prop_inad_classified$metadata$threshold_rule`  
+**Incomplete Data definition:** `r afp_prop_inad_classified$metadata$incomplete_data_definition`  
+
+```{r prop-classified-table}
+datatable(
+  afp_prop_inad_classified$data |>
+    dplyr::arrange(ctry) |>
+    dplyr::rename(
+      Country = ctry,
+      Region = whoregion,
+      `SG Priority Level` = sg_priority_level,
+      `Inad Cases` = inad_cases,
+      `# Classified` = n_classified,
+      `# Unclassified` = n_unclassified,
+      `% Unclassified` = prop_unclassified,
+      Flag = flag
+    ),
+  rownames=FALSE,
+  filter = "top", 
+  extensions = "Buttons",
+  options = list(
+    dom = "Bfrtip", 
+    buttons = c("copy", "csv", "excel"),
+    pageLength = 15, 
+    scrollX = TRUE)
+)
+```
+
+### Proportion Lab Pending
+
+**Definition:** `r afp_prop_lab_pending$metadata$definition`  
+**Eligibility:** `r afp_prop_lab_pending$metadata$eligibility_note`  
+**Threshold:** `r afp_prop_lab_pending$metadata$threshold_rule`  
+**Incomplete Data definition:** `r afp_prop_lab_pending$metadata$incomplete_data_definition`  
+
+```{r lab-pending-table}
+datatable(
+  afp_prop_lab_pending$data |>
+    dplyr::arrange(ctry) |>
+    dplyr::rename(
+      Country = ctry,
+      Region = whoregion,
+      `SG Priority Level` = sg_priority_level,
+      `Eligible Samples` = eligible_samples,
+      `Pending Samples` = pending_samples,
+      `% Pending` = prop_lab_pending,
+      Flag = flag
+    ),
+  rownames=FALSE,
+  filter = "top", 
+  extensions = "Buttons",
+  options = list(
+    dom = "Bfrtip", 
+    buttons = c("copy", "csv", "excel"),
+    pageLength = 15, 
+    scrollX = TRUE
+    )
+)
+```
+
+### Timeliness of AFP WPV/VDPV Detection
+
+**Definition:** `r afp_wpv_vdpv_timeliness$metadata$definition`  
+**Period of focus:** `r afp_wpv_vdpv_timeliness$metadata$recent_period_label`  
+**Comparison period:** `r afp_wpv_vdpv_timeliness$metadata$recent_prior_period_label`  
+**Earlier period of focus (for context):** `r afp_wpv_vdpv_timeliness$metadata$earlier_period_label`  
+**Earlier comparison period (for context):** `r afp_wpv_vdpv_timeliness$metadata$earlier_prior_period_label`  
+**Threshold:** `r afp_wpv_vdpv_timeliness$metadata$threshold_rule`  
+**Incomplete data definition:** `r afp_wpv_vdpv_timeliness$metadata$incomplete_data_definition`
+
+```{r wpv-vdpv-table}
+datatable(
+  afp_wpv_vdpv_timeliness$data |>
+    dplyr::arrange(ctry, current_period) |>
+    dplyr::rename(
+      Country = ctry,
+      Region = whoregion,
+      `SG Priority Level` = sg_priority_level,
+      Window = window,
+      `Current Period` = current_period,
+      `Prior Period` = prior_period,
+      `Current #` = current_count,
+      `Current Median (days)` = current_median_days,
+      `Prior #` = prior_count,
+      `Prior Median (days)` = prior_median_days,
+      `% Change` = perc_change,
+      Flag = flag
+    ),
+  rownames=FALSE,
+  filter = "top", 
+  extensions = "Buttons",
+  options = list(
+    dom = "Bfrtip",
+    buttons = c("copy", "csv", "excel"),
+    pageLength = 15, 
+    scrollX = TRUE
+    )
+)
+```
+
+### Timeliness of Detection of Negative AFP Samples
+
+**Definition:** `r afp_neg_samples$metadata$definition`  
+**Period of focus:** `r afp_neg_samples$metadata$current_period_label`  
+**Comparison period:** `r afp_neg_samples$metadata$prior_period_label`  
+**Threshold:** `r afp_neg_samples$metadata$threshold_rule`  
+**Incomplete Data definition:** `r afp_neg_samples$metadata$incomplete_data_definition`
+
+> **Note:** `r afp_neg_samples$metadata$eligibility_note`
+
+
+```{r neg-samples-table}
+
+ afp_neg_samples$data |>
+    dplyr::arrange(country, lubridate::my(month_label)) |>
+    dplyr::rename(
+      Country = country,
+      Region = whoregion,
+      `SG Priority Level` = sg_priority_level,
+      Month = month_label,
+      `Lab Type` = culture.itd.cat,
+      `Current #` = current_n,
+      `Current Median (days)` = current_median_days,
+      `Prior #` = prior_n,
+      `Prior Median (days)` = prior_median_days,
+      `% Change` = perc_change,
+      Flag = flag) |>
+  make_sortable_month_col()
+```
+
+### Timeliness of Stool Shipment
+
+**Definition:** `r afp_timely_stool$metadata$definition`  
+**Period of focus:** `r afp_timely_stool$metadata$current_period_label`  
+**Comparison period:** `r afp_timely_stool$metadata$prior_period_label`  
+**Threshold:** `r afp_timely_stool$metadata$threshold_rule`  
+**Incomplete data definition:** `r afp_timely_stool$metadata$incomplete_data_definition`
+
+> **Note:** `r afp_timely_stool$metadata$eligibility_note`
+
+
+```{r stool-shipment-table}
+afp_timely_stool$data |>
+    dplyr::arrange(country, lubridate::my(month_label)) |>
+    dplyr::rename(
+      Country = country,
+      Region = whoregion,
+      `SG Priority Level` = sg_priority_level,
+      Month = month_label,
+      `Lab Type` = culture.itd.cat,
+      `Current #` = current_n,
+      `Current Median (days)` = current_median_days,
+      `Prior #` = prior_n,
+      `Prior Median (days)` = prior_median_days,
+      `% Change` = perc_change,
+      Flag = flag
+    ) |>
+  make_sortable_month_col()
+
+```
+
+
+### Number of Inadequate Cases
+
+**Definition:**  `r afp_inadequate_cases$metadata$definition`  
+**Period of focus:** `r afp_inadequate_cases$metadata$current_period_label`  
+**Comparison periods:** `r afp_inadequate_cases$metadata$prior_period_label`  
+**Threshold for above or below target:** `r afp_inadequate_cases$metadata$threshold_rule`  
+**Incomplete Data definition:** `r afp_inadequate_cases$metadata$incomplete_data_definition`  
+
+```{r inadequate-cases-table}
+afp_inadequate_cases$data |>
+    dplyr::arrange(place.admin.0, lubridate::my(month_label)) |>
+    dplyr::rename(
+      Country = place.admin.0,
+      Region = whoregion,
+      `SG Priority Level` = sg_priority_level,
+      Month = month_label,
+      Cases = current_period_counts,
+      `3yr Median` = prior_3yr_median,
+      `Yrs w/ Data` = prior_yrs_w_data,
+      `Percent Change` = perc_change,
+      Flag = flag
+    ) |>
+  make_sortable_month_col()
+
+```
+
+
+:::
+
+## ES Monitoring Flags
+
+::: panel-tabset
+
+
+### Proportion of Active ES Sites with Monthly Collections
+
+**Definition:** `r es_prop_active_sites_collections$metadata$definition`  
+**Period of focus:** `r es_prop_active_sites_collections$metadata$current_period_label`  
+**Threshold:** `r es_prop_active_sites_collections$metadata$threshold_rule`  
+**Other statuses:** `r es_prop_active_sites_collections$metadata$other_status_definition`  
+
+```{r es-prop-active-collections-table}
+
+  es_prop_active_sites_collections$data |>
+    dplyr::arrange(country, lubridate::my(month_label)) |>
+    dplyr::rename(
+      Country                  = country,
+      Region                   = whoregion,
+      `SG Priority Level`      = sg_priority_level,
+      Month                    = month_label,
+      `Active Sites`           = active_sites,
+      `Sites w/ ≥1 Collection` = sites_with_1_collection,
+      `% With Collection`      = prop_sites_with_1_collection,
+      Flag                     = flag
+    ) |>
+  make_sortable_month_col()
+
+```
+
+### Number of Active ES Sites
+
+**Definition:** `r es_active_sites$metadata$definition`  
+**Period of focus:** `r es_active_sites$metadata$current_period_label`  
+**Comparison period:** `r es_active_sites$metadata$prior_period_label`  
+**Threshold:** `r es_active_sites$metadata$threshold_rule`  
+**Other statuses definition:** `r es_active_sites$metadata$other_status_definitions`  
+
+```{r es-active-sites-table}
+
+  es_active_sites$data |>
+    dplyr::arrange(country, lubridate::my(month_label)) |>
+    dplyr::rename(
+      Country = country,
+      Region = whoregion,
+      `SG Priority Level` = sg_priority_level,
+      Month = month_label,
+      `Current Sites` = current_active_sites,
+      `Prior Sites` = prior_active_sites,
+      `% Change` = perc_change,
+      Flag = flag
+    ) |>
+  make_sortable_month_col()
+
+```
+
+### Timeliness of ES Shipment
+
+**Definition:** `r es_timely_shipment$metadata$definition`  
+**Period of focus:** `r es_timely_shipment$metadata$current_period_label`  
+**Comparison period:** `r es_timely_shipment$metadata$prior_period_label`  
+**Threshold:** `r es_timely_shipment$metadata$threshold_rule`  
+**Incomplete Data definition:** `r es_timely_shipment$metadata$incomplete_data_definition`  
+
+```{r es-shipment-table}
+  es_timely_shipment$data |>
+    dplyr::arrange(country, lubridate::my(month_label)) |>
+    dplyr::rename(
+      Country = country,
+      Region = whoregion,
+      `SG Priority Level` = sg_priority_level,
+      Month = month_label,
+      `Lab Type` = es.lab.type,
+      `Current #` = current_count,
+      `Current Median (days)` = current_median_days,
+      `Prior #` = prior_count,
+      `Prior Median (days)` = prior_median_days,
+      `% Change` = perc_change,
+      Flag = flag
+    ) |>
+  make_sortable_month_col()
+  
+```
+
+### Timeliness of ES WPV/VDPV Notification
+
+**Definition:** `r es_wpv_vdpv_timeliness$metadata$definition`  
+**Period of focus:** `r es_wpv_vdpv_timeliness$metadata$recent_period_label`  
+**Comparison period:** `r es_wpv_vdpv_timeliness$metadata$recent_prior_period_label`  
+**Threshold:** `r es_wpv_vdpv_timeliness$metadata$threshold_rule`  
+**Incomplete Data definition:** `r es_wpv_vdpv_timeliness$metadata$incomplete_data_definition`  
+
+```{r es-wpv-vdpv-table}
+datatable(
+  es_wpv_vdpv_timeliness$data |>
+    dplyr::arrange(country, current_period) |>
+    dplyr::rename(
+      Country = country,
+      Region = whoregion,
+      `SG Priority Level` = sg_priority_level,
+      Window = window,
+      `Current Period` = current_period,
+      `Prior Period` = prior_period,
+      `Lab Type` = es.lab.type,
+      `Current #` = current_count,
+      `Current Median (days)` = current_median_days,
+      `Prior #` = prior_count,
+      `Prior Median (days)` = prior_median_days,
+      `% Change` = perc_change,
+      Flag = flag
+    ),
+  rownames=FALSE,
+  filter = "top", 
+  extensions = "Buttons",
+  options = list(
+    dom = "Bfrtip", 
+    buttons = c("copy", "csv", "excel"),
+    pageLength = 15,
+    scrollX = TRUE
+    )
+)
+```
+
+:::
+
+## Lab Monitoring Flags
+
+::: panel-tabset
+
+### Timeliness of Virus Isolation
+
+**Definition:** `r lab_virus_isolation_timeliness$metadata$definition`  
+**Period of focus:** `r lab_virus_isolation_timeliness$metadata$current_period_label`  
+**Comparison period:** `r lab_virus_isolation_timeliness$metadata$prior_period_label`  
+**Threshold:** `r lab_virus_isolation_timeliness$metadata$threshold_rule`  
+**Other statuses:** `r lab_virus_isolation_timeliness$metadata$other_status_definition`  
+**Incomplete data definition:** `r lab_virus_isolation_timeliness$metadata$incomplete_data_definition`  
+
+> **Note:** `r lab_virus_isolation_timeliness$metadata$eligibility_note`
+
+```{r virus-isolation-table}
+
+  lab_virus_isolation_timeliness$data |>
+    dplyr::arrange(culture.itd.lab, lubridate::my(month_label)) |>
+    dplyr::rename(
+      `Culture/ITD Lab`      = culture.itd.lab,
+      Region = whoregion,
+      Month                  = month_label,
+      `Current #`            = current_n,
+      `Current Median (days)`   = current_median_days,
+      `Prior 3yr #`          = prior_3yr_n,
+      `Prior 3yr Median (days)` = prior_3yr_median_days,
+      `Yrs w/ Data`          = prior_yrs_w_data,
+      `% Change`             = perc_change,
+      Flag                   = flag
+    ) |>
+  make_sortable_month_col()
+
+```
+
+### Timeliness of ITD results
+
+**Definition:** `r lab_virus_ITD_results_timeliness$metadata$definition`  
+**Period of focus:** `r lab_virus_ITD_results_timeliness$metadata$recent_period_label`  
+**Comparison period:** `r lab_virus_ITD_results_timeliness$metadata$recent_prior_period_label`  
+**Earlier period of focus (for context):** `r lab_virus_ITD_results_timeliness$metadata$earlier_period_label`  
+**Earlier comparison period (for context):** `r lab_virus_ITD_results_timeliness$metadata$earlier_prior_period_label`  
+**Threshold:** `r lab_virus_ITD_results_timeliness$metadata$threshold_rule`  
+**Incomplete Data definition:** `r lab_virus_ITD_results_timeliness$metadata$incomplete_data_definition`  
+**Other statues definition:** `r lab_virus_ITD_results_timeliness$metadata$other_status_definition`  
+
+> **Note:** `r lab_virus_ITD_results_timeliness$metadata$eligibility_note`
+
+```{r ITD-results-table}
+datatable(
+  lab_virus_ITD_results_timeliness$data |>
+    dplyr::arrange(culture.itd.lab, window) |>
+    dplyr::rename(
+      `Culture/ITD Lab`      = culture.itd.lab,
+      Region = whoregion,
+      Window = window,
+      `Current Period` = current_period,
+      `Prior Period` = prior_period,
+      `Current #` = current_n,
+      `Current Median (days)` = current_median_days,
+      `Prior #` = prior_n,
+      `Prior Median (days)` = prior_median_days,
+      `% Change` = perc_change,
+      Flag = flag
+    ),
+  rownames=FALSE,
+  filter = "top",
+  extensions = "Buttons",
+  options = list(
+    dom = "Bfrtip",
+    buttons = c("copy", "csv", "excel"),
+    pageLength = 15,
+    scrollX = TRUE
+  )
+)
+```
+
+
+### Timeliness of Shipment for Sequencing
+
+**Definition:** `r lab_sequencing_shipment_timeliness$metadata$definition`  
+**Period of focus:** `r lab_sequencing_shipment_timeliness$metadata$recent_period_label`  
+**Comparison period:** `r lab_sequencing_shipment_timeliness$metadata$recent_prior_period_label`  
+**Earlier period of focus (for context):** `r lab_sequencing_shipment_timeliness$metadata$earlier_period_label`  
+**Earlier comparison period (for context):** `r lab_sequencing_shipment_timeliness$metadata$earlier_prior_period_label`  
+**Threshold:** `r lab_sequencing_shipment_timeliness$metadata$threshold_rule`  
+**Other statuses definition:** `r lab_sequencing_shipment_timeliness$metadata$other_status_definitions`  
+**Incomplete Data definition:** `r lab_sequencing_shipment_timeliness$metadata$incomplete_data_definition`  
+
+> **Note:** `r lab_sequencing_shipment_timeliness$metadata$eligibility_note`
+
+```{r sequencing-shipment-table}
+datatable(
+  lab_sequencing_shipment_timeliness$data |>
+    dplyr::arrange(culture.itd.lab, window) |>
+    dplyr::rename(
+      `Culture/ITD Lab`      = culture.itd.lab,
+      Region = whoregion,
+      Window                  = window,
+      `Current Period` = current_period,
+      `Prior Period` = prior_period,
+      `Current #` = current_n,
+      `Current Median (days)` = current_median_days,
+      `Prior #` = prior_n,
+      `Prior Median (days)` = prior_median_days,
+      `% Change` = perc_change,
+      Flag = flag
+    ),
+  rownames=FALSE,
+  filter = "top",
+  extensions = "Buttons",
+  options = list(
+    dom = "Bfrtip",
+    buttons = c("copy", "csv", "excel"),
+    pageLength = 15,
+    scrollX = TRUE
+  )
+)
+```
+
+### Lab Workload
+
+**Definition:** `r lab_workload$metadata$definition`  
+**Period of focus:** `r lab_workload$metadata$current_period_label`  
+**Comparison period:** `r lab_workload$metadata$prior_period_label`  
+**Threshold:** `r lab_workload$metadata$threshold_rule`  
+**Incomplete Data definition:** `r lab_workload$metadata$incomplete_data_definition`  
+
+> **Note:** `r lab_workload$metadata$eligibility_note`  
+
+```{r lab-workload-table}
+
+  lab_workload$data |>
+    dplyr::arrange(culture.itd.lab, lubridate::my(month_label)) |>
+    dplyr::rename(
+      `Culture/ITD Lab`      = culture.itd.lab,
+      Region = whoregion,
+      Month                  = month_label,
+      `Current #`            = current_n,
+      `Prior 3yr Median (days)` = prior_3yr_median,
+      `Yrs w/ Data`          = prior_yrs_w_data,
+      `% Change`             = perc_change,
+      Flag                   = flag
+    ) |>
+  make_sortable_month_col()
+
+```
+
+
+### Timeliness of Sequencing Results
+
+**Definition:** `r lab_sequencing_timeliness$metadata$definition`  
+**Period of focus:** `r lab_sequencing_timeliness$metadata$recent_period_label`  
+**Comparison period:** `r lab_sequencing_timeliness$metadata$recent_prior_period_label`  
+**Earlier period of focus (for context):** `r lab_sequencing_timeliness$metadata$earlier_period_label`  
+**Earlier comparison period (for context):** `r lab_sequencing_timeliness$metadata$earlier_prior_period_label`  
+**Threshold:** `r lab_sequencing_timeliness$metadata$threshold_rule`  
+**Other statuses definition:** `r lab_sequencing_timeliness$metadata$other_status_definitions`  
+**Incomplete Data definition:** `r lab_sequencing_timeliness$metadata$incomplete_data_definition`  
+
+> **Note:** `r lab_sequencing_timeliness$metadata$eligibility_note`
+
+```{r lab-sequencing-timeliness-table}
+datatable(
+  lab_sequencing_timeliness$data |>
+    dplyr::arrange(seq.lab, window) |>
+    dplyr::rename(
+      `Sequencing Lab`      = seq.lab,
+      Region = whoregion,
+      Window                  = window,
+      `Current Period` = current_period,
+      `Prior Period` = prior_period,
+      `Current #` = current_n,
+      `Current Median (days)` = current_median_days,
+      `Prior #` = prior_n,
+      `Prior Median (days)` = prior_median_days,
+      `% Change` = perc_change,
+      Flag = flag
+    ),
+  rownames=FALSE,
+  filter = "top",
+  extensions = "Buttons",
+  options = list(
+    dom = "Bfrtip",
+    buttons = c("copy", "csv", "excel"),
+    pageLength = 15,
+    scrollX = TRUE
+  )
+)
+```
+
+:::
+
+:::
+
+```{js enable-js-graphs}
+//| echo: false
+
+function remove_all_option() {
+    document.getElementById("region-table").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    
+    document.getElementById("country-table-m-region").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("country-table-m-flag").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("country-table-q-region").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("country-table-q-flag").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("country-table-n-region").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("country-table-n-flag").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    
+    document.getElementById("country-plot-m-country").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("country-plot-m-flag").getElementsByClassName("selectized")[0].selectize.removeOption("");
+
+    document.getElementById("country-plot-q-country-1").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("country-plot-q-flag-1").getElementsByClassName("selectized")[0].selectize.removeOption("");
+
+    document.getElementById("country-plot-q-country-2").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("country-plot-q-flag-2").getElementsByClassName("selectized")[0].selectize.removeOption("");
+
+    document.getElementById("lab-region-table").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("lab-country-table-m-region").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("lab-country-table-m-flag").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("lab-country-table-q-region").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("lab-country-table-q-flag").getElementsByClassName("selectized")[0].selectize.removeOption("");
+
+    document.getElementById("lab-country-plot-m-country").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("lab-country-plot-m-flag").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    
+    document.getElementById("lab-country-plot-q-country").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("lab-country-plot-q-flag").getElementsByClassName("selectized")[0].selectize.removeOption("");
+
+
+}
+
+function filter_default() {
+    document.getElementById("region-table").getElementsByClassName("selectized")[0].selectize.setValue("AFRO");
+    
+    document.getElementById("country-table-m-region").getElementsByClassName("selectized")[0].selectize.setValue("AFRO");
+    document.getElementById("country-table-m-flag").getElementsByClassName("selectized")[0].selectize.setValue("01. AFP Cases Reported");
+    document.getElementById("country-table-q-region").getElementsByClassName("selectized")[0].selectize.setValue("AFRO");
+    document.getElementById("country-table-q-flag").getElementsByClassName("selectized")[0].selectize.setValue("02. Proportion 60-Day Follow-Up Completed");
+    document.getElementById("country-table-n-region").getElementsByClassName("selectized")[0].selectize.setValue("AFRO");
+    document.getElementById("country-table-n-flag").getElementsByClassName("selectized")[0].selectize.setValue("03. Proportion Inadequate Cases Unclassified");
+    
+    document.getElementById("country-plot-m-country").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN");
+    document.getElementById("country-plot-m-flag").getElementsByClassName("selectized")[0].selectize.setValue("01. Number of AFP Cases");
+
+  document.getElementById("country-plot-q-country-1").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN");
+  document.getElementById("country-plot-q-flag-1").getElementsByClassName("selectized")[0].selectize.setValue("02. Proportion 60-Day Follow Up Completed");
+  
+  document.getElementById("country-plot-q-country-2").getElementsByClassName("selectized")[0].selectize.setValue("AFGHANISTAN");
+  document.getElementById("country-plot-q-flag-2").getElementsByClassName("selectized")[0].selectize.setValue("05. Timeliness of AFP WPV/VDPV Detection");
+  
+    document.getElementById("lab-region-table").getElementsByClassName("selectized")[0].selectize.setValue("AFRO");
+    
+    document.getElementById("lab-country-table-m-region").getElementsByClassName("selectized")[0].selectize.setValue("AFRO");
+    document.getElementById("lab-country-table-m-flag").getElementsByClassName("selectized")[0].selectize.setValue("13. Timeliness of Virus Isolation");
+    document.getElementById("lab-country-table-q-region").getElementsByClassName("selectized")[0].selectize.setValue("AFRO");
+    document.getElementById("lab-country-table-q-flag").getElementsByClassName("selectized")[0].selectize.setValue("14. Timeliness of ITD results");
+    
+    document.getElementById("lab-country-plot-m-country").getElementsByClassName("selectized")[0].selectize.setValue("NICD-South Africa");
+    document.getElementById("lab-country-plot-m-flag").getElementsByClassName("selectized")[0].selectize.setValue("13. Timeliness of Virus Isolation - Median days");
+    
+  document.getElementById("lab-country-plot-q-country").getElementsByClassName("selectized")[0].selectize.setValue("NICD-South Africa");
+  document.getElementById("lab-country-plot-q-flag").getElementsByClassName("selectized")[0].selectize.setValue("14. Timeliness of ITD results");
+    
+}
+function waitForSelectize(callback, maxTries = 50) {
+    let tries = 0;
+    const check = setInterval(function() {
+        tries++;
+        const el = document.getElementById("region-table");
+        if (el && el.getElementsByClassName("selectized")[0] && el.getElementsByClassName("selectized")[0].selectize) {
+            clearInterval(check);
+            callback();
+        } else if (tries >= maxTries) {
+            clearInterval(check);
+            console.warn("Selectize widgets not found after waiting.");
+        }
+    }, 100);
+}
+
+window.onload = function() {
+    waitForSelectize(function() {
+        remove_all_option();
+        filter_default();
+    });
+}
+
+```

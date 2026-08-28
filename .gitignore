@@ -4,6 +4,10 @@
 .Ruserdata
 
 /.quarto/
-sg-monitoring-report.html
-/data_cache
+sg_monitoring_report.html
+afp_report.html
+/datatables
 /Excel_Output
+
+**/*.quarto_ipynb
+

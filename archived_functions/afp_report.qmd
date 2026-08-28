@@ -1,0 +1,181 @@
+---
+title: "AFP Surveillance Monitoring — Demo"
+date: today
+date-format: "MMMM D, YYYY"
+format:
+  html:
+    embed-resources: true
+    page-layout: full
+    theme: default
+execute:
+  echo: false
+  message: false
+  warning: false
+---
+
+```{r setup}
+library(sirfunctions)
+library(DT)
+library(tidyverse)
+
+end_date <- lubridate::ceiling_date(Sys.Date() %m-% months(1), unit = "month") %m-% days(1)
+
+# Source repo functions ----
+lapply(list.files("R"), \(fx) source(file.path("R", fx)))
+
+```
+
+```{r load-data}
+raw_data <- get_all_polio_data(attach.spatial.data = FALSE)
+afp_data <- raw_data$afp
+pos <- raw_data$pos
+```
+
+```{r build-indicators}
+# Build indicators — keep full list for metadata access
+afp_cases_reported    <- build_afp_cases_reported(afp_data, end_date)
+prop_60               <- build_prop_60_day_follow_up(afp_data)
+afp_wpv_vdpv <- build_wpv_vdpv_timeliness_indicator(pos, end_date)
+
+# Extract data and add risk category
+afp_cases_reported_data <- afp_cases_reported$data |>
+  sirfunctions:::add_risk_category(ctry_col = "place.admin.0") |>
+  dplyr::select(-Region) |>
+  dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "place.admin.0")
+
+prop_60_data <- prop_60$data |>
+  sirfunctions:::add_risk_category(ctry_col = "ctry") |>
+  dplyr::select(-Region) |>
+  dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "ctry")
+
+afp_wpv_vdpv_data <- afp_wpv_vdpv$data |>
+  sirfunctions:::add_risk_category(ctry_col = "ctry") |>
+  dplyr::select(-Region) |>
+  dplyr::relocate(dplyr::any_of("SG Priority Level"), .after = "ctry")
+```
+
+
+::: panel-tabset
+
+
+
+## AFP Cases Reported
+
+**Period:** `r afp_cases_reported$metadata$current_period_label`  
+**Compared to:** `r afp_cases_reported$metadata$prior_period_label`  
+**Threshold:** `r afp_cases_reported$metadata$threshold_rule`
+
+```{r afp-cases-table}
+datatable(
+  afp_cases_reported_data |>
+    dplyr::arrange(place.admin.0, month_label) |>
+    dplyr::rename(
+      Country      = "place.admin.0",
+      Region       = "whoregion",
+      `Month/Year` = "month_label",
+      Cases        = "current_period_counts",
+      `3yr Median` = "prior_median",
+      `Yrs w/ Data`= "prior_yrs_w_data",
+      `Lower 50%`  = "lower_50pct",
+      `Upper 50%`  = "upper_50pct",
+      Flag         = "flag"
+    ),
+  filter   = "top",
+  extensions = "Buttons",
+  options  = list(
+    dom        = "Bfrtip",
+    buttons    = c("copy", "csv", "excel"),
+    pageLength = 15,
+    scrollX    = TRUE,
+    columnDefs = list(
+      list(className = "dt-center", targets = "_all")
+    )
+  )
+)
+```
+
+## Proportion 60-Day Follow-Up Done
+
+**Recent period:** `r prop_60$metadata$recent_period_label`  
+**Compared to:** `r prop_60$metadata$recent_prior_period_label`  
+**Earlier period:** `r prop_60$metadata$earlier_period_label`  
+**Compared to:** `r prop_60$metadata$earlier_prior_period_label`  
+**Threshold:** `r prop_60$metadata$threshold_rule`
+
+> `r prop_60$metadata$eligibility_note`
+
+```{r prop-60-table}
+
+datatable(
+  prop_60_data |>
+    dplyr::select(-window) |> 
+    dplyr::arrange(ctry, current_period) |>
+    dplyr::rename(
+      Country              = "ctry",
+      Region               = "whoregion",
+      `Current Period`     = "current_period",
+      `Prior Period`       = "prior_period",
+      `Current Cases`      = "current_inad_cases",
+      `Current Got 60d`    = "current_got_60day",
+      `Current Prop (%)`   = "current_prop_60day",
+      `Prior Cases`        = "prior_inad_cases",
+      `Prior Got 60d`      = "prior_got_60day",
+      `Prior Prop (%)`     = "prior_prop_60day",
+      `% Change`           = "perc_change",
+      Flag                 = "flag"
+    ),
+  filter     = "top",
+  extensions = "Buttons",
+  options    = list(
+    dom        = "Bfrtip",
+    buttons    = c("copy", "csv", "excel"),
+    pageLength = 15,
+    scrollX    = TRUE,
+    columnDefs = list(
+      list(className = "dt-center", targets = "_all")
+    )
+  )
+)
+```
+
+
+## Timely AFP WPV/VDPV Detection
+
+**Recent period:** `r afp_wpv_vdpv$metadata$recent_period_label`  
+**Compared to:** `r afp_wpv_vdpv$metadata$recent_prior_period_label`  
+**Earlier period:** `r afp_wpv_vdpv$metadata$earlier_period_label`  
+**Compared to:** `r afp_wpv_vdpv$metadata$earlier_prior_period_label`  
+**Threshold:** `r afp_wpv_vdpv$metadata$threshold_rule`
+
+```{r wpv-vdpv-table}
+datatable(
+  afp_wpv_vdpv_data |>
+    dplyr::select(-window) |> 
+    dplyr::arrange(ctry, current_period) |>
+    dplyr::rename(
+      Country             = "ctry",
+      Region              = "whoregion",
+      `Current Period`    = "current_period",
+      `Prior Period`      = "prior_period",
+      `Current N`         = "current_count",
+      `Current Median (days)` = "current_median_days",
+      `Prior N`           = "prior_count",
+      `Prior Median (days)`   = "prior_median_days",
+      `% Change`          = "perc_change",
+      Flag                = "flag"
+    ),
+  filter     = "top",
+  extensions = "Buttons",
+  options    = list(
+    dom        = "Bfrtip",
+    buttons    = c("copy", "csv", "excel"),
+    pageLength = 15,
+    scrollX    = TRUE,
+    columnDefs = list(
+      list(className = "dt-center", targets = "_all")
+    )
+  )
+)
+```
+
+:::
