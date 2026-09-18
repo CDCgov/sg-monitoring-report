@@ -30,7 +30,7 @@ library(cowplot)
 end_date <- lubridate::ceiling_date(Sys.Date() %m-% months(2), unit = "month") %m-% days(1)
 
 # Get report data from existing tables or by sourcing generate_data_for_report.R
-use_existing_data <- FALSE  # set TRUE to skip data reload during QMD development
+use_existing_data <- TRUE  # set TRUE to skip data reload during QMD development
 
 if (use_existing_data) {
   load("datatables/datatables.rda")
@@ -1434,6 +1434,8 @@ function remove_all_option() {
     
     document.getElementById("country-table-m-region").getElementsByClassName("selectized")[0].selectize.removeOption("");
     document.getElementById("country-table-m-flag").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("country-table-m-lab-region").getElementsByClassName("selectized")[0].selectize.removeOption("");
+    document.getElementById("country-table-m-lab-flag").getElementsByClassName("selectized")[0].selectize.removeOption("");
     document.getElementById("country-table-q-region").getElementsByClassName("selectized")[0].selectize.removeOption("");
     document.getElementById("country-table-q-flag").getElementsByClassName("selectized")[0].selectize.removeOption("");
     document.getElementById("country-table-n-region").getElementsByClassName("selectized")[0].selectize.removeOption("");
@@ -1468,6 +1470,8 @@ function filter_default() {
     
     document.getElementById("country-table-m-region").getElementsByClassName("selectized")[0].selectize.setValue("AFRO");
     document.getElementById("country-table-m-flag").getElementsByClassName("selectized")[0].selectize.setValue("01. AFP Cases Reported");
+    document.getElementById("country-table-m-lab-region").getElementsByClassName("selectized")[0].selectize.setValue("AFRO");
+    document.getElementById("country-table-m-lab-flag").getElementsByClassName("selectized")[0].selectize.setValue("06. Negative Sample Timeliness");
     document.getElementById("country-table-q-region").getElementsByClassName("selectized")[0].selectize.setValue("AFRO");
     document.getElementById("country-table-q-flag").getElementsByClassName("selectized")[0].selectize.setValue("02. Proportion 60-Day Follow-Up Completed");
     document.getElementById("country-table-n-region").getElementsByClassName("selectized")[0].selectize.setValue("AFRO");
