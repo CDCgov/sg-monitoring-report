@@ -171,7 +171,7 @@ datatable(
 ```{r country-summary-table-m}
 #| echo: false
 
-country_table_m<-country_table_monthly     |>
+country_table_m<-country_table_monthly_afp_es     |>
     dplyr::select(Flag, whoregion,Country,sg_priority_level,dplyr::matches("[0-9]"),months_below) |>
     dplyr::mutate(sg_priority_level = factor(sg_priority_level, levels = c("HIGH", "MEDIUM", "LOW (WATCHLIST)", "LOW"), ordered = TRUE)) |>
     dplyr::arrange(whoregion, Flag, sg_priority_level) |>
@@ -208,6 +208,51 @@ datatable(
     #need to remove the row_key column we created for dynamic filtering
     columnDefs = list(
       list(visible = FALSE, targets = which(names(country_table_m$data()) == "row_key") - 1)
+    )
+  )
+)
+
+```
+
+#### Lab-based AFP flags
+
+```{r country-summary-table-m-lab}
+#| echo: false
+
+country_table_m_lab <- country_table_monthly_lab |>
+    dplyr::select(Flag, whoregion, Country, sg_priority_level,
+                  dplyr::matches("[0-9]"), months_below) |>
+    dplyr::mutate(sg_priority_level = factor(
+      sg_priority_level,
+      levels = c("HIGH", "MEDIUM", "LOW (WATCHLIST)", "LOW"),
+      ordered = TRUE
+    )) |>
+    dplyr::arrange(whoregion, Flag, sg_priority_level) |>
+    dplyr::rename(
+      Region = whoregion,
+      `SG Priority Level` = sg_priority_level,
+      `Months Below Target` = months_below
+    ) |>
+    dplyr::mutate(row_key = paste0(Country, "_", Flag)) |>
+    SharedData$new(key = ~row_key)
+
+filter_select("country-table-m-lab-region", "Region: ", country_table_m_lab,
+              ~Region, multiple = FALSE, allLevels = FALSE)
+filter_select("country-table-m-lab-flag", "Flag: ", country_table_m_lab,
+              ~Flag, multiple = FALSE, allLevels = FALSE)
+
+datatable(
+  country_table_m_lab,
+  filter = "top",
+  extensions = "Buttons",
+  rownames = FALSE,
+  options = list(
+    dom = "Bfrtip",
+    buttons = c("copy", "csv", "excel"),
+    pageLength = 20,
+    columnDefs = list(
+      list(visible = FALSE,
+           targets = which(names(country_table_m_lab$data()) == "row_key") - 1)
     )
   )
 )
@@ -595,6 +640,26 @@ datatable(
   lab_country_table_monthly, 
   filter = "top",
   extensions = 'Buttons',
+  callback = DT::JS(
+    "function updateMonthColumns() {",
+    "  var api = table;",
+    "  var monthPattern = /^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \\\\d{4}$/;",
+    "  api.columns().every(function() {",
+    "    var column = this;",
+    "    var header = $(column.header()).text().trim();",
+    "    if (monthPattern.test(header)) {",
+    "      var values = column.data({ search: 'applied' }).toArray();",
+    "      var hasValue = values.some(function(value) {",
+    "        return value !== null && value !== undefined && String(value).trim() !== '';",
+    "      });",
+    "      column.visible(hasValue, false);",
+    "    }",
+    "  });",
+    "  api.columns.adjust();",
+    "}",
+    "table.on('draw.dt', updateMonthColumns);",
+    "setTimeout(updateMonthColumns, 100);"
+  ),
   rownames=FALSE,
   options = list(
     dom = 'Bfrtip',
