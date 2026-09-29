@@ -19,11 +19,13 @@
 #'   \code{source}, and \code{measurement}.
 #' @param end_date Date to end the current reporting window.
 #'   Defaults to \code{Sys.Date()}. Typically passed as the last day of the previous month.
+#' @param lab_loc Laboratory location metadata. Must include \code{country} and
+#'   \code{culture.itd.cat}. Defaults to \code{sirfunctions::get_lab_locs()}.
 #'
 #' @return A named list with two elements:
 #' \describe{
 #'   \item{data}{A long-format data frame with one row per country per window
-#'     containing: \code{ctry}, \code{whoregion}, \code{window},
+#'     containing: \code{ctry}, \code{whoregion}, \code{lab_type}, \code{window},
 #'     \code{current_period}, \code{prior_period}, \code{current_count},
 #'     \code{current_median_days}, \code{prior_count}, \code{prior_median_days},
 #'     \code{perc_change}, and \code{flag}.}
@@ -42,7 +44,9 @@
 #' }
 #'
 #' @export
-build_wpv_vdpv_timeliness_indicator <- function(pos, end_date = Sys.Date()) {
+build_wpv_vdpv_timeliness_indicator <- function(pos,
+                                                end_date = Sys.Date(),
+                                                lab_loc = sirfunctions::get_lab_locs()) {
 
   # Basic initial checks -----
   stopifnot(
@@ -51,7 +55,9 @@ build_wpv_vdpv_timeliness_indicator <- function(pos, end_date = Sys.Date()) {
     "place.admin.0 column required" = "place.admin.0" %in% names(pos),
     "datenotificationtohq column required" = "datenotificationtohq" %in% names(pos),
     "source column required" = "source" %in% names(pos),
-    "measurement column required" = "measurement" %in% names(pos)
+    "measurement column required" = "measurement" %in% names(pos),
+    "lab_loc must be a data frame" = is.data.frame(lab_loc),
+    "required columns missing from lab_loc" = all(c("country", "culture.itd.cat") %in% names(lab_loc))
   )
 
 
@@ -84,6 +90,27 @@ build_wpv_vdpv_timeliness_indicator <- function(pos, end_date = Sys.Date()) {
 
 
   # Prepare Data -----
+  lab_type <- lab_loc |>
+    dplyr::transmute(
+      ctry = country,
+      lab_type = dplyr::case_when(
+        trimws(as.character(culture.itd.cat)) == "International culture/ITD" ~ "International",
+        trimws(as.character(culture.itd.cat)) == "In-country culture/ITD" ~ "In-country",
+        TRUE ~ as.character(culture.itd.cat)
+      )
+    ) |>
+    dplyr::group_by(ctry) |>
+    dplyr::summarise(
+      lab_type = {
+        values <- unique(stats::na.omit(lab_type))
+        non_blank <- values[trimws(values) != ""]
+        if (length(non_blank) > 0) paste(non_blank, collapse = "; ")
+        else if (length(values) > 0) ""
+        else NA_character_
+      },
+      .groups = "drop"
+    )
+
   pos_prep <- pos |>
     dplyr::filter(source == "AFP") |>
     dplyr::mutate(ctry = place.admin.0, # rename for easy merging below
@@ -119,7 +146,8 @@ build_wpv_vdpv_timeliness_indicator <- function(pos, end_date = Sys.Date()) {
   # Create Full Grid of all Countries + Region -----
   full_grid <- tibble::tibble(
     ctry = unique(pos$place.admin.0)) |>
-    dplyr::mutate(whoregion = sirfunctions::get_region(ctry))
+    dplyr::mutate(whoregion = sirfunctions::get_region(ctry)) |>
+    dplyr::left_join(lab_type, by = "ctry")
 
   # Build Period Summaries -----
   # Helper function to join each median data to full country list, calculate percent change,
@@ -168,7 +196,7 @@ build_wpv_vdpv_timeliness_indicator <- function(pos, end_date = Sys.Date()) {
 
   # Join for full table -----
   final_summary <- dplyr::bind_rows(recent_summary, earlier_summary) |>
-    dplyr::select(ctry, whoregion, window, current_period, prior_period,
+    dplyr::select(ctry, whoregion, window, current_period, prior_period, lab_type,
                   current_count, current_median_days, prior_count, prior_median_days,
                   perc_change, flag)
 

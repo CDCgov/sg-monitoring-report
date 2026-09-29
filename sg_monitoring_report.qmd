@@ -931,6 +931,7 @@ datatable(
       Window = window,
       `Current Period` = current_period,
       `Prior Period` = prior_period,
+      `Lab Type` = lab_type,
       `Current #` = current_count,
       `Current Median (days)` = current_median_days,
       `Prior #` = prior_count,
