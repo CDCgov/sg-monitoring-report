@@ -3,13 +3,35 @@
 
 create_summary_tables_monthly <- function(data, label, country_var_name, flag_values, incomplete_values, latest_month){
 
+  # Normalize the country identifier used by the indicator output. Some build
+  # functions use place.admin.0, while others use country or ctry.
+  if (country_var_name %in% names(data)) {
+    country_alias <- country_var_name
+  } else {
+    country_aliases <- c("place.admin.0", "country", "Country", "ctry")
+    country_alias <- country_aliases[country_aliases %in% names(data)][1]
+    if (is.na(country_alias)) {
+      stop("No supported country identifier found in monthly indicator data.")
+    }
+  }
+  data[[".summary_country"]] <- data[[country_alias]]
+  country_var_name <- ".summary_country"
+
   # divide into two quarters for grouping
-  latest_month <- max(lubridate::my(data$month_label))
-  # re-extract the max dates from the text columns of the tables
+  # Use the supplied reporting month so indicators with different data
+  # availability still share the same summary window.
+  latest_month <- lubridate::floor_date(
+    lubridate::as_date(latest_month),
+    unit = "month"
+  )
   latest_q_end <- latest_month
   latest_q_start <- lubridate::floor_date(latest_month %m-% months(2), unit = "month")
   earlier_q_end <- lubridate::floor_date(latest_month %m-% months(3), unit = "month")
-  earlier_q_start <- lubridate::floor_date(latest_month %m-% months(6), unit = "month")
+  earlier_q_start <- lubridate::floor_date(latest_month %m-% months(5), unit = "month")
+  current_month_labels <- format(
+    seq(latest_q_start, latest_q_end, by = "month"),
+    "%b %Y"
+  )
 
   # get the number of months a country has been flagged for merging into the country-level table
   num_months_below <- data |>
@@ -33,13 +55,18 @@ create_summary_tables_monthly <- function(data, label, country_var_name, flag_va
   # pivot wider so the columns are the months and merge the number of months below the target
   summary_table_country <- data |>
     dplyr::mutate(period = dplyr::case_when(dplyr::between(lubridate::my(month_label), latest_q_start, latest_q_end) ~ "Current",
-                                            dplyr::between(lubridate::my(month_label), earlier_q_start, earlier_q_end) ~ "Earlier"))  |>
+                                            dplyr::between(lubridate::my(month_label), earlier_q_start, earlier_q_end) ~ "Earlier"),
+                  month_label = factor(month_label, levels = current_month_labels))  |>
     # filter for now to simplify the table
     dplyr::filter(period == "Current")|>
-    tidyr::pivot_wider(id_cols = dplyr::all_of(id_cols_vec), values_from = flag, names_from = month_label) |>
+    tidyr::pivot_wider(id_cols = dplyr::all_of(id_cols_vec), values_from = flag,
+                       names_from = month_label, names_expand = TRUE)
+
+  summary_table_country <- summary_table_country |>
     dplyr::right_join(num_months_below) |>
-    dplyr::rename(Country = dplyr::all_of(country_var_name)) |>
-    dplyr::mutate(Flag = label)
+    dplyr::mutate(Flag = label) |>
+    dplyr::select(dplyr::all_of(id_cols_vec), dplyr::all_of(current_month_labels), dplyr::everything()) |>
+    dplyr::rename(Country = dplyr::all_of(country_var_name))
 
   summary_table_region <- data |>
     # create a column for quarter
