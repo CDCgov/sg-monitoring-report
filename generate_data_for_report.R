@@ -85,7 +85,6 @@ add_culture_itd_lab_who_region <- function(data) {
     "Oman",                       "EMRO",
     "Noguchi-Ghana",              "AFRO",
     "Cote d'Ivoire",              "AFRO",
-    "Coted'Ivoire",               "AFRO", # spelling variant currently present in lab_data
     "UVRI-Uganda",                "AFRO",
     "Cameroon",                   "AFRO",
     "Central African Republic",   "AFRO",
@@ -168,7 +167,6 @@ add_seq_lab_who_region <- function(data) {
     "NCCD-Mongolia",           "WPRO",
     "NIH-Thailand",            "SEARO",
     "NIID-Japan",              "WPRO",
-    "NPML-Banglasesh",         "SEARO", # spelling currently present in lab_data
     "Singapore",               "WPRO",
     "Sri Lanka",               "SEARO",
     "VIDRL-Australia",         "WPRO"
