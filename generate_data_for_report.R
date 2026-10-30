@@ -109,7 +109,20 @@ add_culture_itd_lab_who_region <- function(data) {
     "Syria",                      "EMRO",
     "Oman/Jordan",                "EMRO",
     "Zambia",                     "AFRO",
-    "Zimbabwe",                   "AFRO"
+    "Zimbabwe",                   "AFRO",
+    "China",                      "WPRO",
+    "IMR-Malaysia",               "WPRO",
+    "India",                      "SEARO",
+    "Indonesia",                  "WPRO",
+    "KDCA-Korea",                 "WPRO",
+    "Myanmar",                    "SEARO",
+    "NCCD-Mongolia",              "WPRO",
+    "NIH-Thailand",               "SEARO",
+    "NIID-Japan",                 "WPRO",
+    "NPML-Bangladesh",            "SEARO",
+    "Singapore",                  "WPRO",
+    "Sri Lanka",                  "SEARO",
+    "VIDRL-Australia",            "WPRO"
   )
 
   data |>
@@ -144,7 +157,19 @@ add_seq_lab_who_region <- function(data) {
     "Ibadan-Nigeria",          "AFRO",
     "Jordan",                  "EMRO",
     "Oman",                    "EMRO",
-    "Oman/Egypt",              "EMRO"
+    "Oman/Egypt",              "EMRO",
+    "China",                   "WPRO",
+    "Ibadan-Nigeria,Maiduguri-Nigeria", "AFRO",
+    "IMR-Malaysia",            "WPRO",
+    "India",                   "SEARO",
+    "Indonesia",               "WPRO",
+    "KDCA-Korea",              "WPRO",
+    "NCCD-Mongolia",           "WPRO",
+    "NIH-Thailand",            "SEARO",
+    "NIID-Japan",              "WPRO",
+    "Singapore",               "WPRO",
+    "Sri Lanka",               "SEARO",
+    "VIDRL-Australia",         "WPRO"
   )
 
   data |>
