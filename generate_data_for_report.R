@@ -139,7 +139,9 @@ add_seq_lab_who_region <- function(data) {
     "seq.lab column required" = "seq.lab" %in% names(data)
   )
 
-  # Update this lookup if seq.lab names change in lab_locs.
+  # Update this lookup if seq.lab names change in lab_locs. Values are
+  # canonicalized below so comma-separated lab names match regardless of
+  # whitespace around the comma.
   seq_lab_regions <- tibble::tribble(
     ~seq.lab,                  ~whoregion,
     "Pakistan",                "EMRO",
@@ -174,7 +176,10 @@ add_seq_lab_who_region <- function(data) {
 
   data |>
     dplyr::select(-dplyr::any_of("whoregion")) |>
-    dplyr::mutate(seq.lab = trimws(as.character(seq.lab))) |>
+    dplyr::mutate(
+      seq.lab = trimws(as.character(seq.lab)),
+      seq.lab = gsub("\\s*,\\s*", ",", seq.lab)
+    ) |>
     dplyr::left_join(seq_lab_regions, by = "seq.lab") |>
     dplyr::relocate(whoregion, .after = seq.lab)
 }
